@@ -22,7 +22,10 @@ export const siteConfig = {
   useGradient: false,
   themeColors: ["#a18cd1", "#fbc2eb", "#a1c4fd", "#c2e9fb"], // 呼吸流动的颜色组合
 // 修改这里：变成图片数组
-  bgImages: ["https://bu.dusays.com/2026/03/24/69c1e38b4c370.jpg", "https://bu.dusays.com/2026/03/24/69c26fe4acdb5.jpg", "https://bu.dusays.com/2026/03/24/69c26fe4d9486.jpg"],
+  bgImages: ["/images/bg/bg-ocean.webp", "/images/bg/bg-wings.webp"],
+
+  // 👇 【新增】移动端专用竖版背景（屏幕宽度 < 768px 时生效）；留空数组则沿用上面的 bgImages
+  bgImagesMobile: ["/images/bg/bg-mobile-blue.webp", "/images/bg/bg-mobile-cat.webp"],
 
   // 4. 文章默认封面图 (当 Markdown 没写 cover 时显示)
   defaultPostCover: "https://bu.dusays.com/2026/03/24/69c1e38b346cb.jpg",

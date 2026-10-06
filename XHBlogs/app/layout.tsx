@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Serif_SC } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "../components/ThemeProvider";
+import { themeInitScript } from "../lib/theme";
 import BackgroundEffects from "../components/BackgroundEffects";
 import { MusicProvider } from "../components/MusicProvider";
 import FloatingPlayer from "../components/FloatingPlayer";
@@ -39,6 +40,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="zh-CN" className={`${geistSans.variable} ${geistMono.variable} ${notoSerif.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
+        {/* 🌗 必须放在最前：绘制前确定深浅色，避免闪烁（替代旧版「挂载前隐藏整页」） */}
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <style
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
@@ -71,7 +74,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <div id="app-mount-root" className="flex-1 flex flex-col transition-opacity duration-1000">
               <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
                 {!siteConfig.useGradient && <BackgroundSlider />}
-                <div className="absolute inset-0 z-[-9] bg-white/30 dark:bg-slate-900/40 backdrop-blur-md transition-colors duration-1000"></div>
+                {/* 🚀 性能：模糊已移到 BackgroundSlider 的图片层（静态 filter，只栅格化一次），这里只保留半透明色调，不再用全屏 backdrop-filter */}
+                <div className="absolute inset-0 z-[-9] bg-white/30 dark:bg-slate-900/40 transition-colors duration-1000"></div>
 
                 <div
                   className="absolute inset-0 z-[-8] opacity-60 dark:opacity-20 mix-blend-color transition-opacity duration-1000 transform-gpu"

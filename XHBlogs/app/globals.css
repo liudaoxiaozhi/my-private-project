@@ -31,10 +31,11 @@
     --tw-prose-links: var(--color-indigo-400);
   }
 
-  [class*="backdrop-blur-"] {
-    will-change: backdrop-filter;
-    -webkit-backdrop-filter: blur(12px);
-  }
+  /*
+   * 🚀 已移除旧规则：[class*="backdrop-blur-"] { will-change; -webkit-backdrop-filter: blur(12px) }
+   * - Tailwind v4 的 backdrop-blur-* 自带 -webkit- 前缀，无需再补；旧规则反而把 Safari 下所有模糊强制成 12px。
+   * - 给上百个元素加 will-change 会让每个都常驻独立合成层，移动端显存吃紧、滚动掉帧。
+   */
 
   .group:hover img {
     will-change: transform;
@@ -53,10 +54,6 @@ input[type=range]::-webkit-slider-thumb {
 
 /* 4. 火狐专项优化与布局兜底 */
 @layer base {
-  [class*="backdrop-blur-"] {
-    will-change: backdrop-filter;
-  }
-
   @-moz-document url-prefix() {
     [class*="backdrop-blur-md"] {
       backdrop-filter: blur(8px) !important;
@@ -94,4 +91,28 @@ input[type=range]::-webkit-slider-thumb {
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+}
+
+/* ========================================================
+   7. 移动端毛玻璃降级：大半径 backdrop-filter 是滚动卡顿主因
+   只覆盖 Tailwind 主题变量，视觉仍是磨砂，但每帧采样范围小很多。
+   写在 @layer 之外，优先级高于 Tailwind 的 theme 层。
+   ======================================================== */
+@media (max-width: 767px) {
+  :root {
+    --blur-lg: 10px;
+    --blur-xl: 12px;
+    --blur-2xl: 14px;
+    --blur-3xl: 16px;
+  }
+}
+
+/* 用户开启「减少动态效果」时，停用背景轮播的淡入淡出与卡片缩放过渡 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

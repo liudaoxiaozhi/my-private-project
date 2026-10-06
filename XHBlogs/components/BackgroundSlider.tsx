@@ -67,26 +67,32 @@ export default function BackgroundSlider() {
 
   return (
     <div className="absolute inset-0 z-[-10] overflow-hidden" aria-hidden="true">
-      {slides.map((slide, i) => {
-        const isActive = i === index;
-        // 只保留「当前 / 正在淡出的上一张 / 预加载的下一张」，其余不参与渲染合成
-        const isMounted = isActive || i === prev || i === next;
+      {/*
+        模糊直接作用在图片层：静态 filter 只需栅格化一次，滚动时不会逐帧重算，
+        比在其上方叠一层全屏 backdrop-filter 省得多。scale-110 用来盖住模糊后的透明边缘。
+      */}
+      <div className="absolute inset-0 scale-110 blur-md transform-gpu">
+        {slides.map((slide, i) => {
+          const isActive = i === index;
+          // 只保留「当前 / 正在淡出的上一张 / 预加载的下一张」，其余不参与渲染合成
+          const isMounted = isActive || i === prev || i === next;
 
-        return (
-          <div
-            key={`${slide.desktop}|${slide.mobile}|${i}`}
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[2000ms] ease-in-out transform-gpu bg-[image:var(--bg-mobile)] md:bg-[image:var(--bg-desktop)]"
-            style={
-              {
-                '--bg-mobile': cssUrl(slide.mobile),
-                '--bg-desktop': cssUrl(slide.desktop),
-                opacity: isActive ? 1 : 0,
-                visibility: isMounted ? 'visible' : 'hidden',
-              } as CSSProperties
-            }
-          />
-        );
-      })}
+          return (
+            <div
+              key={`${slide.desktop}|${slide.mobile}|${i}`}
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[2000ms] ease-in-out transform-gpu bg-[image:var(--bg-mobile)] md:bg-[image:var(--bg-desktop)]"
+              style={
+                {
+                  '--bg-mobile': cssUrl(slide.mobile),
+                  '--bg-desktop': cssUrl(slide.desktop),
+                  opacity: isActive ? 1 : 0,
+                  visibility: isMounted ? 'visible' : 'hidden',
+                } as CSSProperties
+              }
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }

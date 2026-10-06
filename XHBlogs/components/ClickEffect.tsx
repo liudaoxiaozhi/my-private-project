@@ -10,7 +10,9 @@ export default function ClickEffect() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let ripples: any[] = [];
+    // 只需要这三个成员；具体实现见下方 Ripple 类
+    const ripples: Array<{ opacity: number; update: () => void; draw: () => void }> = [];
+    let frameId = 0;
 
     const resize = () => {
       canvas.width = window.innerWidth;
@@ -81,11 +83,13 @@ export default function ClickEffect() {
           i--;
         }
       }
-      requestAnimationFrame(animate);
+      frameId = requestAnimationFrame(animate);
     };
     animate();
 
     return () => {
+      // 修复：卸载时停止动画循环（旧版没有取消，组件卸载后仍在每帧空转）
+      cancelAnimationFrame(frameId);
       window.removeEventListener('resize', resize);
       window.removeEventListener('click', handleClick);
     };

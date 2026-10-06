@@ -9,9 +9,16 @@ import { siteConfig } from '../../siteConfig'; // 🌟 引入站点配置
 
 import AlchemyLab from './AlchemyLab';
 import DijiangModel from './DijiangModel';
+import type { WorkshopItem } from '../../lib/content';
+
+interface CreativeWorkshopClientProps {
+  posts?: WorkshopItem[];
+  chatters?: WorkshopItem[];
+  moments?: WorkshopItem[];
+}
 // import OperatorRecreation from './OperatorRecreation'; // 🌟 先注释掉，以后需要随时可以加回来
 
-export default function CreativeWorkshopClient({ posts = [], chatters = [], moments = [] }: any) {
+export default function CreativeWorkshopClient({ posts = [], chatters = [], moments = [] }: CreativeWorkshopClientProps) {
   const [currentMode, setCurrentMode] = useState<'alchemy' | 'model'>('alchemy'); // 🌟 暂时只保留两个状态
 
   // =========================================================

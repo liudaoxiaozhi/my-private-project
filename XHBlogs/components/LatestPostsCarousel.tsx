@@ -4,8 +4,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import AppImage from './AppImage';
+import type { CardItem } from '../lib/content';
 
-export default function LatestPostsCarousel({ posts }: { posts: any[] }) {
+export default function LatestPostsCarousel({ posts }: { posts: CardItem[] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // 设置自动播放定时器
@@ -37,7 +39,7 @@ export default function LatestPostsCarousel({ posts }: { posts: any[] }) {
           transition={{ duration: 0.8 }}
           className="absolute inset-0 z-0"
         >
-          <img src={currentPost.cover} className="w-full h-full object-cover opacity-90 transition-transform duration-1000 group-hover:scale-105" alt={currentPost.title} />
+          <AppImage src={currentPost.cover} fill sizes="(min-width: 1024px) 400px, 100vw" className="w-full h-full object-cover opacity-90 transition-transform duration-1000 group-hover:scale-105" alt={currentPost.title} />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
         </motion.div>
       </AnimatePresence>

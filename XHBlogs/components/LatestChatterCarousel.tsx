@@ -4,8 +4,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import AppImage from './AppImage';
+import type { CardItem } from '../lib/content';
 
-export default function LatestChatterCarousel({ chatters }: { chatters: any[] }) {
+export default function LatestChatterCarousel({ chatters }: { chatters: CardItem[] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export default function LatestChatterCarousel({ chatters }: { chatters: any[] })
           transition={{ duration: 0.8, ease: "easeInOut" }}
           className="absolute inset-0 z-0"
         >
-          <img src={currentChatter.cover} className="w-full h-full object-cover opacity-80 dark:opacity-60 transition-transform duration-1000 group-hover:scale-105" alt="Chatter Cover" />
+          <AppImage src={currentChatter.cover} fill sizes="(min-width: 1024px) 520px, 100vw" className="w-full h-full object-cover opacity-80 dark:opacity-60 transition-transform duration-1000 group-hover:scale-105" alt="Chatter Cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-black/10"></div>
         </motion.div>
       </AnimatePresence>

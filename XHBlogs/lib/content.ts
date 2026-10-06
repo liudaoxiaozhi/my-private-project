@@ -46,6 +46,37 @@ export interface Chatter extends ChatterMeta {
   content: string;
 }
 
+/** 首页轮播卡片（文章 / 杂谈共用）：只含展示所需字段 */
+export interface CardItem {
+  slug: string;
+  title: string;
+  description: string;
+  cover: string;
+  date: string;
+  /** 已格式化的展示日期，如 "2026.03.24 07:00" */
+  formattedDate: string;
+}
+
+/** 说说 */
+export interface Moment {
+  id: string;
+  date: string;
+  location: string;
+  images: string[];
+  content: string;
+}
+
+/** 「灵境」创意工坊（/tree）使用的内容条目 */
+export interface WorkshopItem {
+  id: string;
+  slug: string;
+  title: string;
+  type: 'post' | 'chatter' | 'moment';
+  date: string;
+  cover: string | null;
+  content: string;
+}
+
 export interface TagStat {
   name: string;
   count: number;
@@ -66,7 +97,7 @@ const pad = (n: number): string => String(n).padStart(2, '0');
  * frontmatter 的 date 可能是字符串，也可能被 YAML 解析成 Date（未加引号的 2026-03-24）。
  * 统一转成字符串：直接把 Date 放进 JSX 会触发 "Objects are not valid as a React child"。
  */
-function normalizeDate(value: unknown): string {
+export function normalizeDate(value: unknown): string {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     // YAML 日期按 UTC 解析，这里按 UTC 取字段，避免时区把日期推到前一天
     const ymd = `${value.getUTCFullYear()}-${pad(value.getUTCMonth() + 1)}-${pad(value.getUTCDate())}`;
@@ -246,3 +277,26 @@ export function getRecentChatters(excludeSlug: string, limit = 3): ChatterMeta[]
     .slice(0, limit)
     .map(({ content: _content, ...meta }) => meta);
 }
+
+// ============================== 说说 ==============================
+
+/** 说说可能放在 moments/ 或旧位置 posts/moments/，两处都扫描，同名以 moments/ 为准 */
+const MOMENT_DIRS = [path.join(CONTENT_ROOT, 'posts', 'moments'), path.join(CONTENT_ROOT, 'moments')];
+
+export const getAllMoments = cache((): Moment[] => {
+  const byId = new Map<string, Moment>();
+  for (const dir of MOMENT_DIRS) {
+    for (const id of listMarkdownSlugs(dir)) {
+      const file = readMarkdown(dir, id);
+      if (!file) continue;
+      byId.set(id, {
+        id,
+        date: normalizeDate(file.data.date) || '1970-01-01',
+        location: asString(file.data.location),
+        images: asStringArray(file.data.images),
+        content: file.content.trim(),
+      });
+    }
+  }
+  return [...byId.values()];
+});

@@ -14,6 +14,9 @@ import { siteConfig } from '../../siteConfig';
 
 import { albums } from '../../data/albums';
 import { friendsData } from '../../data/friends';
+import AppImage from '../../components/AppImage';
+import type { WorkshopItem } from '../../lib/content';
+import type { Album } from '../../data/albums';
 
 function seededRandom(seed: number) {
   const x = Math.sin(seed) * 10000;
@@ -146,7 +149,7 @@ const StackedTacticalHUD = ({ records, color, categoryName, isImageStyle, router
               {records.map((r: any) => (
                 isImageStyle ? (
                   <div key={r.id} onClick={() => handleItemClick(r)} className="relative w-full aspect-video shrink-0 overflow-hidden shadow-md group cursor-pointer border border-[#333] bg-[#222] rounded-xl">
-                    <img src={r.image} alt={r.title} className="absolute inset-0 w-full h-full object-cover blur-[2px] group-hover:blur-0 transition-all duration-500 scale-110 opacity-70 group-hover:opacity-100" />
+                    <AppImage src={r.image} alt={r.title} fill sizes="(min-width: 768px) 300px, 90vw" className="absolute inset-0 w-full h-full object-cover blur-[2px] group-hover:blur-0 transition-all duration-500 scale-110 opacity-70 group-hover:opacity-100" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent transition-colors duration-500" />
                     <div className="absolute right-0 top-0 bottom-0 w-1 opacity-80" style={{ backgroundColor: color }} />
                     <div className="relative z-10 p-4 h-full flex flex-col justify-end">
@@ -179,7 +182,7 @@ const StackedTacticalHUD = ({ records, color, categoryName, isImageStyle, router
                 >
                   {isImageStyle ? (
                     <>
-                      <img src={r.image} className="absolute inset-0 w-full h-full object-cover blur-[2px] opacity-50" alt="" />
+                      <AppImage src={r.image} fill sizes="(min-width: 768px) 600px, 100vw" className="absolute inset-0 w-full h-full object-cover blur-[2px] opacity-50" alt="" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent" />
                       <div className="relative z-10 p-4 h-full flex flex-col justify-end text-left">
                          <div className="text-[10px] text-amber-500 font-mono drop-shadow-md mb-1">{formatDisplayDate(r.date)}</div>
@@ -324,7 +327,13 @@ const HologramShip = ({ activeCategory, currentRecords, router }: any) => {
 // ==========================================
 // 🌟 6. 核心页面渲染
 // ==========================================
-export default function DijiangModel({ posts = [], chatters = [], moments = [] }: any) {
+interface DijiangModelProps {
+  posts?: WorkshopItem[];
+  chatters?: WorkshopItem[];
+  moments?: WorkshopItem[];
+}
+
+export default function DijiangModel({ posts = [], chatters = [], moments = [] }: DijiangModelProps) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [sysTip, setSysTip] = useState<string | null>(null);
@@ -338,10 +347,10 @@ export default function DijiangModel({ posts = [], chatters = [], moments = [] }
   const rpgStats = useMemo(() => {
     if (siteConfig?.enableLevelSystem !== true) return null;
 
-    const totalPhotos = (albums || []).reduce((acc: number, curr: any) => acc + (curr.photos?.length || 0), 0);
+    const totalPhotos = (albums || []).reduce((acc: number, curr: Album) => acc + (curr.photos?.length || 0), 0);
     const totalFriends = (friendsData || []).length;
 
-    const parseDateStr = (dateVal: any) => {
+    const parseDateStr = (dateVal: string | Date) => {
       try {
         const d = new Date(dateVal);
         if (isNaN(d.getTime())) return null;
@@ -351,9 +360,9 @@ export default function DijiangModel({ posts = [], chatters = [], moments = [] }
 
     const todayString = parseDateStr(new Date());
     let tp = 0, tc = 0, tm = 0;
-    const uniqueDays = new Set();
+    const uniqueDays = new Set<string>();
 
-    const processItem = (item: any, type: string) => {
+    const processItem = (item: WorkshopItem, type: 'p' | 'c' | 'm') => {
       if (item.date) {
         const ds = parseDateStr(item.date);
         if (ds) {
@@ -367,9 +376,9 @@ export default function DijiangModel({ posts = [], chatters = [], moments = [] }
       }
     };
 
-    posts.forEach((i: any) => processItem(i, 'p'));
-    chatters.forEach((i: any) => processItem(i, 'c'));
-    moments.forEach((i: any) => processItem(i, 'm'));
+    posts.forEach((i) => processItem(i, 'p'));
+    chatters.forEach((i) => processItem(i, 'c'));
+    moments.forEach((i) => processItem(i, 'm'));
 
     const postsExp = posts.length * 50;
     const chattersExp = chatters.length * 20;
@@ -524,7 +533,8 @@ export default function DijiangModel({ posts = [], chatters = [], moments = [] }
   const currentMonthRecords = useMemo(() => {
     const formatted = [...posts, ...chatters, ...moments].map(r => ({
       id: r.id || r.slug, slug: r.slug, type: r.type, title: r.title, date: r.date,
-      image: r.cover || r.image || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1000&auto=format&fit=crop',
+      // frontmatter 里的 image 字段已在 tree/page.tsx 合并进 cover
+      image: r.cover || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1000&auto=format&fit=crop',
       content: r.content
     })).filter(r => r.date.startsWith(currentMonthStr));
     return [...formatted, ...realWishes];

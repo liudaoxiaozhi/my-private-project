@@ -4,6 +4,7 @@ import { Geist, Geist_Mono, Noto_Serif_SC } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { themeInitScript } from "../lib/theme";
+import { SITE_URL } from "../lib/site";
 import BackgroundEffects from "../components/BackgroundEffects";
 import { MusicProvider } from "../components/MusicProvider";
 import FloatingPlayer from "../components/FloatingPlayer";
@@ -28,6 +29,8 @@ const notoSerif = Noto_Serif_SC({
 });
 
 export const metadata: Metadata = {
+  // 让 OG 卡片等元数据里的相对地址（如 /images/...）补全为绝对地址
+  metadataBase: new URL(SITE_URL),
   title: siteConfig.title,
   description: siteConfig.bio,
   icons: {

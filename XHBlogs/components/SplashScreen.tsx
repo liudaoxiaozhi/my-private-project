@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { siteConfig } from '../siteConfig';
+import AppImage from './AppImage';
 
 export default function SplashScreen() {
   const [show, setShow] = useState(false);
@@ -54,7 +55,7 @@ export default function SplashScreen() {
                 className="absolute -inset-1.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-60 blur-[3px]"
               />
               <div className="relative w-full h-full rounded-full p-1.5 bg-white dark:bg-slate-900 shadow-xl">
-                <img src={siteConfig.avatarUrl} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                <AppImage src={siteConfig.avatarUrl} alt={siteConfig.authorName} width={256} height={256} loading="eager" fetchPriority="high" className="w-full h-full rounded-full object-cover" />
               </div>
             </div>
 

@@ -2,13 +2,21 @@
 
 import { createContext, useContext, useState, useRef, useEffect, ReactNode } from 'react';
 import { siteConfig } from '../siteConfig';
+import type { LyricLine, MusicApiSong, Song } from '../lib/music';
+
+const DEFAULT_COVER = 'https://bu.dusays.com/2026/03/24/69c24230a5ff8.jpg';
+
+/** 过滤掉取不到播放地址的歌曲 */
+function isPlayable(song: MusicApiSong | null | undefined): song is MusicApiSong & { url: string } {
+  return Boolean(song && song.url && !song.error);
+}
 
 // 【增强版 LRC 歌词解析】
-function parseLrc(lrcText: string) {
+function parseLrc(lrcText: string): LyricLine[] {
   if (!lrcText || lrcText.length > 30000) return [];
 
   const lines = lrcText.split(/\r?\n/);
-  const result = [];
+  const result: LyricLine[] = [];
 
   for (let line of lines) {
     const matches = [...line.matchAll(/\[(\d{2,}):(\d{2})(?:\.(\d{2,3}))?\]/g)];
@@ -37,9 +45,9 @@ function parseLrc(lrcText: string) {
 type PlayMode = 'loop' | 'single' | 'random';
 
 interface MusicContextType {
-  playlist: any[];
+  playlist: Song[];
   currentIndex: number;
-  currentSong: any; // 扩展了 lyrics 属性
+  currentSong: Song | undefined;
   isPlaying: boolean;
   progress: number;
   currentTime: number;
@@ -54,6 +62,8 @@ interface MusicContextType {
   nextSong: () => void;
   prevSong: () => void;
   handleSeek: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  /** 跳转到指定进度（0~100） */
+  seekToPercent: (percent: number) => void;
   playSong: (index: number) => void;
   setVolume: (value: number) => void;
   toggleMute: () => void;
@@ -63,13 +73,13 @@ interface MusicContextType {
 const MusicContext = createContext<MusicContextType | null>(null);
 
 export function MusicProvider({ children }: { children: ReactNode }) {
-  const [playlist, setPlaylist] = useState<any[]>([]);
+  const [playlist, setPlaylist] = useState<Song[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [lyrics, setLyrics] = useState<{ time: number; text: string }[]>([]);
+  const [lyrics, setLyrics] = useState<LyricLine[]>([]);
   const [currentLyric, setCurrentLyric] = useState("正在连接高可用神经云端...");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -85,18 +95,17 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     const fetchMusicData = async () => {
       try {
         const res = await fetch(`/api/music?ids=${siteConfig.cloudMusicIds.join(',')}`);
-        const rawResults = await res.json();
+        const rawResults = (await res.json()) as MusicApiSong[];
 
-        const mergedPlaylist = rawResults
-          .filter((song: any) => song && song.url && !song.error)
-          .map((song: any) => ({
-            id: song.id || Math.random().toString(),
+        const mergedPlaylist: Song[] = (Array.isArray(rawResults) ? rawResults : [])
+          .filter(isPlayable)
+          .map((song) => ({
+            id: song.id,
             title: song.name || '未知歌曲',
             artist: song.artist || song.author || '未知歌手',
-            cover: song.cover || song.pic || 'https://bu.dusays.com/2026/03/24/69c24230a5ff8.jpg',
+            cover: song.cover || song.pic || DEFAULT_COVER,
             src: song.url,
-            lrcUrl: null,
-            lyrics: song.lrc ? parseLrc(song.lrc) : []
+            lyrics: song.lrc ? parseLrc(song.lrc) : [],
           }));
 
         if (isMounted) {
@@ -126,22 +135,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         setLyrics(currentSong.lyrics);
         setCurrentLyric(currentSong.lyrics[0]?.text || "\u266a \u7eaf\u4eab\u97f3\u4e50 \u266a");
       }
-    } else if (currentSong.lrcUrl) {
-      fetch(currentSong.lrcUrl)
-        .then(res => res.text())
-        .then(text => {
-          if (isMounted) {
-             const parsed = parseLrc(text);
-             setLyrics(parsed);
-             setPlaylist(prev => {
-                const newPlaylist = [...prev];
-                newPlaylist[currentIndex].lyrics = parsed;
-                return newPlaylist;
-             });
-          }
-        })
-        .catch(() => { if (isMounted) setCurrentLyric("\u266a \u7eaf\u4eab\u97f3\u4e50 \u266a"); });
     }
+    // 歌词已由 /api/music 一并返回并在加载歌单时解析；旧版按 lrcUrl 二次拉取的分支已无数据源，已移除
 
     if (isPlaying && audioRef.current) {
       const playPromise = audioRef.current.play();
@@ -216,13 +211,15 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newProgress = Number(e.target.value);
+  const seekToPercent = (percent: number) => {
+    const newProgress = Math.min(100, Math.max(0, percent));
     setProgress(newProgress);
     if (audioRef.current && audioRef.current.duration) {
       audioRef.current.currentTime = (newProgress / 100) * audioRef.current.duration;
     }
   };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => seekToPercent(Number(e.target.value));
 
   const setVolume = (val: number) => {
     setVolumeState(val);
@@ -245,7 +242,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     <MusicContext.Provider value={{
         playlist, currentIndex, currentSong, isPlaying, progress, currentTime, duration, currentLyric, isLoading,
         volume, isMuted, playMode, // 暴露新状态
-        togglePlay, nextSong, prevSong, handleSeek,
+        togglePlay, nextSong, prevSong, handleSeek, seekToPercent,
         playSong, setVolume, toggleMute, togglePlayMode // 暴露新方法
     }}>
       {children}

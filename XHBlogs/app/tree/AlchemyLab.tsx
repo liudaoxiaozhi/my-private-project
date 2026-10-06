@@ -13,6 +13,8 @@ import { siteConfig } from '../../siteConfig';
 // 🌟 引入相册与友链数据以统计徽章 (请确保路径正确，如果报错请调整 ../ 的数量)
 import { albums } from '../../data/albums';
 import { friendsData } from '../../data/friends';
+import type { WorkshopItem } from '../../lib/content';
+import type { Album } from '../../data/albums';
 
 function seededRandom(seed: number) {
   const x = Math.sin(seed) * 10000;
@@ -179,7 +181,13 @@ const StickyNote = ({ note }: { note: any }) => {
 // ==========================================
 // 🌟 4. 核心实验室组件 (完全体)
 // ==========================================
-export default function AlchemyLab({ posts = [], chatters = [], moments = [] }: any) {
+interface AlchemyLabProps {
+  posts?: WorkshopItem[];
+  chatters?: WorkshopItem[];
+  moments?: WorkshopItem[];
+}
+
+export default function AlchemyLab({ posts = [], chatters = [], moments = [] }: AlchemyLabProps) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -195,10 +203,10 @@ export default function AlchemyLab({ posts = [], chatters = [], moments = [] }: 
     if (siteConfig?.enableLevelSystem !== true) return null;
 
     // 统计照片与友链 (纯发徽章，不加经验)
-    const totalPhotos = (albums || []).reduce((acc: number, curr: any) => acc + (curr.photos?.length || 0), 0);
+    const totalPhotos = (albums || []).reduce((acc: number, curr: Album) => acc + (curr.photos?.length || 0), 0);
     const totalFriends = (friendsData || []).length;
 
-    const parseDateStr = (dateVal: any) => {
+    const parseDateStr = (dateVal: string | Date) => {
       try {
         const d = new Date(dateVal);
         if (isNaN(d.getTime())) return null;
@@ -208,9 +216,9 @@ export default function AlchemyLab({ posts = [], chatters = [], moments = [] }: 
 
     const todayString = parseDateStr(new Date());
     let tp = 0, tc = 0, tm = 0;
-    const uniqueDays = new Set();
+    const uniqueDays = new Set<string>();
 
-    const processItem = (item: any, type: string) => {
+    const processItem = (item: WorkshopItem, type: 'p' | 'c' | 'm') => {
       if (item.date) {
         const ds = parseDateStr(item.date);
         if (ds) {
@@ -224,9 +232,9 @@ export default function AlchemyLab({ posts = [], chatters = [], moments = [] }: 
       }
     };
 
-    posts.forEach((i: any) => processItem(i, 'p'));
-    chatters.forEach((i: any) => processItem(i, 'c'));
-    moments.forEach((i: any) => processItem(i, 'm'));
+    posts.forEach((i) => processItem(i, 'p'));
+    chatters.forEach((i) => processItem(i, 'c'));
+    moments.forEach((i) => processItem(i, 'm'));
 
     const postsExp = posts.length * 50;
     const chattersExp = chatters.length * 20;
@@ -385,9 +393,9 @@ export default function AlchemyLab({ posts = [], chatters = [], moments = [] }: 
     if (!mounted) return { shelvesData: [], stickyNotes: [], stats: { post: 0, chatter: 0, moment: 0, wish: 0 } };
 
     const isCurrentMonth = (dateStr: string) => dateStr && dateStr.startsWith(currentMonthStr);
-    const currentPosts = posts.filter((i: any) => isCurrentMonth(i.date));
-    const currentChatters = chatters.filter((i: any) => isCurrentMonth(i.date));
-    const currentMoments = moments.filter((i: any) => isCurrentMonth(i.date));
+    const currentPosts = posts.filter((i) => isCurrentMonth(i.date));
+    const currentChatters = chatters.filter((i) => isCurrentMonth(i.date));
+    const currentMoments = moments.filter((i) => isCurrentMonth(i.date));
     const currentFlasks = [...currentPosts, ...currentChatters, ...currentMoments];
 
     const monthStats = { post: currentPosts.length, chatter: currentChatters.length, moment: currentMoments.length, wish: realWishes.length };

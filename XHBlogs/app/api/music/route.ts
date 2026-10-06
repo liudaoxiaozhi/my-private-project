@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { MusicApiSong } from '../../../lib/music'
 
 const NET_EASE_HEADERS = {
   'User-Agent':
@@ -10,17 +11,8 @@ const NET_EASE_HEADERS = {
 const MAX_SONGS_PER_REQUEST = 50
 const SONG_ID_PATTERN = /^\d{1,15}$/
 
-type SongResult = {
-  id: string
-  name?: string
-  artist?: string
-  author?: string
-  cover?: string
-  pic?: string
-  url?: string
-  lrc?: string
-  error?: string
-}
+/** 与前端共享的返回类型 */
+type SongResult = MusicApiSong
 
 export async function GET(request: NextRequest) {
   const ids = request.nextUrl.searchParams.get('ids')

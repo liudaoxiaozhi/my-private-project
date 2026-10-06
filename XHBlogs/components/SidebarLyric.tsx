@@ -1,6 +1,7 @@
 "use client";
 import { useMusic } from './MusicProvider';
 import { useState, useEffect } from 'react';
+import AppImage from './AppImage';
 
 export default function SidebarLyric() {
   const { currentSong, currentLyric, isPlaying } = useMusic();
@@ -36,7 +37,7 @@ export default function SidebarLyric() {
           className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/20 shadow-md animate-[spin_6s_linear_infinite]"
           style={{ animationPlayState: isPlaying ? 'running' : 'paused' }}
         >
-          <img src={currentSong.cover} className="w-full h-full object-cover" alt="cover" />
+          <AppImage src={currentSong.cover} width={96} height={96} className="w-full h-full object-cover" alt="专辑封面" referrerPolicy="no-referrer" />
         </div>
 
         <div className="flex-1 overflow-hidden">

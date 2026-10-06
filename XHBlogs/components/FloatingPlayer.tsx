@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useMusic } from './MusicProvider';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import AppImage from './AppImage';
 
 export default function FloatingPlayer() {
   const pathname = usePathname();
@@ -42,7 +43,7 @@ export default function FloatingPlayer() {
           className="w-10 h-10 rounded-full border border-white/50 shadow-sm flex-shrink-0 overflow-hidden relative animate-[spin_6s_linear_infinite] pointer-events-none"
           style={{ animationPlayState: isPlaying ? 'running' : 'paused' }}
         >
-          <img src={currentSong.cover} alt="cover" className="w-full h-full object-cover" />
+          <AppImage src={currentSong.cover} alt="专辑封面" fill sizes="40px" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
           <div className="absolute inset-0 bg-black/10"></div>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white/80 backdrop-blur-sm rounded-full shadow-inner"></div>
         </div>

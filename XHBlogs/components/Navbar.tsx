@@ -18,7 +18,7 @@ export default function Navbar() {
   const smoothRotation = useSpring(rawRotation, { stiffness: 200, damping: 25 });
   const inverseRotation = useTransform(smoothRotation, (r) => -r);
 
-  const handlePan = (event: any, info: PanInfo) => {
+  const handlePan = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (!wheelRef.current) return;
     const rect = wheelRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;

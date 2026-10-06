@@ -1,25 +1,56 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { MapPin, MessageSquare, Clock, Sparkles, Search, ArrowDownAZ, ArrowUpZA, ChevronLeft, ChevronRight, Ghost } from 'lucide-react';
 import MomentComments from '../../components/MomentComments';
+import AppImage from '../../components/AppImage';
+import type { Moment } from '../../lib/content';
 
-function timeAgo(dateStr: string) {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+interface MomentListProps {
+  moments: Moment[];
+  authorName: string;
+  avatarUrl: string;
+}
+
+/** 绝对日期，纯字符串处理：服务端与客户端首帧一致 */
+function absoluteDate(dateStr: string): string {
+  const m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(dateStr);
+  return m ? `${m[1]}.${m[2].padStart(2, '0')}.${m[3].padStart(2, '0')}` : dateStr;
+}
+
+/**
+ * 相对时间。now 为 null（服务端渲染 / 首帧水合）时返回绝对日期，
+ * 挂载后再切换成「x 分钟前」，避免服务端与浏览器时间不同导致 Hydration 不匹配。
+ */
+function timeAgo(dateStr: string, now: number | null): string {
+  if (now === null) return absoluteDate(dateStr);
+  const time = new Date(dateStr.replace(' ', 'T')).getTime();
+  if (Number.isNaN(time)) return dateStr;
+  const diffInSeconds = Math.floor((now - time) / 1000);
   if (diffInSeconds < 60) return '刚刚';
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} 分钟前`;
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} 小时前`;
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+  return absoluteDate(dateStr);
 }
 
-export default function MomentList({ moments, authorName, avatarUrl }: any) {
+/** 挂载后才有值，每分钟刷新一次 */
+function useNow(): number | null {
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  return now;
+}
+
+export default function MomentList({ moments, authorName, avatarUrl }: MomentListProps) {
   const [openCommentId, setOpenCommentId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [lightbox, setLightbox] = useState<{ images: string[], index: number } | null>(null);
+  const now = useNow();
 
   const processedMoments = useMemo(() => {
     let result = moments ? [...moments] : [];
@@ -60,7 +91,7 @@ export default function MomentList({ moments, authorName, avatarUrl }: any) {
       return (
         <div className="mt-4 md:mt-8 flex justify-start sm:justify-center w-full">
           <div onClick={() => setLightbox({ images, index: 0 })} className="max-w-[80%] sm:max-w-[280px] overflow-hidden rounded-xl md:rounded-2xl border border-slate-200/50 dark:border-white/10 shadow-lg md:shadow-xl cursor-zoom-in group">
-            <img src={images[0]} alt="moment" className="w-full h-auto max-h-[300px] md:max-h-[400px] object-contain group-hover:scale-105 transition-transform duration-500" />
+            <AppImage src={images[0]} alt="说说配图" width={560} height={420} sizes="(min-width: 640px) 280px, 80vw" className="w-full h-auto max-h-[300px] md:max-h-[400px] object-contain group-hover:scale-105 transition-transform duration-500" />
           </div>
         </div>
       );
@@ -76,7 +107,7 @@ export default function MomentList({ moments, authorName, avatarUrl }: any) {
             const isLastVisible = idx === 8 && count > 9;
             return (
               <div key={idx} onClick={() => setLightbox({ images, index: idx })} className="group relative aspect-square overflow-hidden rounded-lg md:rounded-xl bg-slate-200/20 dark:bg-slate-700/20 border border-slate-200/50 dark:border-white/10 cursor-zoom-in">
-                <img src={src} alt="moment" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                <AppImage src={src} alt="说说配图" fill sizes="(min-width: 768px) 200px, 33vw" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                 {isLastVisible && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white backdrop-blur-[2px]">
                     <span className="text-lg md:text-xl font-black">+{count - 9}</span>
@@ -90,7 +121,7 @@ export default function MomentList({ moments, authorName, avatarUrl }: any) {
     );
   };
 
-  const renderMomentCard = (moment: any) => (
+  const renderMomentCard = (moment: Moment) => (
     <motion.div
       key={moment.id}
       layout
@@ -102,11 +133,11 @@ export default function MomentList({ moments, authorName, avatarUrl }: any) {
     >
       <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-8 pb-4 md:pb-6 border-b border-slate-200/50 dark:border-slate-700/50 relative">
         <div className="w-10 h-10 md:w-14 md:h-14 shrink-0 rounded-xl md:rounded-2xl overflow-hidden shadow-sm md:shadow-md border-2 border-white dark:border-slate-700">
-          <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+          <AppImage src={avatarUrl} alt={authorName} width={112} height={112} className="w-full h-full object-cover" />
         </div>
         <div className="flex flex-col">
           <h3 className="text-base md:text-lg font-black text-[#576b95] dark:text-[#7f99cc] tracking-wide">{authorName}</h3>
-          <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-[11px] text-slate-400 font-bold mt-0.5 md:mt-1"><Clock size={10} className="md:w-3 md:h-3" /> {timeAgo(moment.date)}</div>
+          <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-[11px] text-slate-400 font-bold mt-0.5 md:mt-1"><Clock size={10} className="md:w-3 md:h-3" /> {timeAgo(moment.date, now)}</div>
         </div>
       </div>
 
@@ -210,6 +241,8 @@ export default function MomentList({ moments, authorName, avatarUrl }: any) {
               </>
             )}
             <motion.div key={lightbox.index} initial={{ opacity: 0, scale: 0.9, x: 50 }} animate={{ opacity: 1, scale: 1, x: 0 }} exit={{ opacity: 0, scale: 0.9, x: -50 }} className="relative w-full h-full flex flex-col items-center justify-center p-4 md:p-12 pointer-events-none">
+              {/* 灯箱展示原图，刻意保留原生 <img>，不经过尺寸压缩 */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={lightbox.images[lightbox.index]} className="max-w-full max-h-[75vh] md:max-h-[85vh] object-contain rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.5)] border border-white/10 pointer-events-auto" alt="fullscreen" />
               <div className="absolute bottom-8 md:bottom-10 px-4 md:px-5 py-1.5 md:py-2 rounded-full bg-white/10 backdrop-blur-md text-white/90 text-[10px] md:text-xs font-black tracking-widest border border-white/10">
                 {lightbox.index + 1} / {lightbox.images.length}

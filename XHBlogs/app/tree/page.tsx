@@ -4,10 +4,12 @@ import matter from 'gray-matter';
 
 // 引入前台客户端组件
 import CreativeWorkshopClient from './CreativeWorkshopClient';
+import { normalizeDate } from '../../lib/content';
+import type { WorkshopItem } from '../../lib/content';
 
-function getLocalItems(directoryName: string, typeName: string) {
+function getLocalItems(directoryName: string, typeName: WorkshopItem['type']): WorkshopItem[] {
   const dirPath = path.join(process.cwd(), directoryName);
-  let items: any[] = [];
+  let items: WorkshopItem[] = [];
   try {
     if (fs.existsSync(dirPath)) {
       const fileNames = fs.readdirSync(dirPath).filter(f => f.endsWith('.md'));
@@ -20,13 +22,14 @@ function getLocalItems(directoryName: string, typeName: string) {
         const realSlug = fileName.replace(/\.md$/, '');
 
         return {
-          id: data.id || realSlug,
+          id: data.id ? String(data.id) : realSlug,
           slug: realSlug, // 🌟 强制保留真实的 slug 供路由跳转使用
-          title: data.title || '',
+          title: typeof data.title === 'string' ? data.title : '',
           type: typeName,
-          date: data.date || '2026-05-01',
+          // 未加引号的 YAML 日期会被解析成 Date 对象，统一转成字符串
+          date: normalizeDate(data.date) || '2026-05-01',
           // 🌟 核心修复：把 cover（封面图）提取出来传给前台！如果写的是 image 也兼容
-          cover: data.cover || data.image || null,
+          cover: (typeof data.cover === 'string' && data.cover) || (typeof data.image === 'string' && data.image) || null,
           // 把正文传给前台，去掉可能存在的换行符，限制长度防止卡片撑爆
           content: content.trim()
         };

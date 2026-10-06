@@ -2,8 +2,10 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import AppImage from './AppImage';
+import type { PostMeta } from '../lib/content';
 
-export default function TimelineNode({ post, index }: { post: any, index: number }) {
+export default function TimelineNode({ post, index }: { post: PostMeta; index: number }) {
   // 判断是放在左边还是右边（偶数左，奇数右）
   const isLeft = index % 2 === 0;
 
@@ -27,8 +29,10 @@ export default function TimelineNode({ post, index }: { post: any, index: number
 
           {/* 上半部分：封面图 */}
           <div className="w-full h-40 sm:h-48 overflow-hidden relative bg-slate-200 dark:bg-slate-700">
-            <img
+            <AppImage
               src={post.cover}
+              fill
+              sizes="(min-width: 640px) 400px, 100vw"
               alt={post.title}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             />

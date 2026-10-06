@@ -15,25 +15,17 @@ import { ToastProvider } from '../components/ToastProvider';
 import LatestPostsCarousel from '../components/LatestPostsCarousel';
 import LatestChatterCarousel from '../components/LatestChatterCarousel';
 import { formatDisplayDate, getAllChatters, getAllPosts } from '../lib/content';
+import type { CardItem } from '../lib/content';
+import AppImage from '../components/AppImage';
 
 const DEFAULT_CHATTER_COVER = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop';
-
-/** 首页轮播卡片所需的最小字段（只传摘要给客户端组件，不带文章全文） */
-interface CarouselItem {
-  slug: string;
-  title: string;
-  description: string;
-  cover: string;
-  date: string;
-  formattedDate: string;
-}
 
 export default function Home() {
   // 只含摘要，不含正文：旧版把所有文章全文一并传给 SearchBar，整站正文都被塞进首页 HTML
   const allPosts = getAllPosts();
   const allChatters = getAllChatters();
 
-  const top5Posts: CarouselItem[] = allPosts.length > 0
+  const top5Posts: CardItem[] = allPosts.length > 0
     ? allPosts.slice(0, 5).map((post) => ({
         slug: post.slug,
         title: post.title,
@@ -44,7 +36,7 @@ export default function Home() {
       }))
     : [{ slug: 'none', title: '暂无文章', description: '快去写第一篇吧！', cover: siteConfig.defaultPostCover, date: '', formattedDate: '' }];
 
-  const top5Chatters: CarouselItem[] = allChatters.length > 0
+  const top5Chatters: CardItem[] = allChatters.length > 0
     ? allChatters.slice(0, 5).map((chatter) => ({
         slug: chatter.slug,
         title: chatter.title || '碎片记录',
@@ -98,7 +90,7 @@ export default function Home() {
 
                   {/* 照片墙大海报 */}
                   <Link href="/photowall" className="w-full rounded-3xl bg-white/40 dark:bg-slate-800/50 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl overflow-hidden transition-all duration-700 hover:scale-[1.02] relative group min-h-[200px] sm:min-h-[220px] flex-shrink-0">
-                    <img src={latestAlbum.cover} className="w-full h-full absolute inset-0 object-cover transition-transform duration-700 group-hover:scale-105 opacity-90"/>
+                    <AppImage src={latestAlbum.cover} alt={latestAlbum.title} fill sizes="(min-width: 1024px) 750px, 100vw" className="w-full h-full absolute inset-0 object-cover transition-transform duration-700 group-hover:scale-105 opacity-90" />
                     <div className="absolute inset-0 bg-black/30 dark:bg-black/50 group-hover:bg-black/10 transition-colors duration-500"></div>
                     <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 right-6">
                       <h3 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 underline decoration-pink-400">{latestAlbum.title}</h3>

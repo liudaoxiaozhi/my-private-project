@@ -6,6 +6,7 @@ import BackButton from '../../components/BackButton';
 import { friendsData } from '../../data/friends';
 import Comments from '../../components/Comments'; // 🌟 引入你的 Gitalk 组件
 import { siteConfig } from '../../siteConfig'; // 🌟 引入刚刚更新的全局配置文件
+import AppImage from '../../components/AppImage';
 
 // Framer Motion 动画变体：交错子元素
 const containerVariants = {
@@ -75,7 +76,7 @@ export default function FriendsBoard() {
               <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-5 relative z-10 mb-2 md:mb-4">
 
                 <div className="w-10 h-10 md:w-16 md:h-16 rounded-full p-[2px] md:p-1 bg-gradient-to-tr from-indigo-500/50 to-purple-500/50 shadow-sm md:shadow-md group-hover:rotate-[360deg] transition-transform duration-1000 ease-in-out flex-shrink-0">
-                  <img src={friend.avatar} alt={friend.name} className="w-full h-full rounded-full object-cover bg-white" />
+                  <AppImage src={friend.avatar} alt={friend.name} width={128} height={128} className="w-full h-full rounded-full object-cover bg-white" />
                 </div>
 
                 <div className="flex-1 overflow-hidden w-full">

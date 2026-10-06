@@ -1,17 +1,6 @@
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
+import type { Metadata } from 'next';
 import Link from 'next/link';
-
-// 🌟 核心升级：引入 Next.js 现代统一解析流
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
-import remarkGfm from 'remark-gfm'; // 🌟 挂载 GFM 支持删除线
-import remarkMath from 'remark-math';
-import remarkRehype from 'remark-rehype';
-import rehypeHighlight from 'rehype-highlight';
-import rehypeStringify from 'rehype-stringify';
-import rehypeKatex from 'rehype-katex';
+import { notFound } from 'next/navigation';
 
 // 🌟 引入神仙代码高亮主题（Atom One Dark）
 import 'highlight.js/styles/atom-one-dark.css';
@@ -23,119 +12,83 @@ import ClientSocials from '../../../components/ClientSocials';
 import SidebarLyric from '../../../components/SidebarLyric';
 import BackButton from '../../../components/BackButton';
 import Comments from '../../../components/Comments';
+import { getChatterBySlug, getChatterSlugs, getRecentChatters, toTimestamp } from '../../../lib/content';
+import { renderMarkdown } from '../../../lib/markdown';
 
-export async function generateStaticParams() {
-  const chattersDirectory = path.join(process.cwd(), 'chatters');
-  if (!fs.existsSync(chattersDirectory)) return [];
-  const filenames = fs.readdirSync(chattersDirectory);
-  return filenames
-    .filter((name) => name.endsWith('.md'))
-    .map((name) => ({
-      slug: name.replace(/\.md$/, ''),
-    }));
+interface ChatterPageProps {
+  params: Promise<{ slug: string }>;
 }
 
-async function getChatterData(slug: string) {
-  const fullPath = path.join(process.cwd(), 'chatters', `${slug}.md`);
-  const fileContents = fs.readFileSync(fullPath, 'utf8');
+const DEFAULT_CHATTER_TITLE = '碎片记录';
 
-  let { data, content } = matter(fileContents);
+export function generateStaticParams(): Array<{ slug: string }> {
+  return getChatterSlugs().map((slug) => ({ slug }));
+}
 
-  // ==========================================
-  // 🌟 前台渲染清洗区：终极防吞换行 + 安全保护补丁！（从 Post 完美移植）
-  // ==========================================
+export const dynamicParams = false;
 
-  // 1. 基础物理清洗：统一换行符，干掉幽灵占位符和纯空格废行
-  content = content.replace(/\r\n/g, '\n');
-  content = content.replace(/[\u200B-\u200D\uFEFF]/g, '');
-  content = content.replace(/^[ \t]+$/gm, '');
+export async function generateMetadata({ params }: ChatterPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const chatter = getChatterBySlug(slug);
+  if (!chatter) return { title: `记录不存在 | ${siteConfig.title}` };
 
-  // 2. 强行修复数字列表缺少空格导致无法渲染为列表的 Bug (1.百度 -> 1. 百度)
-  content = content.replace(/^(\s*\d+)\.([^ \n])/gm, '$1. $2');
-
-  // 3. 🌟 空间隔离防吞换行阵法（绝对不伤代码块！）
-  const blocks = content.split(/(```[\s\S]*?```|~~~[\s\S]*?~~~)/g);
-  content = blocks.map((block, index) => {
-    // 奇数索引是代码块
-    if (index % 2 === 1) {
-      // 🌟 安全注入：如果代码块没写明语言，只在开头安全补上 cpp，绝不破坏结尾！
-      if (/^```[ \t]*(\n|$)/.test(block)) {
-         return block.replace(/^```[ \t]*/, '```cpp');
-      }
-      return block;
-    }
-
-    // 偶数索引是正文。把 3 个以上的连续 \n 替换为真实的 <br> 标签。
-    // （3 个 \n 相当于中间空了 1 行真正的空白）
-    return block.replace(/\n{3,}/g, (match) => {
-      const brCount = match.length - 2;
-      return '\n\n' + '<br>'.repeat(brCount) + '\n\n';
-    });
-  }).join('');
-
-  // ==========================================
-
-  const processedContent = await unified()
-    .use(remarkParse)
-    .use(remarkGfm)
-    .use(remarkMath)
-    .use(remarkRehype, { allowDangerousHtml: true })
-    // @ts-ignore
-    .use(rehypeHighlight, {
-      detect: true,
-      ignoreMissing: true,
-      subset: ['cpp', 'c', 'python', 'java', 'javascript', 'typescript', 'go', 'rust', 'bash', 'json', 'html', 'css', 'sql', 'xml']
-    })
-    .use(rehypeKatex)
-    .use(rehypeStringify, { allowDangerousHtml: true })
-    .process(content);
+  const title = chatter.title || DEFAULT_CHATTER_TITLE;
+  const cover = chatter.cover || siteConfig.defaultPostCover;
+  const publishedAt = toTimestamp(chatter.date);
 
   return {
-    slug,
-    contentHtml: processedContent.toString(),
-    title: data.title || '碎片记录',
-    date: data.date,
-    mood: data.mood,
-    tags: data.tags && Array.isArray(data.tags) ? data.tags : [],
-    cover: data.cover || siteConfig.defaultPostCover
+    title: `${title} | ${siteConfig.chatterTitle} | ${siteConfig.title}`,
+    description: chatter.excerpt,
+    keywords: chatter.tags,
+    alternates: { canonical: `/chatter/${encodeURIComponent(slug)}` },
+    openGraph: {
+      type: 'article',
+      title,
+      description: chatter.excerpt,
+      siteName: siteConfig.title,
+      locale: 'zh_CN',
+      images: cover ? [{ url: cover, alt: title }] : undefined,
+      publishedTime: publishedAt ? new Date(publishedAt).toISOString() : undefined,
+      tags: chatter.tags,
+    },
+    twitter: { card: cover ? 'summary_large_image' : 'summary', title, description: chatter.excerpt },
   };
 }
 
-function getRecentChatters(currentSlug: string) {
-  const chattersDirectory = path.join(process.cwd(), 'chatters');
-  let fileNames: string[] = [];
-  try { fileNames = fs.readdirSync(chattersDirectory).filter(f => f.endsWith('.md')); } catch(e) {}
-  if (!fileNames) return [];
-
-  return fileNames.map(f => {
-    const s = f.replace(/\.md$/, '');
-    const c = fs.readFileSync(path.join(chattersDirectory, f), 'utf8');
-    const { data } = matter(c);
-    return { slug: s, title: data.title || '碎片记录', date: data.date || '1970-01-01' };
-  }).filter(p => p.slug !== currentSlug)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 3);
+/** 从 "YYYY-MM-DD ..." 直接取年月日，不经过 Date 时区换算，避免构建机时区把日期算错一天 */
+function parseYmd(date: string): { year: number; month: number; day: number } {
+  const m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(date);
+  if (m) return { year: Number(m[1]), month: Number(m[2]), day: Number(m[3]) };
+  const fallback = new Date(toTimestamp(date) || Date.UTC(2026, 2, 24));
+  return { year: fallback.getUTCFullYear(), month: fallback.getUTCMonth() + 1, day: fallback.getUTCDate() };
 }
 
 function generateCalendarMatrix(year: number, month: number, targetDay: number) {
-  const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
-  const daysInMonth = new Date(year, month, 0).getDate();
+  // 用 UTC 计算星期与天数，结果不受构建机时区影响
+  const firstDayOfMonth = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const startDay = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
-  const days = [];
+  const days: Array<number | null> = [];
   for (let i = 0; i < startDay; i++) { days.push(null); }
   for (let i = 1; i <= daysInMonth; i++) { days.push(i); }
   return { days, targetDay };
 }
 
-export default async function ChatterDetail({ params }: { params: Promise<{ slug: string }> }) {
-  const resolvedParams = await params;
-  const chatterData = await getChatterData(resolvedParams.slug);
-  const recentChatters = getRecentChatters(resolvedParams.slug);
+export default async function ChatterDetail({ params }: ChatterPageProps) {
+  const { slug } = await params;
+  const chatter = getChatterBySlug(slug);
+  if (!chatter) notFound();
 
-  const dateObj = new Date(chatterData.date || '2026-03-24');
-  const yearStr = dateObj.getFullYear();
-  const monthNum = dateObj.getMonth() + 1;
-  const dayNum = dateObj.getDate();
+  const chatterData = {
+    ...chatter,
+    title: chatter.title || DEFAULT_CHATTER_TITLE,
+    cover: chatter.cover || siteConfig.defaultPostCover,
+    // 杂谈沿用旧行为：未标注语言的代码块默认按 C++ 高亮
+    contentHtml: await renderMarkdown(chatter.content, { defaultCodeLang: 'cpp' }),
+  };
+  const recentChatters = getRecentChatters(slug, 3).map((c) => ({ ...c, title: c.title || DEFAULT_CHATTER_TITLE }));
+
+  const { year: yearStr, month: monthNum, day: dayNum } = parseYmd(chatterData.date);
 
   const { days: calendarDays } = generateCalendarMatrix(yearStr, monthNum, dayNum);
   const weekDays = ['一', '二', '三', '四', '五', '六', '日'];

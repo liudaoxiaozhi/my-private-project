@@ -1,6 +1,3 @@
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
 import Link from 'next/link';
 
 import Navbar from '../components/Navbar';
@@ -17,72 +14,46 @@ import { ToastProvider } from '../components/ToastProvider';
 
 import LatestPostsCarousel from '../components/LatestPostsCarousel';
 import LatestChatterCarousel from '../components/LatestChatterCarousel';
-import DanmakuBackground from '../components/DanmakuBackground';
+import { formatDisplayDate, getAllChatters, getAllPosts } from '../lib/content';
 
-function formatUpdateTime(dateString: string) {
-  if (!dateString || dateString === '1970-01-01') return '刚刚更新';
-  try {
-    const d = new Date(dateString);
-    if (isNaN(d.getTime())) return dateString;
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hours = String(d.getHours()).padStart(2, '0');
-    const mins = String(d.getMinutes()).padStart(2, '0');
-    if (hours === '00' && mins === '00') return `${year}.${month}.${day}`;
-    return `${year}.${month}.${day} ${hours}:${mins}`;
-  } catch { return dateString; }
+const DEFAULT_CHATTER_COVER = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop';
+
+/** 首页轮播卡片所需的最小字段（只传摘要给客户端组件，不带文章全文） */
+interface CarouselItem {
+  slug: string;
+  title: string;
+  description: string;
+  cover: string;
+  date: string;
+  formattedDate: string;
 }
 
 export default function Home() {
-  const postsDirectory = path.join(process.cwd(), 'posts');
-  let allPosts: any[] = [];
-  try {
-    if (fs.existsSync(postsDirectory)) {
-      const fileNames = fs.readdirSync(postsDirectory).filter(f => f.endsWith('.md'));
-      allPosts = fileNames.map(fileName => {
-        const fullPath = path.join(postsDirectory, fileName);
-        const { data, content } = matter(fs.readFileSync(fullPath, 'utf8'));
-        const rawDate = data.date || '1970-01-01';
-        return {
-          slug: fileName.replace(/\.md$/, ''),
-          ...data,
-          title: data.title || '',
-          description: data.description || '',
-          content: content || '',
-          date: rawDate,
-          formattedDate: formatUpdateTime(rawDate)
-        };
-      }).sort((a, b) => {
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
-        if (dateB !== dateA) return dateB - dateA;
-        return b.slug.localeCompare(a.slug);
-      });
-    }
-  } catch (e) {}
-  const top5Posts = allPosts.length > 0 ? allPosts.slice(0, 5) : [{ slug: 'none', title: '暂无文章', description: '快去写第一篇吧！', cover: siteConfig.defaultPostCover, date: '', formattedDate: '' }];
+  // 只含摘要，不含正文：旧版把所有文章全文一并传给 SearchBar，整站正文都被塞进首页 HTML
+  const allPosts = getAllPosts();
+  const allChatters = getAllChatters();
 
-  const chattersDirectory = path.join(process.cwd(), 'chatters');
-  let allChatters: any[] = [];
-  try {
-    if (fs.existsSync(chattersDirectory)) {
-      const chatterFiles = fs.readdirSync(chattersDirectory).filter(f => f.endsWith('.md'));
-      allChatters = chatterFiles.map(fileName => {
-        const fullPath = path.join(chattersDirectory, fileName);
-        const { data, content } = matter(fs.readFileSync(fullPath, 'utf8'));
-        const rawDate = data.date || '1970-01-01';
-        const cover = data.cover || 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop';
-        return { slug: fileName.replace(/\.md$/, ''), title: data.title || '碎片记录', description: data.description || content.substring(0, 60), cover: cover, date: rawDate, formattedDate: formatUpdateTime(rawDate) };
-      }).sort((a, b) => {
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
-        if (dateB !== dateA) return dateB - dateA;
-        return b.slug.localeCompare(a.slug);
-      });
-    }
-  } catch (e) {}
-  const top5Chatters = allChatters.length > 0 ? allChatters.slice(0, 5) : [{ slug: 'none', title: '暂无记录', description: '记录一段思绪...', cover: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop', date: '', formattedDate: '' }];
+  const top5Posts: CarouselItem[] = allPosts.length > 0
+    ? allPosts.slice(0, 5).map((post) => ({
+        slug: post.slug,
+        title: post.title,
+        description: post.description,
+        cover: post.cover || siteConfig.defaultPostCover,
+        date: post.date,
+        formattedDate: formatDisplayDate(post.date),
+      }))
+    : [{ slug: 'none', title: '暂无文章', description: '快去写第一篇吧！', cover: siteConfig.defaultPostCover, date: '', formattedDate: '' }];
+
+  const top5Chatters: CarouselItem[] = allChatters.length > 0
+    ? allChatters.slice(0, 5).map((chatter) => ({
+        slug: chatter.slug,
+        title: chatter.title || '碎片记录',
+        description: chatter.excerpt,
+        cover: chatter.cover || DEFAULT_CHATTER_COVER,
+        date: chatter.date,
+        formattedDate: formatDisplayDate(chatter.date),
+      }))
+    : [{ slug: 'none', title: '暂无记录', description: '记录一段思绪...', cover: DEFAULT_CHATTER_COVER, date: '', formattedDate: '' }];
 
   const chatterCount = allChatters.length;
   const realPhotoCount = albums.reduce((total, album) => total + album.photos.length, 0);

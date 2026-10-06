@@ -1,72 +1,95 @@
-// app/api/chat/route.ts
-import { siteConfig } from '../../../siteConfig'; // 确保这里的路径指向你的 siteConfig
+// app/api/chat/route.ts —— 赛博猫「煤球」的 Gemini 对话代理
+import { siteConfig } from '../../../siteConfig';
+import { getClientIp, isSameOrigin, jsonResponse, rateLimit } from '../../../lib/server/requestGuard';
 
 export const runtime = 'edge';
 
-export async function POST(req: Request) {
-  console.log("🚀 [1/5] 路由进入：开始对接 Gemini 3 脑回路");
+/** 单条消息最大字符数（猫猫只回一两句话，输入也没必要太长） */
+const MAX_MESSAGE_LENGTH = 300;
+/** 每个 IP 每分钟最多对话次数 */
+const RATE_LIMIT = { bucket: 'chat', limit: 8, windowMs: 60_000 } as const;
+/** 上游超时 */
+const UPSTREAM_TIMEOUT_MS = 15_000;
+
+interface ChatRequestBody {
+  message?: unknown;
+}
+
+interface GeminiResponse {
+  candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  error?: { message?: string };
+}
+
+const FALLBACK_REPLY = '本喵现在不想理你喵...';
+
+export async function POST(req: Request): Promise<Response> {
+  // 1. 只接受本站页面发起的请求
+  if (!isSameOrigin(req)) {
+    return jsonResponse({ error: 'Forbidden' }, 403);
+  }
+
+  // 2. 按 IP 限流
+  const limited = rateLimit(getClientIp(req), RATE_LIMIT);
+  if (!limited.ok) {
+    return jsonResponse({ error: 'Too many requests' }, 429, { 'Retry-After': String(limited.retryAfterSec) });
+  }
+
+  // 3. 校验输入
+  let body: ChatRequestBody;
+  try {
+    body = (await req.json()) as ChatRequestBody;
+  } catch {
+    return jsonResponse({ error: 'Invalid JSON' }, 400);
+  }
+
+  const message = typeof body.message === 'string' ? body.message.trim() : '';
+  if (!message || message.length > MAX_MESSAGE_LENGTH) {
+    return jsonResponse({ error: `Message must be 1-${MAX_MESSAGE_LENGTH} characters` }, 400);
+  }
+
+  // 4. 读取密钥（只从环境变量读取，绝不写进 siteConfig）
+  const apiKey = (process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || '').trim();
+  if (!apiKey) {
+    console.error('[api/chat] 未配置 GEMINI_API_KEY');
+    return jsonResponse({ error: 'Service unavailable' }, 503);
+  }
+
+  const { modelId, systemPrompt, maxOutputTokens, temperature } = siteConfig.geminiConfig;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:generateContent`;
 
   try {
-    const { message } = await req.json();
-
-    // 🌟 纯粹靠环境变量读取 API Key
-    const apiKey = (process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || '').trim();
-
-    if (!apiKey) {
-      console.error("❌ 找不到 API Key");
-      return new Response(JSON.stringify({ error: "Key missing" }), { status: 500 });
-    }
-
-    // 调用 siteConfig 的参数
-    const modelId = siteConfig.geminiConfig.modelId;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
-
-    console.log(`📡 [2/5] 正在呼叫模型: ${modelId}`);
-
-    const response = await fetch(url, {
+    const upstream = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        // 密钥放在请求头而不是 URL 查询参数，避免出现在日志与报错信息里
+        'x-goog-api-key': apiKey,
+      },
       body: JSON.stringify({
-        system_instruction: {
-          parts: [{
-            text: siteConfig.geminiConfig.systemPrompt
-          }]
-        },
-        contents: [{
-          parts: [{ text: message }]
-        }],
-        generationConfig: {
-          maxOutputTokens: siteConfig.geminiConfig.maxOutputTokens,
-          temperature: siteConfig.geminiConfig.temperature,
-        }
-      })
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: 'user', parts: [{ text: message }] }],
+        generationConfig: { maxOutputTokens, temperature },
+      }),
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
 
-    const data = await response.json();
+    const data = (await upstream.json()) as GeminiResponse;
 
-    if (!response.ok) {
-      console.error("🚨 Gemini 3 拒绝了请求:", JSON.stringify(data));
-      return new Response(JSON.stringify({
-        error: `模型拒绝访问: ${response.status}`,
-        details: data.error?.message || "未知错误"
-      }), { status: response.status });
+    if (!upstream.ok) {
+      // 详细错误只写服务端日志，不回传给浏览器
+      console.error(`[api/chat] Gemini 返回 ${upstream.status}:`, data.error?.message ?? 'unknown');
+      return jsonResponse({ error: 'Upstream error' }, 502);
     }
 
-    console.log("✅ [3/5] Google 成功响应");
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "本喵现在不想理你喵...";
-
-    console.log("🎉 [4/5] 回复已生成，准备传回前端");
-
-    return new Response(JSON.stringify({ reply }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
-
-  } catch (error: any) {
-    console.error("🔥 [5/5] 运行时崩溃:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || FALLBACK_REPLY;
+    return jsonResponse({ reply });
+  } catch (error: unknown) {
+    const reason = error instanceof Error ? error.message : String(error);
+    console.error('[api/chat] 请求失败:', reason);
+    return jsonResponse({ error: 'Upstream error' }, 502);
   }
 }
 
-export async function GET() {
-  return new Response(JSON.stringify({ status: "Ready", model: "Gemini 3 Flash Preview" }), { status: 200 });
+export async function GET(): Promise<Response> {
+  return jsonResponse({ status: 'Ready', model: siteConfig.geminiConfig.modelId });
 }

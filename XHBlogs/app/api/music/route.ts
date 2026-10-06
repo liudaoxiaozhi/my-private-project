@@ -1,10 +1,14 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 const NET_EASE_HEADERS = {
   'User-Agent':
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
   Referer: 'https://music.163.com/',
 }
+
+/** 单次最多查询的歌曲数 */
+const MAX_SONGS_PER_REQUEST = 50
+const SONG_ID_PATTERN = /^\d{1,15}$/
 
 type SongResult = {
   id: string
@@ -25,6 +29,11 @@ export async function GET(request: NextRequest) {
   }
 
   const songIds = ids.split(',').map((id) => id.trim()).filter(Boolean)
+
+  // 网易云歌曲 ID 只能是纯数字；限制数量，防止被当成批量请求放大器
+  if (songIds.length === 0 || songIds.length > MAX_SONGS_PER_REQUEST || !songIds.every((id) => SONG_ID_PATTERN.test(id))) {
+    return NextResponse.json({ error: 'Invalid ids parameter' }, { status: 400 })
+  }
 
   const results: SongResult[] = await Promise.all(
     songIds.map(async (songId): Promise<SongResult> => {
@@ -71,7 +80,7 @@ export async function GET(request: NextRequest) {
         }
       } catch (error) {
         console.error(`[api/music] 获取歌曲 ${songId} 失败:`, error)
-        return { id: songId, error: String(error) }
+        return { id: songId, error: 'fetch_failed' }
       }
     }),
   )

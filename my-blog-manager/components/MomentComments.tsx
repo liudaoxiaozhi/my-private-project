@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import 'gitalk/dist/gitalk.css';
 import Gitalk from 'gitalk';
-import { siteConfig } from '../siteConfig';
+import { getGitalkBaseOptions, toGitalkId } from '../lib/gitalk';
 
 interface MomentCommentsProps {
   id: string; // 必须传入说说的专属 ID
@@ -19,14 +19,10 @@ export default function MomentComments({ id }: MomentCommentsProps) {
     containerRef.current.innerHTML = '';
 
     const gitalk = new Gitalk({
-      clientID: siteConfig.gitalkConfig.clientID,
-      clientSecret: siteConfig.gitalkConfig.clientSecret,
-      repo: siteConfig.gitalkConfig.repo,
-      owner: siteConfig.gitalkConfig.owner,
-      admin: siteConfig.gitalkConfig.admin,
+      // 公共配置（含同源代理 /api/github），真实密钥只在服务端
+      ...getGitalkBaseOptions(),
       // 截取前49个字符作为 GitHub Issue 的 Label（Gitalk 的要求）
-      id: id.substring(0, 49),
-      distractionFreeMode: false,
+      id: toGitalkId(id),
     });
 
     gitalk.render(containerRef.current);

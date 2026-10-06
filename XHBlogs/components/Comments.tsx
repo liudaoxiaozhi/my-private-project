@@ -5,8 +5,7 @@ import { usePathname } from 'next/navigation';
 import 'gitalk/dist/gitalk.css';
 import Gitalk from 'gitalk';
 
-// 🌟 引入全局配置，读取你的 GitHub OAuth 凭证
-import { siteConfig } from '../siteConfig'; // 如果路径报错，请检查层级是否需要改成 '../../siteConfig'
+import { getGitalkBaseOptions, toGitalkId } from '../lib/gitalk';
 
 export default function Comments() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -19,17 +18,10 @@ export default function Comments() {
     containerRef.current.innerHTML = '';
 
     const gitalk = new Gitalk({
-      clientID: siteConfig.gitalkConfig.clientID,
-      clientSecret: siteConfig.gitalkConfig.clientSecret,
-      repo: siteConfig.gitalkConfig.repo,
-      owner: siteConfig.gitalkConfig.owner,
-      admin: siteConfig.gitalkConfig.admin,
+      // 公共配置（含同源代理 /api/github），真实密钥只在服务端
+      ...getGitalkBaseOptions(),
 
-      // 👇 指向我们自己的同源 API，彻底告别跨域和第三方拦截！
-      proxy: '/api/github',
-
-      id: (pathname.replace(/\/$/, '') || '/').substring(0, 49),
-      distractionFreeMode: false,
+      id: toGitalkId(pathname.replace(/\/$/, '') || '/'),
     });
 
     gitalk.render(containerRef.current);

@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 from fastapi import APIRouter, Request
 
@@ -90,6 +91,12 @@ async def execute_sync(request: Request):
                         for line in lines:
                             # 只要这一行包含以下关键词，直接跳过不写入
                             if "picBedName:" in line or "picBedUrl:" in line or "picBedToken:" in line or "图床核心配置" in line:
+                                continue
+                            # 🔐 Gitalk Client Secret 绝不能进前台：siteConfig 会被打包进浏览器 JS。
+                            # 保留字段结构但清空值，线上由环境变量 GITALK_CLIENT_SECRET 提供。
+                            if re.match(r"\s*clientSecret\s*:", line):
+                                indent = line[: len(line) - len(line.lstrip())]
+                                file_out.write(f'{indent}clientSecret: "", // 由部署平台环境变量 GITALK_CLIENT_SECRET 提供\n')
                                 continue
                             file_out.write(line)
                 else:

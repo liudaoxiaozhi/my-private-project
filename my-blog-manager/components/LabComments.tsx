@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import 'gitalk/dist/gitalk.css';
 import Gitalk from 'gitalk';
 
-import { siteConfig } from '../siteConfig';
+import { getGitalkBaseOptions, toGitalkId } from '../lib/gitalk';
 
 // 🌟 专门为炼金实验室定制的 Gitalk 组件，不影响原有的 Comments.tsx
 export default function LabComments({ pageId }: { pageId?: string }) {
@@ -19,17 +19,12 @@ export default function LabComments({ pageId }: { pageId?: string }) {
     containerRef.current.innerHTML = '';
 
     // 优先使用传入的 pageId (如 workshop-2026-05)
-    const finalId = (pageId || pathname.replace(/\/$/, '') || '/').substring(0, 49);
+    const finalId = toGitalkId(pageId || pathname.replace(/\/$/, '') || '/');
 
     const gitalk = new Gitalk({
-      clientID: siteConfig.gitalkConfig.clientID,
-      clientSecret: siteConfig.gitalkConfig.clientSecret,
-      repo: siteConfig.gitalkConfig.repo,
-      owner: siteConfig.gitalkConfig.owner,
-      admin: siteConfig.gitalkConfig.admin,
-      proxy: '/api/github',
+      // 公共配置（含同源代理 /api/github），真实密钥只在服务端
+      ...getGitalkBaseOptions(),
       id: finalId, // 这里的 ID 决定了留言板对应 GitHub 的哪个 Issue
-      distractionFreeMode: false,
     });
 
     gitalk.render(containerRef.current);

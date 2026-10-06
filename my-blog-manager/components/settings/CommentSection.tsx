@@ -70,6 +70,9 @@ export default function CommentSection({ formData, handleUpdate, pushToQueue }: 
                 className="w-full bg-white/50 dark:bg-slate-800/50 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono dark:text-slate-200"
                 placeholder="请输入 OAuth Apps 的 Client Secret"
               />
+              <p className="mt-2 text-[11px] leading-relaxed text-slate-400 dark:text-slate-500">
+                仅保存在本地后台。「同步 Blog」时会自动清空，线上请在 Vercel 环境变量中配置 <code className="font-mono text-indigo-500 dark:text-indigo-400">GITALK_CLIENT_SECRET</code>。
+              </p>
             </div>
           </div>
 

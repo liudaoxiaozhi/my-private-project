@@ -122,7 +122,7 @@ export default function ProfileSection({ formData, handleUpdate, pushToQueue }: 
               {/* 社交媒体区域 */}
               <div className="col-span-1 md:col-span-2 pt-4 border-t border-slate-200 dark:border-slate-700/50 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">邮箱 Email</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">邮箱 Email（Gmail 地址会显示 Gmail 图标）</label>
                   <input type="text" value={safeSocial.email || ''} onChange={e => handleSocialUpdate('email', e.target.value)} className="w-full bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm mt-1 outline-none" />
                 </div>
                 <div>
@@ -140,6 +140,10 @@ export default function ProfileSection({ formData, handleUpdate, pushToQueue }: 
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">GitHub 地址</label>
                   <input type="text" value={safeSocial.github || ''} onChange={e => handleSocialUpdate('github', e.target.value)} className="w-full bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm mt-1 outline-none" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Instagram 用户名 / 链接</label>
+                  <input type="text" value={safeSocial.instagram || ''} onChange={e => handleSocialUpdate('instagram', e.target.value)} placeholder="your_name" className="w-full bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm mt-1 outline-none" />
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Gitee 地址</label>

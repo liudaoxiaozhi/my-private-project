@@ -18,6 +18,7 @@ import {
   type TmdbType,
 } from '../anime';
 import { AnimeError, cover, date, int, str } from './animeClean';
+import { outboundFetch } from './outboundFetch';
 import { TMDB_IMAGE_HOST } from './tmdb';
 
 export { AnimeError };
@@ -215,7 +216,7 @@ async function localizeCover(src: string, id: string): Promise<string> {
   }
   if (!canDownloadCover(url.hostname)) return src;
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(15_000) });
+    const res = await outboundFetch(url, { headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(15_000) });
     const ext = COVER_EXT[(res.headers.get('content-type') ?? '').split(';')[0].trim()];
     if (!res.ok || !ext) throw new Error(`HTTP ${res.status} ${res.headers.get('content-type')}`);
     const buf = Buffer.from(await res.arrayBuffer());
@@ -308,9 +309,9 @@ function toSubject(raw: RawSubject): SearchResult | null {
   };
 }
 
-async function bangumiFetch(url: string, init?: RequestInit, tokenOverride?: string): Promise<unknown> {
+async function bangumiFetch(url: string, init?: { method?: string; body?: string }, tokenOverride?: string): Promise<unknown> {
   const token = tokenOverride ?? bangumiToken();
-  const res = await fetch(url, {
+  const res = await outboundFetch(url, {
     ...init,
     headers: {
       ...BANGUMI_HEADERS,
@@ -318,7 +319,6 @@ async function bangumiFetch(url: string, init?: RequestInit, tokenOverride?: str
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     signal: AbortSignal.timeout(12_000),
-    cache: 'no-store',
   });
   if (res.status === 401 && token) throw new AnimeError(BANGUMI_TOKEN_INVALID, 401);
   if (res.status === 404) return null;

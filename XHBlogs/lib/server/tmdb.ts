@@ -2,9 +2,11 @@
 //
 // Key 存在 .env.local 的 TMDB_API_KEY（也可以在追番页的「电影 / 电视剧」搜索里直接填，会自动写进去）：
 // v3 的 API Key 或 v4 的 Read Access Token（eyJ 开头）都可以。
-// 访问不了 api.themoviedb.org 时，可以用 TMDB_API_BASE / TMDB_IMAGE_BASE 换成自己的反代地址。
+// 访问不了 api.themoviedb.org 时：在 .env.local 里配 HTTPS_PROXY 走本机代理（见 outboundFetch），
+// 或用 TMDB_API_BASE / TMDB_IMAGE_BASE 换成自己的反代地址。
 import { emptyInput, type AnimeKind, type AnimePart, type SearchResult, type TmdbDetail, type TmdbType } from '../anime';
 import { AnimeError, date, int, str } from './animeClean';
+import { isProxyConfigured, outboundFetch } from './outboundFetch';
 
 const trimSlash = (s: string) => s.replace(/\/+$/, '');
 const API_BASE = trimSlash(process.env.TMDB_API_BASE?.trim() || 'https://api.themoviedb.org');
@@ -26,6 +28,17 @@ const LANGUAGE = 'zh-CN';
 /** TMDB 的「动画」类型 */
 const GENRE_ANIMATION = 16;
 
+const TMDB_TIMEOUT_MS = 10_000;
+
+/** 连不上时告诉用户该怎么办：国内网络下 Node 不走系统代理，最常见的原因就是这个 */
+function unreachableMessage(error: unknown): string {
+  const timedOut = error instanceof Error && error.name === 'TimeoutError';
+  const host = new URL(API_BASE).host;
+  const what = timedOut ? `连接 ${host} 超时` : `连不上 ${host}`;
+  if (isProxyConfigured()) return `${what}：已配置 HTTPS_PROXY，请确认代理软件开着、端口没填错`;
+  return `${what}。本地服务器不会走系统代理：在 XHBlogs/.env.local 里加一行 HTTPS_PROXY=http://127.0.0.1:7890（端口换成你代理软件的 HTTP 端口），保存后再试`;
+}
+
 async function tmdbFetch<T>(pathname: string, params: Record<string, string> = {}, keyOverride?: string): Promise<T> {
   const key = keyOverride ?? apiKey();
   if (!key) throw new AnimeError('还没有配置 TMDB Key：在追番页「电影 / 电视剧」搜索里填一下', 400);
@@ -39,14 +52,13 @@ async function tmdbFetch<T>(pathname: string, params: Record<string, string> = {
 
   let res: Response;
   try {
-    res = await fetch(url, {
+    res = await outboundFetch(url, {
       headers: { Accept: 'application/json', ...(isToken ? { Authorization: `Bearer ${key}` } : {}) },
-      signal: AbortSignal.timeout(12_000),
-      cache: 'no-store',
+      signal: AbortSignal.timeout(TMDB_TIMEOUT_MS),
     });
   } catch (error) {
     console.error('请求 TMDB 失败:', error);
-    throw new AnimeError('连不上 TMDB，检查网络（或在 .env.local 里配置 TMDB_API_BASE 反代）', 502);
+    throw new AnimeError(unreachableMessage(error), 502);
   }
   if (res.status === 401) throw new AnimeError('TMDB Key 无效，请重新填写', 401);
   if (res.status === 404) throw new AnimeError('TMDB 上找不到这个条目', 404);

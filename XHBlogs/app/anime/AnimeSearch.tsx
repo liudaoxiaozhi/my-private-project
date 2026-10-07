@@ -2,7 +2,7 @@
 // app/anime/AnimeSearch.tsx —— 添加追番的第一步：从 Bangumi（动画）或 TMDB（电影 / 电视剧）搜索
 //
 // TMDB 的结果要再取一次详情：电视剧拿到每季集数；电影如果属于某个系列（如指环王），让用户选加单部还是整个系列。
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { ChevronLeft, ExternalLink, Film, KeyRound, Layers, Loader2, Search } from 'lucide-react';
 import AppImage from '../../components/AppImage';
@@ -74,7 +74,14 @@ function ExtLink({ href, children }: { href: string; children: ReactNode }) {
 
 const CREDENTIAL_FORMS: Record<
   CredentialService,
-  { title: string; description: ReactNode; placeholder: string; endpoint: string; cancelText: (saved: boolean) => string }
+  {
+    title: string;
+    description: ReactNode;
+    placeholder: string;
+    endpoint: string;
+    waitingText: string;
+    cancelText: (saved: boolean) => string;
+  }
 > = {
   tmdb: {
     title: '填写 TMDB Key',
@@ -87,6 +94,7 @@ const CREDENTIAL_FORMS: Record<
     ),
     placeholder: '粘贴你的 TMDB Key',
     endpoint: '/api/anime/tmdb-key',
+    waitingText: '正在由本地服务器连接 TMDB 验证……国内网络下通常需要代理，连不上的话稍后会提示怎么设置。',
     cancelText: () => '取消，继续用现在的 Key',
   },
   bangumi: {
@@ -100,6 +108,7 @@ const CREDENTIAL_FORMS: Record<
     ),
     placeholder: '粘贴 Bangumi Access Token',
     endpoint: '/api/anime/bangumi-token',
+    waitingText: '正在连接 Bangumi 验证……',
     cancelText: (saved) => (saved ? '取消，继续用现在的令牌' : '先不登录'),
   },
 };
@@ -121,22 +130,35 @@ function CredentialForm({
   const config = CREDENTIAL_FORMS[service];
   const [key, setKey] = useState('');
   const [saving, setSaving] = useState(false);
+  const [slow, setSlow] = useState(false);
   const [error, setError] = useState('');
+
+  // 服务端连外网最多等 10 秒左右，超过 3 秒就先告诉用户在等什么
+  useEffect(() => {
+    if (!saving) return;
+    const timer = window.setTimeout(() => setSlow(true), 3000);
+    return () => window.clearTimeout(timer);
+  }, [saving]);
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
     if (!key.trim() || saving) return;
     setSaving(true);
+    setSlow(false);
     setError('');
     try {
       const data = await getJson<{ nickname?: string }>(config.endpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: key.trim() }),
+        // 兜底：服务端自己 10 秒左右就会超时返回，这里只防止请求意外挂住
+        signal: AbortSignal.timeout(30_000),
       });
       onSaved(data.nickname);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '保存失败');
+      const timedOut = err instanceof Error && err.name === 'TimeoutError';
+      setSlow(false);
+      setError(timedOut ? '等了 30 秒还没有结果，请看运行 npm run dev 的终端里有没有报错' : err instanceof Error ? err.message : '保存失败');
       setSaving(false);
     }
   };
@@ -168,6 +190,7 @@ function CredentialForm({
           {saving && <Loader2 size={15} className="animate-spin" />} 验证并保存
         </button>
       </div>
+      {slow && <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{config.waitingText}</p>}
       {error && <p className="mt-2 text-sm font-bold text-red-500">{error}</p>}
       {onCancel && (
         <button type="button" onClick={onCancel} className="mt-2 text-xs font-bold text-slate-500 hover:underline dark:text-slate-400">

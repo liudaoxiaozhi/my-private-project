@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BackButton from '../../components/BackButton';
 import { friendsData as initialFriends, Friend } from '../../data/friends';
@@ -12,6 +12,7 @@ import FloatingImageTool from '../../components/editor/FloatingImageTool';
 // 🌟 新增：引入配置和评论组件
 import Comments from '../../components/Comments';
 import { siteConfig } from '../../siteConfig';
+import { fillFriendLinkTemplate } from '../../lib/friendLink';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -35,7 +36,10 @@ export default function FriendsBoard() {
 
   // 🌟 新增：控制复制按钮的状态和读取配置模板
   const [isCopied, setIsCopied] = useState(false);
-  const applyFormat = siteConfig.friendLinkApplyFormat;
+  // 模板里的 {{siteUrl}} 等占位符在挂载后填入当前网址，避免服务端与浏览器渲染不一致
+  const [origin, setOrigin] = useState('');
+  useEffect(() => setOrigin(window.location.origin), []);
+  const applyFormat = fillFriendLinkTemplate(siteConfig.friendLinkApplyFormat, origin);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(applyFormat);

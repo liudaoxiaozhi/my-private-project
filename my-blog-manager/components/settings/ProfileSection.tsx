@@ -174,12 +174,12 @@ export default function ProfileSection({ formData, handleUpdate, pushToQueue }: 
 
               {/* 👇 友链申请模板配置区域 */}
               <div className="col-span-1 md:col-span-2 pt-4 border-t border-slate-200 dark:border-slate-700/50">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">友链申请模板 (friendLinkApplyFormat)</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">友链申请模板（可用 {"{{name}} {{bio}} {{siteUrl}} {{avatar}}"} 占位符）(friendLinkApplyFormat)</label>
                 <textarea
                   rows={4}
                   value={safeData.friendLinkApplyFormat || ''}
                   onChange={e => handleUpdate('friendLinkApplyFormat', e.target.value)}
-                  placeholder="名称：XingHuiSamaの宝藏之地\n简介：今天我也要学习吗\n链接：https://www.xinghuisama.top\n头像：..."
+                  placeholder="名称：{{name}}\n简介：{{bio}}\n链接：{{siteUrl}}\n头像：{{avatar}}"
                   className="w-full bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm mt-1 outline-none resize-none focus:ring-2 focus:ring-indigo-500 font-mono"
                 />
               </div>

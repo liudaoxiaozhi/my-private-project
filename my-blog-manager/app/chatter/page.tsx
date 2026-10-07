@@ -4,9 +4,10 @@ import matter from 'gray-matter';
 import Navbar from '../../components/Navbar';
 import PageTransition from '../../components/PageTransition';
 import ChatterBoard from './ChatterBoard';
+import { siteConfig } from '../../siteConfig';
 
 export const metadata = {
-  title: "杂谈 | XingHuiSama の 博客",
+  title: "杂谈 | " + siteConfig.title,
   description: "日常碎片与灵感记录",
 };
 

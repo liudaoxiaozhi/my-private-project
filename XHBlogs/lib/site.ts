@@ -34,7 +34,7 @@ function resolveSiteUrl(): string {
   );
 }
 
-/** 例如 "https://www.xinghuisama.top"（无结尾斜杠） */
+/** 例如 "https://your-domain.com"（无结尾斜杠） */
 export const SITE_URL: string = resolveSiteUrl();
 
 /** 拼接站内绝对地址 */

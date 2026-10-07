@@ -77,7 +77,8 @@ export default function SiteDashboard() {
         </div>
 
         {/* 备案信息 (🌟 从 siteConfig 读取链接和名称) */}
-        {siteConfig.icpConfig && (
+        {/* 没填备案号就不显示 */}
+        {siteConfig.icpConfig?.name && (
           <a
             href={siteConfig.icpConfig.link}
             target="_blank"

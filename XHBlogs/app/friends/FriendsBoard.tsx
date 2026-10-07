@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import BackButton from '../../components/BackButton';
 import { friendsData } from '../../data/friends';
 import Comments from '../../components/Comments'; // 🌟 引入你的 Gitalk 组件
 import { siteConfig } from '../../siteConfig'; // 🌟 引入刚刚更新的全局配置文件
+import { fillFriendLinkTemplate } from '../../lib/friendLink';
 import AppImage from '../../components/AppImage';
 
 // Framer Motion 动画变体：交错子元素
@@ -27,7 +28,10 @@ export default function FriendsBoard() {
   const [isCopied, setIsCopied] = useState(false);
 
   // 🌟 直接从 siteConfig 读取申请格式
-  const applyFormat = siteConfig.friendLinkApplyFormat;
+  // 模板里的 {{siteUrl}} 等占位符在挂载后填入当前网址，避免服务端与浏览器渲染不一致
+  const [origin, setOrigin] = useState('');
+  useEffect(() => setOrigin(window.location.origin), []);
+  const applyFormat = fillFriendLinkTemplate(siteConfig.friendLinkApplyFormat, origin);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(applyFormat);

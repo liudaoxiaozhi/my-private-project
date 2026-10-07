@@ -28,10 +28,10 @@ export const siteConfig = {
   bgImagesMobile: ["/images/bg/bg-mobile-blue.webp", "/images/bg/bg-mobile-cat.webp"],
 
   // 4. 文章默认封面图 (当 Markdown 没写 cover 时显示)
-  defaultPostCover: "https://bu.dusays.com/2026/03/24/69c1e38b346cb.jpg",
+  defaultPostCover: "/images/bg/bg-ocean.webp",
 
   // 5. 首页照片墙预览图
-  photoWallImage: "https://bu.dusays.com/2026/03/24/69c1e38b4c370.jpg",
+  photoWallImage: "/images/bg/bg-wings.webp",
   // 网易云歌单已停用：音乐全部来自 XHBlogs/public/music/（见该目录下的 README.md）
   cloudMusicIds: [],
   social: {
@@ -47,11 +47,11 @@ export const siteConfig = {
     photos: 128, // 照片墙数量可以手动写死或动态计算
   },
   chatterTitle: "云端杂谈", // 你可以改成任何你喜欢的名字
-  chatterDescription: "代码、学术、提瓦特与泰拉大陆的碎片记录",
+  chatterDescription: "日常碎片与灵感记录",
 
 
   // 👇 【新增】：全局背景弹幕配置
-  danmakuList: ["在干嘛呢？", "有笨蛋嘛？", "前方高能反应！", "GROMACS 跑起来了吗？", "MD 模拟什么时候才能出图啊", "Graph Neural Networks 炼丹中...", "BUG 修复进度 99%", "今天背单词了吗？", "Tailwind CSS 拯救前端", "写算法中", "睡大觉中", "到底在干嘛？"],
+  danmakuList: ["在干嘛呢？", "有笨蛋嘛？", "前方高能反应！", "BUG 修复进度 99%", "Tailwind CSS 拯救前端", "写算法中", "睡大觉中", "到底在干嘛？"],
   gitalkConfig: {
     clientID: "",
     clientSecret: "",

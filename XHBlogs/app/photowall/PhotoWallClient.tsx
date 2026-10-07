@@ -103,6 +103,9 @@ export default function PhotoWallClient() {
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-20 mt-10">
+                  {!activeQuery && matchedAlbums.length === 0 && (
+                    <p className="col-span-full py-16 text-center text-sm font-bold tracking-widest text-slate-500 dark:text-slate-400">还没有相册，在后台「相册」里创建第一个吧</p>
+                  )}
                   {matchedAlbums.map((album, index) => (
                     <div
                       key={album.id}

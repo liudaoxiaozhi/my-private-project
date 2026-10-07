@@ -153,6 +153,11 @@ export default function ChatterBoard({ chatters }: { chatters: Chatter[] }) {
           ))}
         </AnimatePresence>
       </motion.div>
+      {filteredChatters.length === 0 && (
+        <p className="py-16 text-center text-sm font-bold tracking-widest text-slate-500 dark:text-slate-400">
+          {chatters.length === 0 ? '还没有杂谈，写下第一篇吧' : '没有找到相关的杂谈'}
+        </p>
+      )}
     </div>
   );
 }

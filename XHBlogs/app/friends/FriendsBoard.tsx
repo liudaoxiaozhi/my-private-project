@@ -63,6 +63,9 @@ export default function FriendsBoard() {
         animate="show"
         className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6"
       >
+        {friendsData.length === 0 && (
+          <p className="col-span-full py-16 text-center text-sm font-bold tracking-widest text-slate-500 dark:text-slate-400">还没有友链，欢迎在下方留言交换</p>
+        )}
         {friendsData.map((friend) => (
           <motion.div key={friend.id} variants={itemVariants} className="h-full">
             <a

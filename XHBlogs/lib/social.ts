@@ -1,7 +1,7 @@
 // lib/social.ts —— 社交账号配置解析（客户端 / 服务端通用，无运行时依赖）
 //
 // siteConfig.social 里可以填用户名，也可以填完整链接：
-//   github: "heiehiehi"            或 "https://github.com/heiehiehi"
+//   github: "your-name"            或 "https://github.com/your-name"
 //   instagram: "@your_name"        或 "https://www.instagram.com/your_name/"
 //   email: "you@gmail.com"         （Gmail 地址显示 Gmail 图标，其他地址显示普通信封）
 // 留空的平台不显示。

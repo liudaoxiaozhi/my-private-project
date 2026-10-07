@@ -38,7 +38,7 @@ export const siteConfig = {
     github: "",
     gitee: "",
     google: "",
-    email: "",
+    email: "fatiaochengovo@gmail.com",
     qq: "",
     wechat: "",
     instagram: "", // 填用户名（如 your_name）或完整主页链接；留空则不显示

@@ -137,7 +137,6 @@ function NavDropdown({ group, pathname }: { group: NavGroup; pathname: string | 
 
 export default function Navbar() {
   const [showNav, setShowNav] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
@@ -182,20 +181,19 @@ export default function Navbar() {
     if (isMobileMenuOpen) rawRotation.set(0);
   }, [isMobileMenuOpen, rawRotation]);
 
-  // 控制 PC 端导航栏
+  // 控制 PC 端导航栏：上次滚动位置放在 ref 里，只有显隐真正变化时才更新状态
+  // （旧版每个滚动事件都 setState，导致整个导航栏随滚动不停重渲染）
+  const lastScrollY = useRef(0);
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      if (currentScrollY > lastScrollY && currentScrollY > 80) {
-        setShowNav(false);
-      } else {
-        setShowNav(true);
-      }
-      setLastScrollY(currentScrollY);
+      const next = !(currentScrollY > lastScrollY.current && currentScrollY > 80);
+      lastScrollY.current = currentScrollY;
+      setShowNav((prev) => (prev === next ? prev : next));
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+  }, []);
 
   // 🌟 手机端轮盘：把分组展开成平铺链接，并过滤掉「灵境」，保证圆盘自动均匀排布
   const mobileNavLinks: NavLink[] = NAV_ITEMS

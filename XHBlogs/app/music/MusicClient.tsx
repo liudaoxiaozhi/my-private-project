@@ -1,250 +1,234 @@
 "use client";
+// app/music/MusicClient.tsx —— 音乐页：Apple Music 风格的沉浸式播放页
+//
+// 布局：左侧封面 + 歌名 + 进度 + 控制；右侧歌词 / 播放列表。手机上上下堆叠。
+// 整页固定为深色（外层 .dark），背景随封面取色流动，不受站点日夜模式影响。
 
-import { useEffect, useRef, useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, SkipBack, SkipForward, Repeat, Shuffle, RefreshCcw, ListMusic, Mic2, Disc3, Volume2, VolumeX, Search, X, MessageSquare } from 'lucide-react';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import {
+  FastForward, ListMusic, MessageSquare, MessageSquareQuote, Pause, Play,
+  Repeat, Repeat1, Rewind, Shuffle, Volume1, Volume2, VolumeX,
+} from 'lucide-react';
 import Navbar from '../../components/Navbar';
-import PageTransition from '../../components/PageTransition';
-import { useMusic } from '../../components/MusicProvider';
 import Comments from '../../components/Comments';
 import AppImage from '../../components/AppImage';
-import type { LyricLine } from '../../lib/music';
+import { useMusic } from '../../components/MusicProvider';
+import ArtworkBackground from './ArtworkBackground';
+import AmSlider from './AmSlider';
+import LyricsPanel from './LyricsPanel';
+import QueuePanel from './QueuePanel';
+import { coverAtSize, formatTime } from './musicUtils';
+import './music.css';
+
+type Panel = 'lyrics' | 'queue';
+
+const PLAY_MODE_META = {
+  loop: { Icon: Repeat, label: '列表循环' },
+  single: { Icon: Repeat1, label: '单曲循环' },
+  random: { Icon: Shuffle, label: '随机播放' },
+} as const;
+
+/** 圆形透明按钮：只有悬停时出现浅色底 */
+const GHOST_BTN =
+  'flex items-center justify-center rounded-full text-white transition-all duration-300 ease-out hover:bg-white/10 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50';
 
 export default function MusicClient() {
   const {
-    playlist, currentSong, isPlaying, progress, currentTime, duration, currentLyric,
-    isLoading, togglePlay, nextSong, prevSong, handleSeek,
-    playSong, seekToPercent,
-    playMode, togglePlayMode,
-    volume, setVolume, isMuted, toggleMute
+    playlist, currentSong, isPlaying, currentTime, duration, isLoading,
+    togglePlay, nextSong, prevSong, seekToPercent, playSong,
+    playMode, togglePlayMode, volume, setVolume, isMuted, toggleMute,
   } = useMusic();
 
-  const lyricContainerRef = useRef<HTMLDivElement>(null);
-  const activeLyricRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<'lyrics' | 'playlist'>('lyrics');
-  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [panel, setPanel] = useState<Panel>('lyrics');
+  /** 拖动进度条时的预览比例，用于实时显示时间 */
+  const [scrubRatio, setScrubRatio] = useState<number | null>(null);
 
-  // 歌词已由 MusicProvider 解析好（Song.lyrics），这里直接使用
-  const parsedLyrics: LyricLine[] = useMemo(() => currentSong?.lyrics ?? [], [currentSong]);
+  const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
+  const shownTime = scrubRatio !== null ? scrubRatio * safeDuration : currentTime;
+  const ModeIcon = PLAY_MODE_META[playMode].Icon;
+  const VolumeIcon = isMuted || volume === 0 ? VolumeX : Volume1;
 
-  const activeLyricIndex = useMemo(() => {
-    if (!parsedLyrics.length) return -1;
-    let idx = parsedLyrics.findIndex((l) => l.time > currentTime) - 1;
-    if (idx === -2) idx = parsedLyrics.length - 1;
-    return Math.max(0, idx);
-  }, [currentTime, parsedLyrics]);
-
-  useEffect(() => {
-    if (activeLyricRef.current && lyricContainerRef.current && activeTab === 'lyrics') {
-      const container = lyricContainerRef.current;
-      const activeItem = activeLyricRef.current;
-      const scrollTarget = activeItem.offsetTop - container.offsetHeight / 2 + activeItem.offsetHeight / 2;
-      container.scrollTo({ top: scrollTarget, behavior: 'smooth' });
-    }
-  }, [activeLyricIndex, activeTab]);
-
-  const formatTime = (time: number) => {
-    if (!time || isNaN(time)) return "0:00";
-    const mins = Math.floor(time / 60);
-    const secs = Math.floor(time % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  const seekToTime = (seconds: number) => {
+    if (safeDuration > 0) seekToPercent((seconds / safeDuration) * 100);
   };
 
-  const getPlayModeIcon = () => {
-    switch (playMode) {
-      case 'loop': return <Repeat size={18} className="text-slate-500 hover:text-indigo-500 md:w-5 md:h-5" />;
-      case 'single': return <RefreshCcw size={18} className="text-indigo-500 md:w-5 md:h-5" />;
-      case 'random': return <Shuffle size={18} className="text-slate-500 hover:text-indigo-500 md:w-5 md:h-5" />;
-      default: return <Repeat size={18} className="text-slate-500 md:w-5 md:h-5" />;
-    }
-  };
-
-  const handlePlaySong = (index: number) => playSong(index);
-
-  const filteredPlaylist = useMemo(() => {
-    if (!searchQuery.trim()) return playlist;
-    const lowerQuery = searchQuery.toLowerCase();
-    return playlist.filter((song) =>
-      song.title.toLowerCase().includes(lowerQuery) ||
-      song.artist.toLowerCase().includes(lowerQuery)
-    );
-  }, [playlist, searchQuery]);
-
+  // —— 加载中 / 空歌单 ——
   if (isLoading || !currentSong) {
     return (
-      <div className="min-h-screen relative pb-32 flex flex-col">
+      <div className="dark am-root relative min-h-[100dvh] text-white">
+        <ArtworkBackground />
         <Navbar />
-        <div className="flex-1 flex flex-col items-center justify-center animate-pulse gap-4">
-          <Disc3 size={48} className="text-indigo-500 animate-spin" />
-          <span className="font-black text-slate-500 tracking-widest text-sm">唤醒音频引擎中...</span>
+        <div className="relative z-10 flex min-h-[100dvh] flex-col items-center justify-center gap-5 px-6 text-center">
+          {isLoading ? (
+            <>
+              <div className="h-56 w-56 animate-pulse rounded-2xl bg-white/10" />
+              <p className="text-sm tracking-wide text-white/50">正在载入歌单…</p>
+            </>
+          ) : (
+            <>
+              <ListMusic size={48} className="text-white/30" />
+              <p className="text-xl text-white/80">歌单还是空的</p>
+              <p className="max-w-sm text-sm leading-relaxed text-white/45">
+                把音频放进 public/music/，或在 siteConfig.ts 的 cloudMusicIds 里添加网易云歌曲 ID。
+              </p>
+            </>
+          )}
         </div>
       </div>
     );
   }
 
-  const songCover = currentSong.cover || "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1000&auto=format&fit=crop";
-
   return (
-    <div className="min-h-screen relative pb-10 flex flex-col">
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-[-10%] bg-cover bg-center transition-all duration-1000 blur-[50px] opacity-40 dark:opacity-20 saturate-150" style={{ backgroundImage: `url(${JSON.stringify(songCover)})` }} />
-        <div className="absolute inset-0 bg-white/40 dark:bg-black/40 backdrop-blur-sm" />
-      </div>
-
+    // 外层加 .dark：导航栏、评论区等子组件在本页一律使用深色样式
+    <div className="dark am-root relative min-h-[100dvh] text-white">
+      <ArtworkBackground cover={currentSong.cover} />
       <Navbar />
 
-      <PageTransition>
-        <div className="w-full max-w-7xl mx-auto mt-24 md:mt-28 px-4 sm:px-6 md:px-10 relative z-10">
-          <div className="animate-fade-in-up mb-6 md:mb-10 text-center md:text-left">
-            <h1 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-widest mb-1 md:mb-2 transition-colors duration-700">云端乐律</h1>
-            <p className="text-xs md:text-base text-slate-600 dark:text-slate-400 font-medium tracking-wider transition-colors duration-700">在代码的缝隙中寻找灵魂的共鸣</p>
-          </div>
+      <main className="relative z-10">
+        {/* ================= 播放器（占满一屏） ================= */}
+        <section
+          aria-label="正在播放"
+          className="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-8 px-5 pb-10 pt-24 sm:px-8 lg:h-[100dvh] lg:min-h-[640px] lg:grid-cols-[minmax(320px,440px)_1fr] lg:grid-rows-[minmax(0,1fr)] lg:gap-16 lg:px-12 lg:pb-10 lg:pt-24"
+        >
+          {/* ---------- 左：封面与控制 ---------- */}
+          <div className="flex min-w-0 flex-col justify-center">
+            {/* 封面：播放时原尺寸，暂停时略微缩小，带一点回弹 */}
+            <motion.div
+              animate={{ scale: isPlaying ? 1 : 0.86 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+              className="am-art-w relative mx-auto aspect-square w-[min(78vw,360px)] overflow-hidden rounded-[14px] bg-white/10 shadow-[0_28px_60px_-12px_rgba(0,0,0,0.6)]"
+            >
+              <AppImage
+                key={currentSong.id}
+                src={coverAtSize(currentSong.cover, 600)}
+                alt={`${currentSong.title} 封面`}
+                fill
+                sizes="(min-width: 1024px) 440px, 78vw"
+                loading="eager"
+                className="object-cover"
+                referrerPolicy="no-referrer"
+              />
+            </motion.div>
 
-          <div className="flex flex-col md:grid md:grid-cols-12 gap-6 md:gap-8 w-full md:items-stretch md:h-[calc(100vh-320px)] md:min-h-[600px] md:max-h-[720px]">
+            <div className="am-meta-w mx-auto mt-6 w-full max-w-[360px] lg:mt-5">
+              {/* 歌名 / 歌手 */}
+              <div className="min-w-0">
+                <h1 className="truncate text-[1.35rem] leading-tight text-white">{currentSong.title}</h1>
+                <p className="mt-1 truncate text-[1.05rem] text-white/60">{currentSong.artist}</p>
+              </div>
 
-            {/* ====== 左侧/顶部：播放控制台 ====== */}
-            <div className="md:col-span-5 flex flex-col bg-white/40 dark:bg-slate-800/50 backdrop-blur-md border border-white/40 dark:border-white/10 rounded-[32px] shadow-2xl p-6 md:p-10 relative overflow-hidden transition-all duration-500 shrink-0 min-h-[460px] sm:min-h-[500px] md:min-h-0">
-
-              <div className="flex-1 flex flex-col items-center justify-center relative z-10 w-full overflow-hidden py-4 md:py-0">
-                <div className="relative w-40 h-40 sm:w-48 sm:h-48 lg:w-64 lg:h-64 flex-shrink-0 aspect-square mb-6 md:mb-10 flex items-center justify-center">
-                   <div className={`absolute inset-0 m-auto w-[85%] h-[85%] bg-indigo-500/25 blur-[35px] rounded-full transition-all duration-1000 z-0 ${isPlaying ? 'opacity-90 scale-105' : 'opacity-20 scale-100'}`}></div>
-                   <div className="absolute inset-0 m-auto w-[90%] h-[90%] rounded-full shadow-[0_0_40px_-5px_rgba(99,102,241,0.4)] z-0"></div>
-                   <motion.div className={`absolute inset-0 w-full h-full rounded-full border-[4px] md:border-[6px] border-white/80 dark:border-slate-600/80 shadow-2xl overflow-hidden transition-transform duration-700 z-10 rotating-disc ${isPlaying ? 'scale-100' : 'scale-95'}`}
-                     style={{ animationPlayState: isPlaying ? 'running' : 'paused' }}>
-                     <AppImage src={songCover} alt="专辑封面" fill sizes="320px" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                     <div className="absolute inset-0 m-auto w-10 h-10 md:w-12 md:h-12 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-full z-30 shadow-inner border border-slate-300 dark:border-slate-700"></div>
-                     <div className="absolute inset-0 z-20 rounded-full pointer-events-none opacity-20" style={{ background: 'conic-gradient(from 0deg, transparent, rgba(255,255,255,0.4), transparent, rgba(255,255,255,0.4), transparent)' }}></div>
-                   </motion.div>
-                </div>
-                <div className="w-full text-center px-2 md:px-4 mb-2 md:mb-6">
-                  <h1 className="text-lg md:text-xl lg:text-2xl font-black text-slate-900 dark:text-white truncate drop-shadow-sm tracking-tight">{currentSong.title}</h1>
-                  <h2 className="text-xs md:text-sm font-bold text-slate-500 dark:text-slate-400 truncate mt-1 md:mt-2 tracking-widest">{currentSong.artist}</h2>
+              {/* 进度条：右侧显示剩余时间 */}
+              <div className="mt-5">
+                <AmSlider
+                  value={safeDuration ? currentTime / safeDuration : 0}
+                  onCommit={(v) => seekToPercent(v * 100)}
+                  onPreview={setScrubRatio}
+                  ariaLabel="播放进度"
+                  ariaValueText={`${formatTime(shownTime)} / ${formatTime(safeDuration)}`}
+                  keyboardStep={safeDuration ? 5 / safeDuration : 0.02}
+                />
+                <div className="mt-1 flex justify-between text-[11px] font-medium tabular-nums text-white/50">
+                  <span>{formatTime(shownTime)}</span>
+                  <span>{formatTime(shownTime - safeDuration)}</span>
                 </div>
               </div>
 
-              <div className="w-full mt-auto relative z-20">
-                <div className="w-full flex flex-col gap-1.5 mb-6 md:mb-8 px-1 md:px-3">
-                  <input type="range" min="0" max="100" value={progress || 0} onChange={handleSeek} className="w-full h-1 md:h-1.5 rounded-full appearance-none cursor-pointer" style={{ background: `linear-gradient(to right, #4f46e5 ${progress}%, rgba(0, 0, 0, 0.15) 0)` }} />
-                  <div className="flex justify-between text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 tabular-nums"><span>{formatTime(currentTime)}</span><span>{formatTime(duration)}</span></div>
-                </div>
-                <div className="w-full flex items-center justify-between px-1 md:px-2 lg:px-4">
-                  <button onClick={togglePlayMode} className="p-2 transition-transform hover:scale-110">{getPlayModeIcon()}</button>
-                  <div className="flex items-center gap-3 md:gap-4 lg:gap-6">
-                    <button onClick={prevSong} className="p-2 text-slate-700 dark:text-slate-300 hover:text-indigo-500 transition-transform hover:scale-110"><SkipBack size={24} className="md:w-7 md:h-7" fill="currentColor" /></button>
-                    <button onClick={togglePlay} className="w-14 h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 flex items-center justify-center bg-indigo-500 text-white rounded-full hover:scale-105 shadow-xl shadow-indigo-500/40">
-                      {isPlaying ? <Pause size={28} className="md:w-8 md:h-8" fill="currentColor" /> : <Play size={28} className="md:w-8 md:h-8 ml-1" fill="currentColor" />}
+              {/* 播放控制 */}
+              <div className="mt-2 flex items-center justify-center gap-6 sm:gap-8">
+                <button type="button" onClick={prevSong} aria-label="上一首" className={`${GHOST_BTN} h-14 w-14`}>
+                  <Rewind size={30} fill="currentColor" strokeWidth={0} />
+                </button>
+                <button type="button" onClick={togglePlay} aria-label={isPlaying ? '暂停' : '播放'} className={`${GHOST_BTN} h-16 w-16`}>
+                  {isPlaying
+                    ? <Pause size={40} fill="currentColor" strokeWidth={0} />
+                    : <Play size={40} fill="currentColor" strokeWidth={0} className="translate-x-[2px]" />}
+                </button>
+                <button type="button" onClick={nextSong} aria-label="下一首" className={`${GHOST_BTN} h-14 w-14`}>
+                  <FastForward size={30} fill="currentColor" strokeWidth={0} />
+                </button>
+              </div>
+
+              {/* 音量 */}
+              <div className="mt-3 flex items-center gap-3 text-white/55">
+                <button type="button" onClick={toggleMute} aria-label={isMuted ? '取消静音' : '静音'} className="rounded p-0.5 transition-colors duration-300 hover:text-white">
+                  <VolumeIcon size={16} />
+                </button>
+                <AmSlider
+                  value={isMuted ? 0 : volume}
+                  onScrub={setVolume}
+                  onCommit={setVolume}
+                  ariaLabel="音量"
+                  ariaValueText={`${Math.round((isMuted ? 0 : volume) * 100)}%`}
+                  className="flex-1"
+                />
+                <Volume2 size={16} aria-hidden="true" />
+              </div>
+
+              {/* 播放模式 / 面板切换 */}
+              <div className="mt-4 flex items-center justify-between lg:mt-3">
+                <button
+                  type="button"
+                  onClick={togglePlayMode}
+                  aria-label={`播放模式：${PLAY_MODE_META[playMode].label}，点击切换`}
+                  title={PLAY_MODE_META[playMode].label}
+                  className={`${GHOST_BTN} h-9 w-9 ${playMode === 'loop' ? 'text-white/55' : 'bg-white/15'}`}
+                >
+                  <ModeIcon size={17} />
+                </button>
+                <div className="flex items-center gap-1" role="tablist" aria-label="右侧面板">
+                  {([
+                    { id: 'lyrics', Icon: MessageSquareQuote, label: '歌词' },
+                    { id: 'queue', Icon: ListMusic, label: '播放列表' },
+                  ] as const).map(({ id, Icon, label }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="tab"
+                      aria-selected={panel === id}
+                      aria-label={label}
+                      title={label}
+                      onClick={() => setPanel(id)}
+                      className={`${GHOST_BTN} h-9 w-9 rounded-lg ${panel === id ? 'bg-white/15 text-white' : 'text-white/55'}`}
+                    >
+                      <Icon size={17} />
                     </button>
-                    <button onClick={nextSong} className="p-2 text-slate-700 dark:text-slate-300 hover:text-indigo-500 transition-transform hover:scale-110"><SkipForward size={24} className="md:w-7 md:h-7" fill="currentColor" /></button>
-                  </div>
-                  <div className="flex items-center" onMouseLeave={() => setShowVolumeSlider(false)}>
-                    <AnimatePresence>
-                      {showVolumeSlider && (
-                        <motion.div initial={{ width: 0, opacity: 0 }} animate={{ width: 80, opacity: 1 }} exit={{ width: 0, opacity: 0 }} className="hidden md:flex overflow-hidden items-center mr-2 bg-white/30 dark:bg-black/20 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20">
-                          <input type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : (volume || 0)} onChange={(e) => setVolume && setVolume(Number(e.target.value))} className="w-16 h-1 appearance-none rounded-full cursor-pointer" style={{ background: `linear-gradient(to right, #4f46e5 ${(volume || 0) * 100}%, rgba(0, 0, 0, 0.15) 0)` }} />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                    <button onClick={() => setShowVolumeSlider(!showVolumeSlider)} onDoubleClick={toggleMute} className={`p-2 rounded-full transition-all ${showVolumeSlider ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-500 hover:text-indigo-500'}`}>{isMuted || volume === 0 ? <VolumeX size={18} className="md:w-5 md:h-5"/> : <Volume2 size={18} className="md:w-5 md:h-5" />}</button>
-                  </div>
+                  ))}
                 </div>
-              </div>
-            </div>
-
-            {/* ====== 右侧/底部：歌词与歌单面板 ====== */}
-            <div className="md:col-span-7 flex flex-col bg-white/40 dark:bg-slate-800/50 backdrop-blur-md border border-white/40 dark:border-white/10 rounded-[32px] shadow-2xl relative transition-colors duration-700 overflow-hidden h-[450px] md:h-auto shrink-0">
-              <div className="flex items-center justify-center gap-1 p-1 mt-4 md:mt-6 mx-auto bg-white/50 dark:bg-slate-900/50 rounded-full shadow-inner border border-white/40 w-48 md:w-64 z-20 shrink-0">
-                <button onClick={() => setActiveTab('lyrics')} className={`flex-1 py-1.5 md:py-2 rounded-full font-black text-xs md:text-[13px] transition-all ${activeTab === 'lyrics' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-500'}`}>歌词</button>
-                <button onClick={() => setActiveTab('playlist')} className={`flex-1 py-1.5 md:py-2 rounded-full font-black text-xs md:text-[13px] transition-all ${activeTab === 'playlist' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-500'}`}>歌单</button>
-              </div>
-
-              <div className="flex-1 relative mt-2 flex flex-col overflow-hidden">
-                {activeTab === 'lyrics' && (
-                  <div className="absolute inset-0 flex flex-col h-full animate-in fade-in duration-300">
-                    <div className="absolute top-0 left-0 right-0 h-32 md:h-40 bg-gradient-to-b from-white/40 dark:from-slate-800/60 to-transparent z-10 pointer-events-none" />
-                    <div className="absolute bottom-0 left-0 right-0 h-32 md:h-40 bg-gradient-to-t from-white/40 dark:from-slate-800/60 to-transparent z-10 pointer-events-none" />
-                    <div ref={lyricContainerRef} className="h-full overflow-y-auto no-scrollbar scroll-smooth relative px-4 md:px-6 lyric-mask-container">
-                        <div className="py-[30vh] md:py-[35vh] flex flex-col gap-4 md:gap-6 text-center lg:px-10">
-                            {parsedLyrics.length > 0 ? (
-                              parsedLyrics.map((line, index) => {
-                                const isActive = index === activeLyricIndex;
-                                return (
-                                  <div key={index} ref={isActive ? activeLyricRef : null}
-                                    className={`transition-all duration-700 cursor-pointer px-2 md:px-4 rounded-2xl ${isActive ? 'opacity-100 scale-105 py-2 md:py-3 bg-white/10' : 'opacity-20 hover:opacity-40'}`}
-                                    onClick={() => duration > 0 && line.time >= 0 && seekToPercent((line.time / duration) * 100)}
-                                  >
-                                    <p className={`font-black tracking-tight leading-relaxed transition-all duration-700 ${isActive ? 'text-lg md:text-2xl text-indigo-600 dark:text-indigo-400' : 'text-sm md:text-lg text-slate-700 dark:text-slate-300'}`} style={isActive ? { textShadow: '0 0 20px rgba(99,102,241,0.15)' } : {}}>{line.text}</p>
-                                  </div>
-                                );
-                              })
-                            ) : (
-                              <div className="h-full flex items-center justify-center">
-                                 <div className="flex flex-col items-center gap-3 md:gap-4">
-                                    <Disc3 className="animate-spin text-indigo-500/40" size={32} />
-                                    <p className="text-base md:text-xl font-black text-indigo-500 animate-pulse">{currentLyric || "正在捕获灵魂旋律..."}</p>
-                                 </div>
-                              </div>
-                            )}
-                        </div>
-                    </div>
-                  </div>
-                )}
-                {activeTab === 'playlist' && (
-                  <div className="absolute inset-0 px-4 md:px-8 pb-4 md:pb-8 pt-2 md:pt-4 animate-in fade-in duration-300 flex flex-col">
-                    <div className="relative w-full max-w-md mx-auto group mb-4 md:mb-8 shrink-0">
-                      <div className="absolute inset-0 bg-indigo-500/5 blur-xl group-focus-within:bg-indigo-500/10 transition-all rounded-full" />
-                      <Search className="w-4 h-4 md:w-5 md:h-5 absolute left-4 top-1/2 -translate-y-1/2 z-10 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                      <input type="text" placeholder="搜索音轨..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full h-10 md:h-12 pl-10 md:pl-12 pr-10 md:pr-12 bg-white/30 dark:bg-slate-900/60 backdrop-blur-md border border-white/50 dark:border-white/10 rounded-full text-xs md:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/40 shadow-inner transition-all" />
-                      {searchQuery && (<button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 hover:bg-black/10 rounded-full transition-colors"><X size={14} className="text-slate-500" /></button>)}
-                    </div>
-                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-2 md:gap-2.5">
-                      <AnimatePresence mode='popLayout'>
-                        {filteredPlaylist.map((song) => {
-                          const originalIndex = playlist.findIndex((s) => s.id === song.id);
-                          const isPlayingThis = (song.id === currentSong.id);
-                          return (
-                            <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} key={song.id} onClick={() => handlePlaySong(originalIndex)} className={`group flex items-center justify-between p-3 md:p-4 rounded-xl md:rounded-2xl cursor-pointer transition-all border ${isPlayingThis ? 'bg-white/60 dark:bg-slate-700/80 shadow-md border-indigo-500/30' : 'border-transparent hover:bg-white/30 dark:hover:bg-slate-700/40'}`}>
-                              <div className="flex items-center gap-3 md:gap-4 w-[85%]">
-                                <div className="relative w-10 h-10 md:w-12 md:h-12 shrink-0 rounded-lg md:rounded-xl overflow-hidden shadow-sm">
-                                  <AppImage src={song.cover} alt={`${song.title} 封面`} fill sizes="48px" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                                  {isPlayingThis && isPlaying && <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px]"><div className="flex gap-[3px] items-end h-2 md:h-3"><span className="w-0.5 bg-white rounded-full animate-[bounce_1s_infinite_0ms]" /><span className="w-0.5 bg-white rounded-full animate-[bounce_1s_infinite_200ms]" /><span className="w-0.5 bg-white rounded-full animate-[bounce_1s_infinite_400ms]" /></div></div>}
-                                </div>
-                                <div className="flex flex-col truncate"><span className={`text-sm md:text-[15px] font-black truncate ${isPlayingThis ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-slate-200'}`}>{song.title}</span><span className="text-[10px] md:text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate mt-0.5">{song.artist}</span></div>
-                              </div>
-                            </motion.div>
-                          );
-                        })}
-                      </AnimatePresence>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
 
-          {/* ====== 留言板 ====== */}
-          <div className="mt-8 md:mt-12 mb-20 bg-white/60 dark:bg-slate-800/50 backdrop-blur-xl rounded-[32px] md:rounded-[40px] shadow-2xl border border-white/40 dark:border-white/10 overflow-hidden transition-colors duration-700 relative">
-             <div className="px-5 sm:px-8 md:px-16 py-8 md:py-12 relative">
-                <div className="flex items-center gap-3 mb-6 md:mb-8 border-b border-slate-300/50 dark:border-slate-700 pb-4 md:pb-6">
-                   <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-indigo-500/10 flex items-center justify-center"><MessageSquare className="text-indigo-500 w-5 h-5 md:w-6 md:h-6" /></div>
-                   <div><h3 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">乐迷留言板</h3><p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 font-medium">听着这首歌，你想到了什么？</p></div>
-                </div>
-                <div className="relative"><Comments /></div>
-             </div>
+          {/* ---------- 右：歌词 / 播放列表 ---------- */}
+          <div className="h-[58vh] min-h-[360px] min-w-0 lg:h-full lg:min-h-0" role="tabpanel">
+            {panel === 'lyrics' ? (
+              <LyricsPanel
+                lyrics={currentSong.lyrics}
+                currentTime={shownTime}
+                duration={safeDuration}
+                onSeekTime={seekToTime}
+                emptyText="纯音乐，请欣赏"
+              />
+            ) : (
+              <QueuePanel playlist={playlist} currentId={currentSong.id} isPlaying={isPlaying} onPlay={playSong} />
+            )}
           </div>
-        </div>
-      </PageTransition>
+        </section>
 
-      <style jsx global>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .rotating-disc { animation: spin 20s linear infinite; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .lyric-mask-container {
-          -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
-          mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
-        }
-      `}</style>
+        {/* ================= 留言板（向下滚动） ================= */}
+        <section aria-labelledby="music-comments-title" className="mx-auto w-full max-w-[1320px] px-5 pb-24 sm:px-8 lg:px-12">
+          <div className="rounded-3xl border border-white/10 bg-black/25 px-5 py-8 backdrop-blur-xl sm:px-8 md:px-12">
+            <div className="mb-6 flex items-center gap-3 border-b border-white/10 pb-5">
+              <MessageSquare size={20} className="text-white/60" />
+              <div>
+                <h2 id="music-comments-title" className="text-lg text-white">乐迷留言板</h2>
+                <p className="text-sm text-white/45">聊聊你正在听的歌</p>
+              </div>
+            </div>
+            <Comments />
+          </div>
+        </section>
+      </main>
     </div>
   );
 }

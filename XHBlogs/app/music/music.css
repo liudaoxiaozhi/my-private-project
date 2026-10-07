@@ -1,0 +1,77 @@
+/* app/music/music.css —— 音乐页（Apple Music 风格）专用样式，类名统一 am- 前缀 */
+
+/* 让歌词填充进度可以平滑过渡（不支持 @property 的浏览器会直接跳到新进度） */
+@property --am-fill {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+.am-root {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+/* 全站 h1~h4 默认 900 字重，这里恢复 Apple 的克制字重 */
+.am-root :where(h1, h2, h3, h4) { font-weight: 600; letter-spacing: -0.01em; }
+
+/* ---------- 流动背景：模糊只在内层算一次，外层只做 transform 动画，开销很小 ---------- */
+.am-blob { position: absolute; width: 95vmax; height: 95vmax; will-change: transform; }
+.am-blob-1 { top: -35vmax; left: -30vmax; animation: am-drift-1 46s ease-in-out infinite alternate; }
+.am-blob-2 { top: -10vmax; right: -40vmax; animation: am-drift-2 58s ease-in-out infinite alternate; }
+.am-blob-3 { bottom: -45vmax; left: -5vmax; animation: am-drift-3 52s ease-in-out infinite alternate; }
+.am-blob-inner { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; filter: blur(72px) saturate(1.8) brightness(0.92); }
+
+@keyframes am-drift-1 { from { transform: translate(0, 0) rotate(0deg) scale(1); } to { transform: translate(12vmax, 8vmax) rotate(140deg) scale(1.15); } }
+@keyframes am-drift-2 { from { transform: translate(0, 0) rotate(0deg) scale(1.1); } to { transform: translate(-14vmax, 10vmax) rotate(-120deg) scale(0.95); } }
+@keyframes am-drift-3 { from { transform: translate(0, 0) rotate(0deg) scale(1); } to { transform: translate(10vmax, -12vmax) rotate(160deg) scale(1.2); } }
+
+/* ---------- 歌词 ---------- */
+.am-lyrics-scroller { scrollbar-width: none; }
+.am-lyrics-scroller::-webkit-scrollbar { display: none; }
+/* 上下边缘渐隐 */
+.am-lyrics-mask {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 78%, transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 78%, transparent 100%);
+}
+
+.am-line {
+  transform-origin: left center;
+  transition:
+    opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* 当前行：按这一行的播放进度从左到右填亮 */
+.am-line-active .am-line-text {
+  color: transparent;
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 1) var(--am-fill),
+    rgba(255, 255, 255, 0.42) calc(var(--am-fill) + 10%)
+  );
+  -webkit-background-clip: text;
+          background-clip: text;
+  transition: --am-fill 0.3s linear;
+}
+
+/* ---------- 进度条 / 音量条 ---------- */
+.am-bar { transition: height 0.2s ease-out; }
+.am-slider:hover .am-bar,
+.am-slider:focus-visible .am-bar,
+.am-slider[data-dragging="true"] .am-bar { height: 9px; }
+.am-slider:hover .am-bar-fill,
+.am-slider[data-dragging="true"] .am-bar-fill { background: #fff; }
+
+/* 正在播放的跳动音柱 */
+.am-eq span { animation: am-eq 0.9s ease-in-out infinite; transform-origin: bottom; }
+.am-eq span:nth-child(2) { animation-delay: -0.3s; }
+.am-eq span:nth-child(3) { animation-delay: -0.6s; }
+.am-eq[data-paused="true"] span { animation-play-state: paused; }
+@keyframes am-eq { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
+
+/* ---------- 桌面端：封面与信息区跟随屏幕高度缩放，保证一屏放得下全部控制 ---------- */
+@media (min-width: 1024px) {
+  .am-art-w { width: min(100%, max(240px, calc(100dvh - 480px))); }
+  .am-meta-w { max-width: min(100%, max(240px, calc(100dvh - 480px))); }
+}

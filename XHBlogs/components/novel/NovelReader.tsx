@@ -9,13 +9,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, House, List, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, House, List } from 'lucide-react';
 import NovelMusicButton from './NovelMusicButton';
-import { useTheme } from '../ThemeProvider';
-import {
-  FONT_SIZES, LINE_HEIGHTS, loadProgress, loadSettings, saveProgress, saveSettings,
-} from '../../lib/novelProgress';
-import type { ReaderFont, ReaderSettings, ReaderTheme } from '../../lib/novelProgress';
+import { ReaderSettingsPanel, useReaderSettings } from './ReaderSettings';
+import { loadProgress, saveProgress } from '../../lib/novelProgress';
 import '../../app/novel/reader.css';
 
 interface ChapterLink {
@@ -43,23 +40,7 @@ export interface NovelReaderProps {
   isOngoing: boolean;
 }
 
-const THEMES: Array<{ id: ReaderTheme; label: string; swatch: string }> = [
-  { id: 'paper', label: '白纸', swatch: '#f7f5ef' },
-  { id: 'sepia', label: '羊皮纸', swatch: '#f1e7d0' },
-  { id: 'green', label: '护眼', swatch: '#e2ead6' },
-  { id: 'night', label: '夜间', swatch: '#141518' },
-];
-const FONTS: Array<{ id: ReaderFont; label: string }> = [
-  { id: 'serif', label: '宋体' },
-  { id: 'sans', label: '黑体' },
-];
-
 const SAVE_INTERVAL_MS = 600;
-
-function nearest<T extends number>(list: readonly T[], value: unknown, fallback: T): T {
-  if (typeof value !== 'number') return fallback;
-  return list.reduce((best, v) => (Math.abs(v - value) < Math.abs(best - value) ? v : best), fallback);
-}
 
 function scrollRatio(): number {
   const max = document.documentElement.scrollHeight - window.innerHeight;
@@ -72,43 +53,19 @@ const ICON_BTN =
 export default function NovelReader(props: NovelReaderProps) {
   const { bookSlug, bookTitle, bookHref, volumeTitle, chapterTitle, dateText, wordCount, html, href, prev, next, position, total, isOngoing } = props;
   const router = useRouter();
-  const { isDark } = useTheme();
 
-  // 首帧用固定默认值（与服务端一致），挂载后再读本地设置
-  const [settings, setSettings] = useState<ReaderSettings>({ fontSize: 18, lineHeight: 1.9, font: 'serif', theme: 'paper' });
+  // 字号 / 行距 / 字体 / 底色（首帧用默认值，挂载后读取本地设置）
+  const { settings, ready, updateSettings } = useReaderSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [barVisible, setBarVisible] = useState(true);
   const [progress, setProgress] = useState(0);
   const [restoredNotice, setRestoredNotice] = useState(false);
-  const [ready, setReady] = useState(false);
   const lastY = useRef(0);
   const lastSave = useRef(0);
   /** 本章当前阅读比例；切章时用它保存上一章的进度，而不是读取已经换成新章节的页面 */
   const ratioRef = useRef(0);
   /** 恢复位置完成前不保存，避免把「第 0 行」覆盖掉上次的进度 */
   const canPersist = useRef(false);
-
-  // ---------- 读取设置；首次阅读时跟随站点日夜模式 ----------
-  useEffect(() => {
-    const saved = loadSettings();
-    setSettings({
-      fontSize: nearest(FONT_SIZES, saved?.fontSize, 18),
-      lineHeight: nearest(LINE_HEIGHTS, saved?.lineHeight, 1.9),
-      font: saved?.font === 'sans' ? 'sans' : 'serif',
-      theme: THEMES.some((t) => t.id === saved?.theme) ? (saved!.theme as ReaderTheme) : isDark ? 'night' : 'paper',
-    });
-    setReady(true);
-    // 只在进入页面时读取一次
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const updateSettings = (patch: Partial<ReaderSettings>) => {
-    setSettings((prevSettings) => {
-      const merged = { ...prevSettings, ...patch };
-      saveSettings(merged);
-      return merged;
-    });
-  };
 
   // ---------- 保存进度 ----------
   const persist = useCallback(() => {
@@ -180,7 +137,6 @@ export default function NovelReader(props: NovelReaderProps) {
   }, [prev, next, router]);
 
   const showBar = barVisible || settingsOpen;
-  const fontIndex = FONT_SIZES.indexOf(settings.fontSize as (typeof FONT_SIZES)[number]);
 
   return (
     <div className="nv-reader relative min-h-[100dvh]" data-theme={settings.theme} data-font={settings.font}>
@@ -224,76 +180,7 @@ export default function NovelReader(props: NovelReaderProps) {
         </div>
 
         {/* ---------- 设置面板 ---------- */}
-        {settingsOpen && (
-          <div id="nv-settings" role="dialog" aria-label="阅读设置" className="nv-line mx-auto max-w-5xl border-t px-4 pb-5 pt-4 sm:px-5">
-            <div className="mx-auto grid max-w-xl gap-4 text-sm">
-              <div className="flex items-center justify-between gap-4">
-                <span className="nv-muted w-12 shrink-0">字号</span>
-                <div className="flex flex-1 items-center gap-3">
-                  <button type="button" aria-label="缩小字号" disabled={fontIndex <= 0}
-                    onClick={() => updateSettings({ fontSize: FONT_SIZES[Math.max(0, fontIndex - 1)] })}
-                    className="nv-line rounded-full border px-3 py-1 text-xs transition-colors duration-300 hover:bg-current/10 disabled:opacity-30">A−</button>
-                  <input
-                    id="nv-font-size"
-                    type="range"
-                    min={0}
-                    max={FONT_SIZES.length - 1}
-                    value={Math.max(0, fontIndex)}
-                    onChange={(e) => updateSettings({ fontSize: FONT_SIZES[Number(e.target.value)] })}
-                    aria-label="字号"
-                    className="nv-range flex-1"
-                  />
-                  <button type="button" aria-label="放大字号" disabled={fontIndex >= FONT_SIZES.length - 1}
-                    onClick={() => updateSettings({ fontSize: FONT_SIZES[Math.min(FONT_SIZES.length - 1, fontIndex + 1)] })}
-                    className="nv-line rounded-full border px-3 py-1 text-base transition-colors duration-300 hover:bg-current/10 disabled:opacity-30">A+</button>
-                  <span className="w-10 text-right tabular-nums">{settings.fontSize}px</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-4">
-                <span className="nv-muted w-12 shrink-0">行距</span>
-                <div className="flex flex-1 gap-2">
-                  {LINE_HEIGHTS.map((lh, i) => (
-                    <button key={lh} type="button" onClick={() => updateSettings({ lineHeight: lh })} aria-pressed={settings.lineHeight === lh}
-                      className={`nv-line flex-1 rounded-full border py-1.5 text-xs transition-colors duration-300 ${settings.lineHeight === lh ? 'bg-current/10 font-bold' : 'hover:bg-current/5'}`}>
-                      {['紧凑', '适中', '宽松'][i]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-4">
-                <span className="nv-muted w-12 shrink-0">字体</span>
-                <div className="flex flex-1 gap-2">
-                  {FONTS.map((f) => (
-                    <button key={f.id} type="button" onClick={() => updateSettings({ font: f.id })} aria-pressed={settings.font === f.id}
-                      className={`nv-line flex-1 rounded-full border py-1.5 text-xs transition-colors duration-300 ${settings.font === f.id ? 'bg-current/10 font-bold' : 'hover:bg-current/5'}`}
-                      style={{ fontFamily: f.id === 'serif' ? 'var(--font-serif), serif' : 'system-ui, sans-serif' }}>
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-4">
-                <span className="nv-muted w-12 shrink-0">底色</span>
-                <div className="flex flex-1 gap-2">
-                  {THEMES.map((t) => (
-                    <button key={t.id} type="button" onClick={() => updateSettings({ theme: t.id })} aria-pressed={settings.theme === t.id}
-                      className={`flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 text-[11px] transition-colors duration-300 ${settings.theme === t.id ? 'bg-current/10 font-bold' : 'hover:bg-current/5'}`}>
-                      <span className="h-6 w-6 rounded-full ring-1 ring-black/15" style={{ background: t.swatch }} />
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <button type="button" onClick={() => setSettingsOpen(false)} className="nv-muted mx-auto flex items-center gap-1 text-xs hover:underline">
-                <X size={13} /> 收起
-              </button>
-            </div>
-          </div>
-        )}
+        {settingsOpen && <ReaderSettingsPanel settings={settings} onChange={updateSettings} onClose={() => setSettingsOpen(false)} />}
       </header>
 
       {/* ---------- 正文 ---------- */}

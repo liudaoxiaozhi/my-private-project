@@ -45,3 +45,11 @@
 .nv-content hr::before { content: "＊　＊　＊"; color: var(--nv-muted); letter-spacing: 0.4em; }
 
 .nv-range { accent-color: var(--nv-accent); }
+
+/* 本地 EPUB：书里的小图标（注释标记等）常放在链接 / 上标里，保持在行内、与文字同高 */
+.nv-epub :is(a, sup, sub, span) > img, .nv-epub img.ep-inline { display: inline-block; width: auto; height: 1em; margin: 0 0.1em; vertical-align: -0.12em; border-radius: 0; }
+.nv-epub h1, .nv-epub h2, .nv-epub h3, .nv-epub h4 { text-align: center; }
+.nv-epub table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 0.9em; }
+.nv-epub td, .nv-epub th { border: 1px solid var(--nv-line); padding: 0.3em 0.5em; text-indent: 0; }
+.nv-epub li p, .nv-epub td p, .nv-epub figcaption { text-indent: 0; }
+.nv-epub figcaption { text-align: center; font-size: 0.85em; color: var(--nv-muted); }

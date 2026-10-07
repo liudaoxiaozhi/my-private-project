@@ -78,7 +78,6 @@ export const siteConfig = {
   },
   // 支持占位符 {{name}} {{bio}} {{siteUrl}} {{avatar}}，会自动替换成当前站点信息
   friendLinkApplyFormat: "名称：{{name}}\n简介：{{bio}}\n链接：{{siteUrl}}\n头像：{{avatar}}",
-  enableLevelSystem: true,
 
   // 👇 【新增】视觉特效开关（电脑端）。觉得卡时可以逐个关掉
   enableParticles: true,   // 背景萤火虫 / 草地（仅电脑端）

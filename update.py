@@ -66,7 +66,7 @@ def main():
         "XHBlogs/app/friends", "XHBlogs/app/moments", "XHBlogs/app/music",
         "XHBlogs/app/photowall", "XHBlogs/app/posts", "XHBlogs/app/projects",
         "XHBlogs/app/timeline", "XHBlogs/app/globals.css", "XHBlogs/app/layout.tsx",
-        "XHBlogs/app/page.tsx", "XHBlogs/components", "XHBlogs/public", "XHBlogs/app/tree",
+        "XHBlogs/app/page.tsx", "XHBlogs/components", "XHBlogs/public",
         "XHBlogs/.gitignore", "XHBlogs/package.json", "XHBlogs/package-lock.json",
         "XHBlogs/postcss.config.mjs", "XHBlogs/tsconfig.json",
 
@@ -80,7 +80,7 @@ def main():
         "my-blog-manager/app/settings", "my-blog-manager/app/timeline",
         "my-blog-manager/app/globals.css", "my-blog-manager/app/layout.tsx",
         "my-blog-manager/app/page.tsx", "my-blog-manager/cms_core",
-        "my-blog-manager/components", "my-blog-manager/context", "my-blog-manager/app/tree",
+        "my-blog-manager/components", "my-blog-manager/context",
         "my-blog-manager/.gitignore", "my-blog-manager/launcher.py", "my-blog-manager/public",
         "my-blog-manager/package.json", "my-blog-manager/package-lock.json",
         "my-blog-manager/postcss.config.mjs", "my-blog-manager/run_me.py",

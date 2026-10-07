@@ -20,8 +20,21 @@ def run_cmd(cmd, cwd=None):
         return False
 
 
+def confirm_overwrite():
+    """本项目已在原版基础上做了大量修改；这个升级程序会用原作者仓库的代码覆盖它们。"""
+    print("⚠️  注意：本升级程序会从原作者仓库 heiehiehi/XinghuisamaBlogs 拉取代码，")
+    print("    并覆盖前台与后台的大部分源码文件（页面、组件、后台脚本等）。")
+    print("    你在此基础上做过的所有修改（音乐页、性能优化、安全修复等）都会丢失。")
+    print("    如果只是想写文章、改配置，不需要运行它。")
+    answer = input("\n确认要覆盖请输入 YES，其他任意输入取消：").strip()
+    if answer != "YES":
+        print("已取消，未做任何修改。")
+        sys.exit(0)
+
+
 def main():
     print_step("XingHuiSama升级程序 (Python 稳定版)")
+    confirm_overwrite()
 
     # 1. 环境自检
     if not shutil.which("git"):

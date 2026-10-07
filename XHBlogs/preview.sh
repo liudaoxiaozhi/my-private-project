@@ -8,7 +8,8 @@ major=$(node -p "process.versions.node.split('.')[0]")
 [ "$major" -ge 20 ] || { echo "[错误] Next.js 16 需要 Node.js 20.9+，当前 $(node -v)"; exit 1; }
 
 [ -f .env.local ] || { [ -f .env.example ] && cp .env.example .env.local && echo "[提示] 已生成 .env.local，按需填写密钥（留空也能预览）。"; }
-[ -d node_modules ] || { echo "[1/2] 首次运行，安装依赖..."; npm install; }
+# 首次运行，或 package.json 新增了依赖时安装
+npm ls --depth=0 >/dev/null 2>&1 || { echo "[1/2] 安装依赖..."; npm install; }
 
 echo "[2/2] 启动开发服务器：http://localhost:3000"
 npm run dev

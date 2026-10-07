@@ -1,15 +1,14 @@
 "use client";
 // app/music/ArtworkBackground.tsx —— 用当前封面生成缓慢流动的模糊背景（Apple Music 播放页风格）
 //
-// 不读取图片像素（网易云封面不允许跨域读取），而是直接把封面放大、重度模糊后叠三层慢速漂移。
+// 不读取图片像素，而是直接把封面放大、重度模糊后叠三层慢速漂移（next/image 会输出小尺寸图片）。
 // 模糊写在内层、动画只改外层 transform，浏览器只需栅格化一次，滚动和播放时都很省。
 
 import { AnimatePresence, motion } from 'framer-motion';
 import AppImage from '../../components/AppImage';
-import { coverAtSize } from './musicUtils';
 
 export default function ArtworkBackground({ cover }: { cover?: string }) {
-  const src = cover ? coverAtSize(cover, 200) : '';
+  const src = cover ?? '';
 
   return (
     <div className="fixed inset-0 z-0 overflow-hidden bg-[#0d0d12] pointer-events-none" aria-hidden="true">

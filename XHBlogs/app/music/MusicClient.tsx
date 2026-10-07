@@ -18,7 +18,7 @@ import ArtworkBackground from './ArtworkBackground';
 import AmSlider from './AmSlider';
 import LyricsPanel from './LyricsPanel';
 import QueuePanel from './QueuePanel';
-import { coverAtSize, formatTime } from './musicUtils';
+import { formatTime } from './musicUtils';
 import './music.css';
 
 type Panel = 'lyrics' | 'queue';
@@ -70,7 +70,7 @@ export default function MusicClient() {
               <ListMusic size={48} className="text-white/30" />
               <p className="text-xl text-white/80">歌单还是空的</p>
               <p className="max-w-sm text-sm leading-relaxed text-white/45">
-                把音频放进 public/music/，或在 siteConfig.ts 的 cloudMusicIds 里添加网易云歌曲 ID。
+                把音频文件放进 public/music/，然后重新运行 npm run dev 或 npm run build。
               </p>
             </>
           )}
@@ -101,7 +101,7 @@ export default function MusicClient() {
             >
               <AppImage
                 key={currentSong.id}
-                src={coverAtSize(currentSong.cover, 600)}
+                src={currentSong.cover}
                 alt={`${currentSong.title} 封面`}
                 fill
                 sizes="(min-width: 1024px) 440px, 78vw"

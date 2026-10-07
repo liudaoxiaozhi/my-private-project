@@ -24,8 +24,10 @@ if not exist ".env.local" (
     )
 )
 
-if not exist "node_modules" (
-    echo [1/2] 首次运行，正在安装依赖，请稍候...
+rem 首次运行，或 package.json 新增了依赖（npm ls 检查不通过）时安装依赖
+call npm ls --depth=0 >nul 2>&1
+if errorlevel 1 (
+    echo [1/2] 正在安装依赖，请稍候...
     call npm install
     if errorlevel 1 (
         echo [错误] 依赖安装失败，请检查网络或尝试：npm config set registry https://registry.npmmirror.com

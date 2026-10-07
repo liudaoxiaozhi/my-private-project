@@ -5,7 +5,6 @@ import { useMemo, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import AppImage from '../../components/AppImage';
 import type { Song } from '../../lib/music';
-import { coverAtSize } from './musicUtils';
 
 interface QueuePanelProps {
   playlist: Song[];
@@ -62,7 +61,7 @@ export default function QueuePanel({ playlist, currentId, isPlaying, onPlay }: Q
                 className={`flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${isCurrent ? 'bg-white/12' : 'hover:bg-white/6'}`}
               >
                 <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-md bg-white/10 shadow-md">
-                  <AppImage src={coverAtSize(song.cover, 100)} alt="" fill sizes="44px" className="object-cover" referrerPolicy="no-referrer" />
+                  <AppImage src={song.cover} alt="" fill sizes="44px" className="object-cover" referrerPolicy="no-referrer" />
                   {isCurrent && (
                     <span className="am-eq absolute inset-0 flex items-end justify-center gap-[3px] bg-black/45 pb-2.5" data-paused={!isPlaying}>
                       <span className="h-3 w-[3px] rounded-full bg-white" />
@@ -75,9 +74,6 @@ export default function QueuePanel({ playlist, currentId, isPlaying, onPlay }: Q
                   <span className={`block truncate text-[15px] ${isCurrent ? 'font-semibold text-white' : 'text-white/90'}`}>{song.title}</span>
                   <span className="block truncate text-[13px] text-white/50">{song.artist}</span>
                 </span>
-                {song.source === 'local' && (
-                  <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] tracking-wider text-white/40 ring-1 ring-white/15">本地</span>
-                )}
               </button>
             </li>
           );

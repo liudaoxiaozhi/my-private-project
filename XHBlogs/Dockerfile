@@ -16,7 +16,8 @@ WORKDIR /app
 # 国内服务器构建时可改为 --build-arg NPM_REGISTRY=https://registry.npmmirror.com
 ARG NPM_REGISTRY=https://registry.npmjs.org
 COPY package.json package-lock.json ./
-RUN npm config set registry "$NPM_REGISTRY" && npm ci --no-audit --no-fund
+# 优先用锁文件精确安装；锁文件和 package.json 不一致时（例如新增依赖后还没更新锁文件）退回 npm install
+RUN npm config set registry "$NPM_REGISTRY" && (npm ci --no-audit --no-fund || npm install --no-audit --no-fund)
 
 # ---------- 2. 构建 ----------
 FROM node:${NODE_VERSION} AS builder

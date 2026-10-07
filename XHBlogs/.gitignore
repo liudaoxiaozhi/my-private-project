@@ -43,3 +43,5 @@ next-env.d.ts
 
 # 本地歌单由 scripts/build-music-manifest.mjs 自动生成
 /public/music/playlist.json
+/public/music/_covers/
+/public/music/_lyrics/

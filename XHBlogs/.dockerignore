@@ -12,6 +12,8 @@ npm-debug.log*
 
 # 本地歌单在构建时重新生成
 public/music/playlist.json
+public/music/_covers
+public/music/_lyrics
 
 .git
 .vscode

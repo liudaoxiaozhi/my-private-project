@@ -1,10 +1,10 @@
 "use client";
 
 import { createContext, useContext, useState, useRef, useEffect, ReactNode } from 'react';
-import { siteConfig } from '../siteConfig';
-import type { LocalPlaylistManifest, LyricLine, MusicApiSong, Song } from '../lib/music';
+import type { LocalPlaylistManifest, LyricLine, Song } from '../lib/music';
 
-const DEFAULT_COVER = 'https://bu.dusays.com/2026/03/24/69c24230a5ff8.jpg';
+/** 歌曲既没有同名封面也没有内嵌封面时使用 */
+const DEFAULT_COVER = '/images/music-default-cover.svg';
 
 const PURE_MUSIC_TEXT = '♪ 纯享音乐 ♪';
 
@@ -27,30 +27,6 @@ async function fetchLocalSongs(): Promise<Song[]> {
     }));
 }
 
-/** 网易云歌单：siteConfig.cloudMusicIds → /api/music */
-async function fetchNeteaseSongs(): Promise<Song[]> {
-  const ids = siteConfig.cloudMusicIds ?? [];
-  if (ids.length === 0) return [];
-  const res = await fetch(`/api/music?ids=${ids.join(',')}`);
-  const rawResults = (await res.json()) as MusicApiSong[];
-  return (Array.isArray(rawResults) ? rawResults : [])
-    .filter(isPlayable)
-    .map((song) => ({
-      id: song.id,
-      source: 'netease' as const,
-      title: song.name || '未知歌曲',
-      artist: song.artist || song.author || '未知歌手',
-      cover: song.cover || song.pic || DEFAULT_COVER,
-      src: song.url,
-      lyrics: song.lrc ? parseLrc(song.lrc) : [],
-    }));
-}
-
-/** 过滤掉取不到播放地址的歌曲 */
-function isPlayable(song: MusicApiSong | null | undefined): song is MusicApiSong & { url: string } {
-  return Boolean(song && song.url && !song.error);
-}
-
 // 【增强版 LRC 歌词解析】
 function parseLrc(lrcText: string): LyricLine[] {
   if (!lrcText || lrcText.length > 30000) return [];
@@ -59,26 +35,34 @@ function parseLrc(lrcText: string): LyricLine[] {
   const result: LyricLine[] = [];
 
   for (let line of lines) {
-    const matches = [...line.matchAll(/\[(\d{2,}):(\d{2})(?:\.(\d{2,3}))?\]/g)];
+    // 兼容 [mm:ss]、[mm:ss.x]、[mm:ss.xx]、[mm:ss.xxx] 以及 [mm:ss:xx] 等写法
+    const matches = [...line.matchAll(/\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]/g)];
     if (matches.length > 0) {
-      let text = line.replace(/\[\d{2,}:\d{2}(?:\.\d{2,3})?\]/g, '').trim();
+      let text = line.replace(/\[\d{1,3}:\d{1,2}(?:[.:]\d{1,3})?\]/g, '').trim();
 
       // 剔除控制字符
       const cleanText = text.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, "");
 
       if (cleanText) {
         for (const match of matches) {
-          const min = parseInt(match[1]);
-          const sec = parseInt(match[2]);
-          const ms = match[3] ? parseInt(match[3]) : 0;
-          const divisor = match[3] && match[3].length === 3 ? 1000 : 100;
-          const time = min * 60 + sec + ms / divisor;
+          const min = parseInt(match[1], 10);
+          const sec = parseInt(match[2], 10);
+          // 小数部分按位数换算：.5 = 0.5 秒，.50 = 0.5 秒，.500 = 0.5 秒
+          const fraction = match[3] ? Number(`0.${match[3]}`) : 0;
+          const time = min * 60 + sec + fraction;
           result.push({ time, text: cleanText });
         }
       }
     }
   }
-  return result.sort((a, b) => a.time - b.time);
+  if (result.length > 0) return result.sort((a, b) => a.time - b.time);
+
+  // 没有任何时间标签：按纯文本歌词处理（time = -1），页面上静态显示
+  return lines
+    .map((l) => l.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '').trim())
+    // 去掉 [ar:歌手]、[ti:歌名] 这类 LRC 信息标签
+    .filter((l) => l && !/^\[[a-z]+:.*\]$/i.test(l))
+    .map((text) => ({ time: -1, text }));
 }
 
 // 🌟 1. 扩充 Context 类型，加入 MusicPage 需要的所有属性
@@ -135,16 +119,13 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true;
     const loadPlaylist = async () => {
-      // 两个来源并行加载，任意一个失败不影响另一个；本地歌曲排在前面
-      const [local, netease] = await Promise.allSettled([fetchLocalSongs(), fetchNeteaseSongs()]);
+      let merged: Song[] = [];
+      try {
+        merged = await fetchLocalSongs();
+      } catch (error) {
+        console.warn('[music] 本地歌单加载失败：', error);
+      }
       if (!isMounted) return;
-
-      const merged: Song[] = [
-        ...(local.status === 'fulfilled' ? local.value : []),
-        ...(netease.status === 'fulfilled' ? netease.value : []),
-      ];
-      if (local.status === 'rejected') console.warn('[music] 本地歌单加载失败：', local.reason);
-      if (netease.status === 'rejected') console.warn('[music] 网易云歌单加载失败：', netease.reason);
 
       if (merged.length > 0) setPlaylist(merged);
       else setCurrentLyric('歌单还是空的');
@@ -164,7 +145,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     if (currentSong.lyrics.length > 0) {
       // 网易云歌词随歌单一起返回；本地歌词加载过一次后也会缓存在这里
       setLyrics(currentSong.lyrics);
-      setCurrentLyric(currentSong.lyrics[0]?.text || PURE_MUSIC_TEXT);
+      setCurrentLyric(currentSong.lyrics[0]?.time === -1 ? `♪ ${currentSong.title} ♪` : currentSong.lyrics[0]?.text || PURE_MUSIC_TEXT);
     } else if (currentSong.lrcUrl) {
       // 本地歌曲：切到这首时才加载同名 .lrc
       fetch(currentSong.lrcUrl)
@@ -173,7 +154,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           if (!isMounted) return;
           const parsed = parseLrc(text);
           setLyrics(parsed);
-          setCurrentLyric(parsed[0]?.text || PURE_MUSIC_TEXT);
+          // 纯文本歌词没有时间轴，顶部歌词条显示歌名即可
+          setCurrentLyric(parsed[0]?.time === -1 ? `♪ ${currentSong.title} ♪` : parsed[0]?.text || PURE_MUSIC_TEXT);
           // 不可变更新，供音乐页的滚动歌词使用；只改内容不改长度，不会重新触发本 effect
           setPlaylist((prev) => prev.map((s) => (s.id === currentSong.id ? { ...s, lyrics: parsed } : s)));
         })
@@ -236,7 +218,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       setDuration(duration || 0);
       setProgress((currentTime / (duration || 1)) * 100);
 
-      if (lyrics.length > 0) {
+      // 纯文本歌词（time = -1）没有时间轴，不参与滚动
+      if (lyrics.length > 0 && lyrics[0].time >= 0) {
         const activeLyric = lyrics.slice().reverse().find(l => currentTime >= l.time);
         if (activeLyric && activeLyric.text !== currentLyric) {
           setCurrentLyric(activeLyric.text);
@@ -256,13 +239,13 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   };
 
   /**
-   * 加载失败（VIP、地区版权限制、文件不存在、格式不支持）时自动跳到下一首。
+   * 加载失败（文件不存在、格式不支持）时自动跳到下一首。
    * 按顺序跳而不是随机跳，保证每首都会尝试到；整张歌单都失败则停止。
    */
   const handleAudioError = () => {
     const failed = playlist[currentIndex];
     if (!failed) return;
-    console.warn(`[music] 无法播放「${failed.title}」（${failed.id}），可能是 VIP、地区版权限制或文件不存在，已自动跳过`);
+    console.warn(`[music] 无法播放「${failed.title}」（${failed.id}），可能是文件不存在或浏览器不支持该格式，已自动跳过`);
     failStreakRef.current += 1;
     if (failStreakRef.current >= playlist.length) {
       failStreakRef.current = 0;

@@ -2,12 +2,14 @@
 import type { MetadataRoute } from 'next';
 import { getAllChatters, getAllPosts, toTimestamp } from '../lib/content';
 import { absoluteUrl } from '../lib/site';
+import { chapterHref, getVolumes } from '../lib/novel';
 
 /** 导航栏中的静态页面及其相对权重 */
 const STATIC_ROUTES: ReadonlyArray<{ path: string; priority: number; changeFrequency: 'daily' | 'weekly' | 'monthly' }> = [
   { path: '/', priority: 1, changeFrequency: 'daily' },
   { path: '/timeline', priority: 0.8, changeFrequency: 'weekly' },
   { path: '/chatter', priority: 0.7, changeFrequency: 'weekly' },
+  { path: '/novel', priority: 0.8, changeFrequency: 'weekly' },
   { path: '/moments', priority: 0.6, changeFrequency: 'weekly' },
   { path: '/projects', priority: 0.5, changeFrequency: 'monthly' },
   { path: '/photowall', priority: 0.5, changeFrequency: 'monthly' },
@@ -39,6 +41,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: toLastModified(post.date),
       changeFrequency: 'monthly' as const,
       priority: 0.9,
+    })),
+    ...getVolumes().flatMap((v) => v.chapters).map((c) => ({
+      url: absoluteUrl(chapterHref(c)),
+      lastModified: toLastModified(c.date),
+      changeFrequency: 'yearly' as const,
+      priority: 0.7,
     })),
     ...chatters.map((chatter) => ({
       url: absoluteUrl(`/chatter/${encodeURIComponent(chatter.slug)}`),

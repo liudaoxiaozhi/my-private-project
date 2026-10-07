@@ -1,0 +1,47 @@
+/* app/novel/reader.css —— 小说沉浸阅读器样式（类名统一 nv- 前缀） */
+
+/* 四种底色：颜色全部走变量，切换时整页平滑过渡 */
+.nv-reader {
+  --nv-bg: #f7f5ef; --nv-fg: #2c2a26; --nv-muted: rgba(44, 42, 38, 0.55);
+  --nv-line: rgba(44, 42, 38, 0.12); --nv-accent: #8a5a2b; --nv-bar: rgba(247, 245, 239, 0.88);
+  color: var(--nv-fg);
+  transition: color 0.4s ease;
+}
+.nv-reader[data-theme="sepia"] {
+  --nv-bg: #f1e7d0; --nv-fg: #4b3a2a; --nv-muted: rgba(75, 58, 42, 0.58);
+  --nv-line: rgba(75, 58, 42, 0.16); --nv-accent: #9a6a32; --nv-bar: rgba(241, 231, 208, 0.88);
+}
+.nv-reader[data-theme="green"] {
+  --nv-bg: #e2ead6; --nv-fg: #2d3a2a; --nv-muted: rgba(45, 58, 42, 0.58);
+  --nv-line: rgba(45, 58, 42, 0.15); --nv-accent: #4f7a3a; --nv-bar: rgba(226, 234, 214, 0.88);
+}
+.nv-reader[data-theme="night"] {
+  --nv-bg: #141518; --nv-fg: #c9c4b8; --nv-muted: rgba(201, 196, 184, 0.5);
+  --nv-line: rgba(201, 196, 184, 0.12); --nv-accent: #d6b07a; --nv-bar: rgba(20, 21, 24, 0.88);
+  color-scheme: dark;
+}
+.nv-ground { background: var(--nv-bg); transition: background-color 0.4s ease; }
+.nv-bar { background: var(--nv-bar); border-color: var(--nv-line); }
+.nv-muted { color: var(--nv-muted); }
+.nv-line { border-color: var(--nv-line); }
+.nv-accent { color: var(--nv-accent); }
+
+.nv-reader[data-font="serif"] .nv-content { font-family: var(--font-serif), "Noto Serif SC", "Songti SC", "SimSun", serif; }
+.nv-reader[data-font="sans"] .nv-content {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+/* 正文排版：首行缩进两字、两端对齐，段间距随行高变化 */
+.nv-content { letter-spacing: 0.02em; text-align: justify; word-break: break-word; }
+.nv-content p { margin: 0 0 0.85em; text-indent: 2em; }
+.nv-content br + br { display: none; }
+.nv-content h1, .nv-content h2, .nv-content h3 { font-weight: 700; text-indent: 0; margin: 1.6em 0 0.8em; line-height: 1.4; }
+.nv-content blockquote { margin: 1em 0; padding-left: 1em; border-left: 3px solid var(--nv-line); color: var(--nv-muted); }
+.nv-content blockquote p { text-indent: 0; }
+.nv-content img { display: block; max-width: 100%; height: auto; margin: 1.4em auto; border-radius: 8px; }
+.nv-content a { color: var(--nv-accent); text-underline-offset: 3px; }
+/* 场景分隔：*** 渲染成三颗星 */
+.nv-content hr { border: 0; margin: 2em 0; text-align: center; overflow: visible; height: auto; }
+.nv-content hr::before { content: "＊　＊　＊"; color: var(--nv-muted); letter-spacing: 0.4em; }
+
+.nv-range { accent-color: var(--nv-accent); }

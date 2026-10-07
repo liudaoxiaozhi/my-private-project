@@ -25,7 +25,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # 内容目录可能被删空，确保存在，避免后面的 COPY 失败
-RUN mkdir -p posts chatters moments public/music
+RUN mkdir -p posts chatters moments novel public/music
 # 开启 standalone 输出（见 next.config.ts），Vercel 部署不受影响
 ENV BUILD_STANDALONE=true \
     NEXT_TELEMETRY_DISABLED=1
@@ -54,6 +54,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/posts ./posts
 COPY --from=builder --chown=nextjs:nodejs /app/chatters ./chatters
 COPY --from=builder --chown=nextjs:nodejs /app/moments ./moments
+COPY --from=builder --chown=nextjs:nodejs /app/novel ./novel
 COPY --from=builder --chown=nextjs:nodejs /app/app/about/about.md ./app/about/about.md
 
 USER nextjs

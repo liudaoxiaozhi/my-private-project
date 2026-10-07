@@ -17,6 +17,7 @@ import CyberCat from '../components/CyberCat';
 import DanmakuBackground from '../components/DanmakuBackground';
 
 import MobileBackButton from '../components/MobileBackButton';
+import HideOnReader from '../components/HideOnReader';
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -112,32 +113,39 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 {children}
               </div>
 
-              <div className="hidden md:block">
-                <FloatingPlayer />
-              </div>
+              {/* 小说阅读页是沉浸式的，这些浮层在那里不显示 */}
+              <HideOnReader>
+                <div className="hidden md:block">
+                  <FloatingPlayer />
+                </div>
 
-              <div className="hidden md:block">
-                <GlobalToolbox />
-              </div>
+                <div className="hidden md:block">
+                  <GlobalToolbox />
+                </div>
 
-              <div className="md:hidden block">
-                <MobileBackButton />
-              </div>
+                <div className="md:hidden block">
+                  <MobileBackButton />
+                </div>
+              </HideOnReader>
 
               {/* 隐藏手机端点击涟漪；siteConfig.enableClickEffect 可关闭 */}
               {siteConfig.enableClickEffect && (
-                <div className="hidden md:block">
-                  <ClickEffect />
-                </div>
+                <HideOnReader>
+                  <div className="hidden md:block">
+                    <ClickEffect />
+                  </div>
+                </HideOnReader>
               )}
             </div>
 
           </MusicProvider>
 
           {siteConfig.enableCyberCat && (
-            <div className="hidden md:block">
-              <CyberCat />
-            </div>
+            <HideOnReader>
+              <div className="hidden md:block">
+                <CyberCat />
+              </div>
+            </HideOnReader>
           )}
 
         </ThemeProvider>

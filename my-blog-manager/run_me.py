@@ -3,9 +3,8 @@ import sys
 import subprocess
 import importlib.util
 
-# 1. 后端 Python 依赖清单
+# 1. 后端 Python 依赖清单（必需）
 PYTHON_PACKAGES = {
-    "webview": "pywebview",
     "fastapi": "fastapi",
     "uvicorn": "uvicorn",
     "multipart": "python-multipart",
@@ -36,14 +35,27 @@ def check_node_environment():
     return True
 
 
+# 可选依赖：桌面窗口。装不上（例如 Python 版本太新，暂时没有对应的安装包）时，控制台改为在浏览器中打开
+OPTIONAL_PACKAGES = {
+    "webview": "pywebview",
+}
+
+
 def check_python_environment():
     """检查后端 Python 环境"""
-    print("🔍 正在检查后端依赖 (Python)...")
+    print(f"🔍 正在检查后端依赖 (Python {sys.version.split()[0]})...")
     python_exe = sys.executable
     for import_name, install_name in PYTHON_PACKAGES.items():
         if importlib.util.find_spec(import_name) is None:
             print(f"📦 正在自动安装 Python 库: {install_name}...")
             subprocess.check_call([python_exe, "-m", "pip", "install", install_name])
+    for import_name, install_name in OPTIONAL_PACKAGES.items():
+        if importlib.util.find_spec(import_name) is None:
+            print(f"📦 正在尝试安装可选库: {install_name}（桌面窗口）...")
+            try:
+                subprocess.check_call([python_exe, "-m", "pip", "install", install_name])
+            except subprocess.CalledProcessError:
+                print(f"⚠️ {install_name} 安装失败，控制台将在浏览器中打开，功能不受影响。")
     print("✅ 后端依赖已就绪。")
     return True
 

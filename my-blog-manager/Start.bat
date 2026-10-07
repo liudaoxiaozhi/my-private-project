@@ -1,55 +1,36 @@
 @echo off
-chcp 65001 >nul 2>&1  :: 解决中文乱码问题
+chcp 65001 >nul 2>&1
 cd /d "%~dp0"
+title 星辉云端控制台
 
-
-echo [调试] 脚本所在目录：%~dp0
-echo [调试] 开始检测Python环境...
-
-:: 1. 优先尝试 py -3.10（兼容多Python版本）
-py -3.10 --version >nul 2>&1
-if %errorlevel% equ 0 (
-    echo [状态] 正在调用 Python 3.10 环境...
-    py -3.10 run_me.py
-    if %errorlevel% neq 0 (
-        echo ❌ 错误：Python 3.10 执行 run_me.py 失败！
-        pause
-        exit /b 1
-    )
-    goto end
-)
-
-:: 2. 尝试直接调用 python（检测是否是3.10+）
-python --version >nul 2>&1
-if %errorlevel% equ 0 (
-    :: 额外检测Python版本是否≥3.10
-    for /f "tokens=2 delims=." %%i in ('python --version 2^>^&1') do set "py_major=%%i"
-    for /f "tokens=3 delims=. " %%j in ('python --version 2^>^&1') do set "py_minor=%%j"
-    if %py_major% equ 3 if %py_minor% geq 10 (
-        echo [状态] 正在调用默认 Python 3.10+ 环境...
-        python run_me.py
-        if %errorlevel% neq 0 (
-            echo ❌ 错误：默认Python执行 run_me.py 失败！
-            pause
-            exit /b 1
-        )
-        goto end
-    ) else (
-        echo ❌ 错误：默认Python版本不是3.10！当前版本：
-        python --version
-        pause
-        exit /b 1
+rem 依次寻找 Python 3.13 / 3.12 / 3.11 / 3.10（桌面窗口组件对这些版本支持最好），
+rem 都没有时再用任意 3.10 以上版本（例如 3.14：后台照常可用，只是可能改为在浏览器中打开）。
+set "PY_CMD="
+for %%v in (3.13 3.12 3.11 3.10) do (
+    if not defined PY_CMD (
+        py -%%v -c "import sys" >nul 2>&1 && set "PY_CMD=py -%%v"
     )
 )
+if not defined PY_CMD (
+    py -3 -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>&1 && set "PY_CMD=py -3"
+)
+if not defined PY_CMD (
+    python -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>&1 && set "PY_CMD=python"
+)
 
-:: 3. 兜底：未找到Python环境
-echo ❌ 错误：未找到 Python 3.10 环境，请确保已安装并添加到系统PATH！
-echo 🔍 排查步骤：
-echo    1. 确认安装Python 3.10（官网：https://www.python.org/downloads/release/python-3100/）
-echo    2. 安装时勾选 "Add Python 3.10 to PATH"
-echo    3. 重启命令行/电脑后重试
-pause
+if not defined PY_CMD (
+    echo [错误] 没有找到 Python 3.10 或更高版本。
+    echo        请到 https://www.python.org/downloads/ 安装，安装时勾选 "Add Python to PATH"，然后重新运行。
+    pause
+    exit /b 1
+)
 
-:end
-echo ✅ 程序执行完成
+echo [状态] 使用以下 Python 启动控制台：
+%PY_CMD% --version
+%PY_CMD% run_me.py
+if errorlevel 1 (
+    echo [错误] 控制台启动失败，请把上面的报错截图发给开发者。
+    pause
+    exit /b 1
+)
 exit /b 0

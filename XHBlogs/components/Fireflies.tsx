@@ -19,7 +19,7 @@ export default function Fireflies() {
   const [flies, setFlies] = useState<Firefly[]>([]);
 
   useEffect(() => {
-    const generated: Firefly[] = Array.from({ length: 50 }).map((_, i) => ({
+    const generated: Firefly[] = Array.from({ length: 24 }) /* 🚀 50 → 24，视觉密度相近，动画元素减半 */.map((_, i) => ({
       id: i,
       // 初始出生点
       top: `${Math.random() * 100}%`,

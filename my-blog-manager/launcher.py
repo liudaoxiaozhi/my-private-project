@@ -9,7 +9,12 @@ else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     EXE_DIR = BASE_DIR
 
-import webview
+# 桌面窗口是可选的：pywebview 不可用时改为用默认浏览器打开控制台
+try:
+    import webview
+except Exception:  # 未安装，或当前 Python 版本下缺少依赖
+    webview = None
+import webbrowser
 import threading
 import uvicorn
 import time
@@ -140,6 +145,16 @@ if __name__ == "__main__":
         sys.exit(1)
 
     time.sleep(1.5)
+
+    if webview is None:
+        print(f"🌐 未检测到桌面窗口组件，已在浏览器中打开控制台：{window_url}")
+        print("   关闭控制台：直接关闭这个命令行窗口，或按 Ctrl+C。")
+        webbrowser.open(window_url)
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            on_closed()
 
     api = WindowAPI()
     window = webview.create_window(

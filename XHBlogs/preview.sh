@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # XHBlogs 本地预览（macOS / Linux）
+# 用法：./preview.sh          开发模式（改动即时生效）
+#       ./preview.sh --prod   正式模式（与线上速度一致）
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -11,5 +13,11 @@ major=$(node -p "process.versions.node.split('.')[0]")
 # 首次运行，或 package.json 新增了依赖时安装
 npm ls --depth=0 >/dev/null 2>&1 || { echo "[1/2] 安装依赖..."; npm install; }
 
-echo "[2/2] 启动开发服务器：http://localhost:3000"
-npm run dev
+if [ "${1:-}" = "--prod" ]; then
+  # 正式模式：与线上一致，适合检查性能；改动后需重新运行
+  echo "[2/2] 构建并以正式模式启动：http://localhost:3000"
+  npm run build && npm run start
+else
+  echo "[2/2] 启动开发服务器：http://localhost:3000（检查性能请用 ./preview.sh --prod）"
+  npm run dev
+fi

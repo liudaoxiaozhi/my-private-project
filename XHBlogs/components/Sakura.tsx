@@ -13,7 +13,7 @@ export default function Sakura() {
   const [petals, setPetals] = useState<Petal[]>([]);
 
   useEffect(() => {
-    const generated = Array.from({ length: 40 }).map((_, i) => ({
+    const generated = Array.from({ length: 22 }) /* 🚀 40 → 22 */.map((_, i) => ({
       id: i,
       left: `${Math.random() * 100}%`,
       size: 8 + Math.random() * 12, // 8px 到 20px 大小的花瓣

@@ -64,6 +64,8 @@ export default function ClickEffect() {
 
     const handleClick = (e: MouseEvent) => {
       ripples.push(new Ripple(e.clientX, e.clientY));
+      // 🚀 只有存在涟漪时才运行动画循环；旧版即使没人点击也每帧清空重绘整张全屏画布
+      if (!frameId) frameId = requestAnimationFrame(animate);
     };
 
     window.addEventListener('click', handleClick);
@@ -83,9 +85,9 @@ export default function ClickEffect() {
           i--;
         }
       }
-      frameId = requestAnimationFrame(animate);
+      // 涟漪全部消失后停下循环，等下一次点击再启动
+      frameId = ripples.length > 0 ? requestAnimationFrame(animate) : 0;
     };
-    animate();
 
     return () => {
       // 修复：卸载时停止动画循环（旧版没有取消，组件卸载后仍在每帧空转）

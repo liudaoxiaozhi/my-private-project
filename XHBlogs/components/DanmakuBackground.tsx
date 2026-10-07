@@ -19,7 +19,7 @@ export default function DanmakuBackground() {
     if (list.length === 0) return;
 
     const generatedDanmakus: DanmakuItem[] = [];
-    const count = 15;
+    const count = 10; // 🚀 15 → 10
 
     for (let i = 0; i < count; i++) {
       generatedDanmakus.push({
@@ -45,7 +45,8 @@ export default function DanmakuBackground() {
           className="absolute whitespace-nowrap text-white/30 dark:text-white/10 font-bold text-lg tracking-wider select-none"
           style={{
             top: `${item.top}%`,
-            right: '-100%',
+            left: 0,
+            willChange: 'transform',
             animation: `float-left ${item.duration}s linear ${item.delay}s infinite`,
           }}
         >
@@ -55,15 +56,10 @@ export default function DanmakuBackground() {
 
       <style dangerouslySetInnerHTML={{
         __html: `
+        /* 🚀 只用 transform 移动（合成器完成），旧版改 right 属性会导致每帧重新排版 */
         @keyframes float-left {
-          0% {
-            right: -100%;
-            transform: translateX(100%);
-          }
-          100% {
-            right: 100%;
-            transform: translateX(-100%);
-          }
+          from { transform: translateX(100vw); }
+          to { transform: translateX(-100%); }
         }
       `}} />
     </div>

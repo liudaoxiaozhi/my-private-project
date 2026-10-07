@@ -4,17 +4,20 @@ import { useTheme } from './ThemeProvider';
 
 interface WildBlade { id: number; height: number; width: number; delay: number; duration: number; opacity: number; left: string; isLeftCurve: boolean; }
 
+const BLADE_COUNT = 64;
+
 export default function WindyGrass() {
   const [blades, setBlades] = useState<WildBlade[]>([]);
   // 订阅日夜状态
   const { isDark } = useTheme();
 
   useEffect(() => {
-    const generated: WildBlade[] = Array.from({ length: 150 }).map((_, i) => ({
-      id: i, height: 30 + Math.random() * 50, width: 1 + Math.random() * 2,
+    // 🚀 150 → 64 根：草叶加粗一点补足视觉密度
+    const generated: WildBlade[] = Array.from({ length: BLADE_COUNT }).map((_, i) => ({
+      id: i, height: 30 + Math.random() * 50, width: 1.5 + Math.random() * 2.5,
       delay: Math.random() * -10, duration: 3 + Math.random() * 4,
       opacity: 0.2 + Math.random() * 0.4,
-      left: `${(i / 150) * 100 + (Math.random() - 0.5) * 0.5}%`,
+      left: `${(i / BLADE_COUNT) * 100 + (Math.random() - 0.5) * 0.8}%`,
       isLeftCurve: Math.random() > 0.5
     }));
     setBlades(generated);

@@ -109,7 +109,8 @@ export const getBook = cache((): NovelBook | null => {
   const status = asString(file.data.status) as NovelStatus;
   return {
     title: asString(file.data.title) || '未命名小说',
-    author: asString(file.data.author) || siteConfig.authorName,
+    // 不写 author 字段时默认是站长；写了 author: "" 则不显示署名（例如替朋友发布、笔名待定）
+    author: 'author' in file.data ? asString(file.data.author) : siteConfig.authorName,
     cover: asString(file.data.cover),
     status: VALID_STATUS.includes(status) ? status : '连载中',
     tags: asStringArray(file.data.tags),

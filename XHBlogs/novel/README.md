@@ -24,6 +24,7 @@ novel/
 ```markdown
 ---
 title: "书名"
+author: "笔名"                      # 可选；不写默认是站长，写 "" 则不显示署名
 cover: "/images/novel/cover.webp"   # 可选，竖版封面，建议 600×800
 status: "连载中"                    # 连载中 / 已完结 / 暂停更新
 tags: ["科幻", "成长"]

@@ -72,7 +72,7 @@ export default async function NovelPage() {
                     ))}
                   </div>
                   <h1 className="mt-3 text-3xl font-black leading-tight text-slate-900 [text-wrap:balance] dark:text-white sm:text-4xl">{book.title}</h1>
-                  <p className="mt-1.5 text-sm font-medium text-slate-500 dark:text-slate-400">{book.author} 著</p>
+                  {book.author && <p className="mt-1.5 text-sm font-medium text-slate-500 dark:text-slate-400">{book.author} 著</p>}
 
                   <dl className="mt-5 grid grid-cols-3 gap-3 rounded-2xl bg-white/40 p-3 text-center ring-1 ring-white/40 dark:bg-slate-900/30 dark:ring-white/5 sm:max-w-md">
                     <div>

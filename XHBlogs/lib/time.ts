@@ -54,3 +54,18 @@ export function parseInTimeZone(value: string, timeZone?: string): number {
   const first = guess - getTimeZoneOffsetMs(timeZone, new Date(guess));
   return guess - getTimeZoneOffsetMs(timeZone, new Date(first));
 }
+
+const WEEKDAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'] as const;
+
+/** 该时区的日期与星期：{ date: "2026年10月7日", weekday: "星期三" }；timeZone 为空时用访客本地时区 */
+export function formatDateParts(at: Date, timeZone?: string): { date: string; weekday: string } {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone, year: 'numeric', month: 'numeric', day: 'numeric', weekday: 'short',
+  }).formatToParts(at);
+  const get = (type: Intl.DateTimeFormatPartTypes): string => parts.find((p) => p.type === type)?.value ?? '';
+  const weekdayIndex = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(get('weekday'));
+  return {
+    date: `${get('year')}年${get('month')}月${get('day')}日`,
+    weekday: WEEKDAYS[weekdayIndex] ?? '',
+  };
+}

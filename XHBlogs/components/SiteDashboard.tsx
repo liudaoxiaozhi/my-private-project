@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 // 🌟 引入咱们的控制中心配置
 import { siteConfig } from '../siteConfig';
-import { formatClock, formatUtcOffset, isValidTimeZone, parseInTimeZone } from '../lib/time';
+import { formatClock, formatDateParts, formatUtcOffset, isValidTimeZone, parseInTimeZone } from '../lib/time';
 
 /** 配置里的时区无效（拼错）时回退到访客本地时区，并在控制台提示 */
 const TIME_ZONE = isValidTimeZone(siteConfig.timeZone) ? siteConfig.timeZone : undefined;
@@ -13,6 +13,7 @@ export default function SiteDashboard() {
   // 首帧（含服务端渲染）显示占位符，挂载后再填入真实时间，避免 Hydration 不一致
   const [timeStr, setTimeStr] = useState('');
   const [zoneLabel, setZoneLabel] = useState('');
+  const [dateStr, setDateStr] = useState('');
   const [uptimeStr, setUptimeStr] = useState('');
 
   useEffect(() => {
@@ -23,6 +24,8 @@ export default function SiteDashboard() {
     const updateTime = () => {
       const now = new Date();
       setTimeStr(formatClock(now, TIME_ZONE));
+      const { date, weekday } = formatDateParts(now, TIME_ZONE);
+      setDateStr(`${date} ${weekday}`);
       setZoneLabel(TIME_ZONE ? `${siteConfig.timeZoneLabel || TIME_ZONE} · ${formatUtcOffset(TIME_ZONE, now)}` : '本地时间');
 
       const diff = Math.max(0, now.getTime() - BUILD_TIME);
@@ -48,8 +51,12 @@ export default function SiteDashboard() {
           {/* 模拟翻页中间的分割线 */}
           <span className="absolute left-0 right-0 top-1/2 h-px bg-black/50" aria-hidden="true"></span>
         </span>
+        {/* 日期（按配置的时区），例如「2026年10月7日 星期三」 */}
+        <span className="relative mt-1.5 text-[11px] font-bold tracking-[0.12em] text-white/80 leading-none min-h-[11px] tabular-nums">
+          {dateStr}
+        </span>
         {/* 时区标签，例如「新加坡 · UTC+8」 */}
-        <span className="relative mt-1.5 text-[10px] font-bold tracking-[0.2em] text-white/50 leading-none min-h-[10px]">
+        <span className="relative mt-1 text-[10px] font-bold tracking-[0.2em] text-white/50 leading-none min-h-[10px]">
           {zoneLabel}
         </span>
       </div>

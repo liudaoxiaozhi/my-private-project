@@ -13,8 +13,9 @@ import ClickEffect from "../components/ClickEffect";
 import BackgroundSlider from "../components/BackgroundSlider";
 import GlobalToolbox from "../components/GlobalToolbox";
 import SplashScreen from "../components/SplashScreen";
-import CyberCat from '../components/CyberCat';
+import PetSaber from '../components/PetSaber';
 import DanmakuBackground from '../components/DanmakuBackground';
+import Sakura from '../components/Sakura';
 
 import MobileBackButton from '../components/MobileBackButton';
 import HideOnReader from '../components/HideOnReader';
@@ -140,10 +141,18 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 
           </MusicProvider>
 
-          {siteConfig.enableCyberCat && (
+          {/* 樱花飘落：在内容前面、不拦截点击；阅读页不显示 */}
+          {siteConfig.enableSakura && (
+            <HideOnReader>
+              <Sakura />
+            </HideOnReader>
+          )}
+
+          {/* 右下角桌宠（仅电脑端；阅读页不显示） */}
+          {siteConfig.enablePet && (
             <HideOnReader>
               <div className="hidden md:block">
-                <CyberCat />
+                <PetSaber />
               </div>
             </HideOnReader>
           )}

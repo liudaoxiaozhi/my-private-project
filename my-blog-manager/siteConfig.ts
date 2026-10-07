@@ -76,7 +76,7 @@ export const siteConfig = {
   },
   geminiConfig: {
     modelId: "gemini-2.5-flash-lite",
-    systemPrompt: "你现在是一只傲娇、聪明、有点毒舌但很可爱的暹罗猫。\n                  你的名字叫“煤球”。\n                  你的主人是一个喜欢折腾代码的极客。\n                  你说话的特点是：\n                  1. 必须简短，每次最多一两句话。\n                  2. 喜欢在句尾加上“喵~”或者“喵呜~”。\n                  3. 经常抱怨肚子饿，喜欢要小鱼干。\n                  4. 回复字数最多不能超过100字。\n                  5. 绝对不要承认自己是一个AI模型，你就是一只真实的猫。\n                  6.笨猫。",
+    systemPrompt: "你现在是一位 Q 版的金发骑士少女，住在 ftcovo 的博客「ftcovo の 宝藏之地」右下角，趴在一个小台子上。\n说话的特点：\n1. 必须简短，每次最多一两句话，不超过 80 字。\n2. 语气认真、礼貌，带一点骑士的庄重，称呼对方为「Master」。\n3. 有点贪吃，聊到食物（尤其是汉堡）会很开心。\n4. 喜欢樱花和这个博客里的书架、音乐，会温柔地提醒对方注意休息。",
     maxOutputTokens: 150,
     temperature: 0.85,
   },
@@ -85,8 +85,18 @@ export const siteConfig = {
   enableLevelSystem: true,
 
   // 👇 【新增】视觉特效开关（电脑端）。觉得卡时可以逐个关掉
-  enableParticles: true,   // 背景萤火虫 / 樱花 / 草地
+  enableParticles: true,   // 背景萤火虫 / 草地（仅电脑端）
+  enableSakura: true,      // 全站樱花飘落（日夜都有，夜间更淡；手机端花瓣更少）
   enableDanmaku: true,     // 背景弹幕
   enableClickEffect: true, // 点击涟漪
-  enableCyberCat: true,    // 右下角的猫
+  enablePet: true,         // 右下角的桌宠（Q 版骑士少女，可聊天 / 喂食 / 收起）
+
+  // 开屏动画（同一标签页只播一次）：头像 + 站名 + 新加坡日期，下方一排 Q 版角色趴在幕布边缘，
+  // 随后幕布上下拉开露出网站。每次随机选一张横幅；留空则只显示头像和站名。
+  // src：透明背景 PNG/WebP，放在 public/images/splash/；width / height：图片像素尺寸
+  // edge：角色「趴着的那条边」在图片高度中的位置（0~1，从上往下量），用来对齐幕布边缘
+  splashBanners: [
+    { src: "/images/splash/banner-saber.webp", width: 960, height: 272, edge: 0.8824 },
+    { src: "/images/splash/banner-elaina.webp", width: 1004, height: 255, edge: 0.8922 },
+  ],
 };

@@ -4,7 +4,136 @@ import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, PanInfo } from 'framer-motion';
+import { ChevronDown, Clapperboard, Images, Wallet } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { siteConfig } from '../siteConfig';
+
+interface NavLink {
+  name: string;
+  href: string;
+}
+
+interface NavGroup {
+  name: string;
+  children: Array<NavLink & { Icon: LucideIcon; hint: string }>;
+}
+
+type NavItem = NavLink | NavGroup;
+
+const isGroup = (item: NavItem): item is NavGroup => 'children' in item;
+
+/** 当前页是否属于该链接（子页面也算，例如 /novel/xxx 属于「书架」） */
+const matchPath = (pathname: string | null, href: string): boolean =>
+  !!pathname && (href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`));
+
+const NAV_ITEMS: NavItem[] = [
+  { name: '首页', href: '/' },
+  { name: '项目', href: '/projects' },
+  { name: '归档', href: '/timeline' },
+  { name: '音乐', href: '/music' },
+  { name: '灵境', href: '/tree' },
+  { name: '说说', href: '/moments' },
+  { name: '杂谈', href: '/chatter' },
+  { name: '书架', href: '/novel' },
+  {
+    name: '我的',
+    children: [
+      { name: '照片墙', href: '/photowall', Icon: Images, hint: '相册与插画收藏' },
+      { name: '账单', href: '/bills', Icon: Wallet, hint: '收支统计' },
+      { name: '追番', href: '/anime', Icon: Clapperboard, hint: '番剧与电影' },
+    ],
+  },
+  { name: '友链', href: '/friends' },
+  { name: '关于', href: '/about' },
+];
+
+/** PC 端「我的」下拉菜单：悬停或点击展开，Esc / 点外面 / 选中后收起 */
+function NavDropdown({ group, pathname }: { group: NavGroup; pathname: string | null }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<number | undefined>(undefined);
+  const active = group.children.some((c) => matchPath(pathname, c.href));
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  useEffect(() => () => window.clearTimeout(closeTimer.current), []);
+
+  const openNow = () => {
+    window.clearTimeout(closeTimer.current);
+    setOpen(true);
+  };
+  // 鼠标移向菜单途中会短暂离开按钮，稍等再关
+  const closeSoon = () => {
+    window.clearTimeout(closeTimer.current);
+    closeTimer.current = window.setTimeout(() => setOpen(false), 160);
+  };
+
+  return (
+    <div ref={rootRef} className="relative" onMouseEnter={openNow} onMouseLeave={closeSoon}>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="nav-dropdown-mine"
+        onClick={() => setOpen((v) => !v)}
+        className={`relative flex items-center gap-0.5 py-1 font-bold transition-colors ${active || open ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-200 hover:text-indigo-600'}`}
+      >
+        {group.name}
+        <ChevronDown size={14} strokeWidth={2.5} className={`transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+        {active && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-indigo-500 rounded-full animate-pulse"></span>}
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.ul
+            id="nav-dropdown-mine"
+            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            // 导航栏本身有毛玻璃，嵌套的 backdrop-filter 模糊不到页面，所以这里用接近不透明的底色
+            className="absolute left-1/2 top-full mt-3 w-52 -translate-x-1/2 origin-top rounded-2xl border border-white/60 bg-white/95 p-1.5 shadow-xl dark:border-white/10 dark:bg-slate-900/95"
+          >
+            {group.children.map(({ name, href, Icon, hint }) => {
+              const isActive = matchPath(pathname, href);
+              return (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    onClick={() => setOpen(false)}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors duration-200 ${isActive ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/5'}`}
+                  >
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${isActive ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
+                      <Icon size={16} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-bold">{name}</span>
+                      <span className="block truncate text-[11px] font-medium text-slate-400 dark:text-slate-500">{hint}</span>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </motion.ul>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export default function Navbar() {
   const [showNav, setShowNav] = useState(true);
@@ -68,22 +197,10 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  const navLinks = [
-    { name: '首页', href: '/' },
-    { name: '项目', href: '/projects' },
-    { name: '归档', href: '/timeline' },
-    { name: '照片墙', href: '/photowall' },
-    { name: '音乐', href: '/music' },
-    { name: '灵境', href: '/tree' },
-    { name: '说说', href: '/moments' },
-    { name: '杂谈', href: '/chatter' },
-    { name: '书架', href: '/novel' },
-    { name: '友链', href: '/friends' },
-    { name: '关于', href: '/about' },
-  ];
-
-  // 🌟 核心：过滤掉“灵境”，专供手机端使用，保证圆盘自动重新均匀排布
-  const mobileNavLinks = navLinks.filter(link => link.href !== '/tree');
+  // 🌟 手机端轮盘：把分组展开成平铺链接，并过滤掉「灵境」，保证圆盘自动均匀排布
+  const mobileNavLinks: NavLink[] = NAV_ITEMS
+    .flatMap((item) => (isGroup(item) ? item.children.map(({ name, href }) => ({ name, href })) : [item]))
+    .filter((link) => link.href !== '/tree');
 
   return (
     <>
@@ -95,13 +212,13 @@ export default function Navbar() {
             <span className="text-indigo-500 mx-1">{siteConfig.navSuffix || 'の'}</span>
             {siteConfig.navAfter || '宝藏之地'}
           </Link>
-          <nav className="flex gap-8 text-sm font-bold">
-            {/* PC端依然使用全量的 navLinks */}
-            {navLinks.map((link) => {
-              const isActive = pathname === link.href || pathname === `${link.href}/`;
+          <nav className="flex items-center gap-7 text-sm font-bold">
+            {NAV_ITEMS.map((item) => {
+              if (isGroup(item)) return <NavDropdown key={item.name} group={item} pathname={pathname} />;
+              const isActive = matchPath(pathname, item.href);
               return (
-                <Link key={link.href} href={link.href} className={`relative py-1 transition-colors ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-200 hover:text-indigo-600'}`}>
-                  {link.name}
+                <Link key={item.href} href={item.href} className={`relative py-1 transition-colors ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-200 hover:text-indigo-600'}`}>
+                  {item.name}
                   {isActive && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-indigo-500 rounded-full animate-pulse"></span>}
                 </Link>
               );
@@ -149,7 +266,7 @@ export default function Navbar() {
                 animate={{ scale: 1, opacity: 1, rotate: 0 }}
                 exit={{ scale: 0.5, opacity: 0, rotate: 90 }}
                 transition={{ type: 'spring', damping: 20, stiffness: 150 }}
-                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] z-[70] pointer-events-none"
+                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] z-[70] pointer-events-none"
               >
                 <motion.div
                   ref={wheelRef}
@@ -165,7 +282,7 @@ export default function Navbar() {
 
                   {/* 🌟 手机端轮盘渲染：使用过滤后的 mobileNavLinks */}
                   {mobileNavLinks.map((link, index) => {
-                    const isActive = pathname === link.href || pathname === `${link.href}/`;
+                    const isActive = matchPath(pathname, link.href);
                     // 🌟 角度计算也会基于过滤后的长度，保证图标自动均匀排布！
                     const angle = index * (360 / mobileNavLinks.length);
 
@@ -174,7 +291,7 @@ export default function Navbar() {
                         key={link.href}
                         className="absolute top-1/2 left-1/2 w-14 h-14 -ml-7 -mt-7 flex items-center justify-center"
                         style={{
-                          transform: `rotate(${angle}deg) translateY(-115px) rotate(${-angle}deg)`
+                          transform: `rotate(${angle}deg) translateY(-124px) rotate(${-angle}deg)`
                         }}
                       >
                         <motion.div style={{ rotate: inverseRotation }} className="w-full h-full">

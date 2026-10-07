@@ -1,10 +1,10 @@
-// app/api/chat/route.ts —— 赛博猫「煤球」的 Gemini 对话代理
+// app/api/chat/route.ts —— 右下角桌宠的 Gemini 对话代理（人设见 siteConfig.geminiConfig.systemPrompt）
 import { siteConfig } from '../../../siteConfig';
 import { getClientIp, isSameOrigin, jsonResponse, rateLimit } from '../../../lib/server/requestGuard';
 
 export const runtime = 'edge';
 
-/** 单条消息最大字符数（猫猫只回一两句话，输入也没必要太长） */
+/** 单条消息最大字符数（桌宠只回一两句话，输入也没必要太长） */
 const MAX_MESSAGE_LENGTH = 300;
 /** 每个 IP 每分钟最多对话次数 */
 const RATE_LIMIT = { bucket: 'chat', limit: 8, windowMs: 60_000 } as const;
@@ -20,7 +20,7 @@ interface GeminiResponse {
   error?: { message?: string };
 }
 
-const FALLBACK_REPLY = '本喵现在不想理你喵...';
+const FALLBACK_REPLY = '……（她好像在走神）';
 
 export async function POST(req: Request): Promise<Response> {
   // 1. 只接受本站页面发起的请求

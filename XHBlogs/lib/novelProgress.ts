@@ -3,7 +3,7 @@
 // 隐私模式或禁用存储时读写会失败，这里全部吞掉错误，阅读功能不受影响。
 
 export interface NovelProgress {
-  /** 章节网址，例如 /novel/01/003 */
+  /** 章节网址，例如 /novel/chuanyue-mijing/01/003 */
   href: string;
   title: string;
   volumeTitle: string;
@@ -22,7 +22,8 @@ export interface ReaderSettings {
   theme: ReaderTheme;
 }
 
-const PROGRESS_KEY = 'novel-progress';
+/** 每本书单独记录进度：novel-progress:<书号> */
+const progressKey = (bookSlug: string): string => `novel-progress:${bookSlug}`;
 const SETTINGS_KEY = 'novel-reader-settings';
 
 export const FONT_SIZES = [16, 18, 20, 22, 24, 26] as const;
@@ -45,12 +46,12 @@ function write(key: string, value: unknown): void {
   }
 }
 
-export function loadProgress(): NovelProgress | null {
-  const p = read<NovelProgress>(PROGRESS_KEY);
+export function loadProgress(bookSlug: string): NovelProgress | null {
+  const p = read<NovelProgress>(progressKey(bookSlug));
   return p && typeof p.href === 'string' && typeof p.ratio === 'number' ? p : null;
 }
 
-export const saveProgress = (p: NovelProgress): void => write(PROGRESS_KEY, p);
+export const saveProgress = (bookSlug: string, p: NovelProgress): void => write(progressKey(bookSlug), p);
 
 export function loadSettings(): Partial<ReaderSettings> | null {
   return read<Partial<ReaderSettings>>(SETTINGS_KEY);

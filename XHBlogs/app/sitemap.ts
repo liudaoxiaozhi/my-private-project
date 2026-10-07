@@ -2,7 +2,7 @@
 import type { MetadataRoute } from 'next';
 import { getAllChatters, getAllPosts, toTimestamp } from '../lib/content';
 import { absoluteUrl } from '../lib/site';
-import { chapterHref, getVolumes } from '../lib/novel';
+import { bookHref, chapterHref, getAllBooks, getAllChapters } from '../lib/novel';
 
 /** 导航栏中的静态页面及其相对权重 */
 const STATIC_ROUTES: ReadonlyArray<{ path: string; priority: number; changeFrequency: 'daily' | 'weekly' | 'monthly' }> = [
@@ -42,7 +42,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly' as const,
       priority: 0.9,
     })),
-    ...getVolumes().flatMap((v) => v.chapters).map((c) => ({
+    ...getAllBooks().map((book) => ({
+      url: absoluteUrl(bookHref(book.slug)),
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    })),
+    ...getAllChapters().map((c) => ({
       url: absoluteUrl(chapterHref(c)),
       lastModified: toLastModified(c.date),
       changeFrequency: 'yearly' as const,

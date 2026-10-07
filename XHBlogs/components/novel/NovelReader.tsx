@@ -24,7 +24,10 @@ interface ChapterLink {
 }
 
 export interface NovelReaderProps {
+  bookSlug: string;
   bookTitle: string;
+  /** 书页（目录）网址 */
+  bookHref: string;
   volumeTitle: string;
   chapterTitle: string;
   /** 已格式化的发布日期，可能为空 */
@@ -67,7 +70,7 @@ const ICON_BTN =
   'flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-300 ease-out hover:bg-current/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/40';
 
 export default function NovelReader(props: NovelReaderProps) {
-  const { bookTitle, volumeTitle, chapterTitle, dateText, wordCount, html, href, prev, next, position, total, isOngoing } = props;
+  const { bookSlug, bookTitle, bookHref, volumeTitle, chapterTitle, dateText, wordCount, html, href, prev, next, position, total, isOngoing } = props;
   const router = useRouter();
   const { isDark } = useTheme();
 
@@ -110,14 +113,14 @@ export default function NovelReader(props: NovelReaderProps) {
   // ---------- 保存进度 ----------
   const persist = useCallback(() => {
     if (!canPersist.current) return;
-    saveProgress({ href, title: chapterTitle, volumeTitle, ratio: ratioRef.current, savedAt: Date.now() });
-  }, [href, chapterTitle, volumeTitle]);
+    saveProgress(bookSlug, { href, title: chapterTitle, volumeTitle, ratio: ratioRef.current, savedAt: Date.now() });
+  }, [bookSlug, href, chapterTitle, volumeTitle]);
 
   // ---------- 进入章节：等字号等设置生效后，恢复上次位置或回到顶部 ----------
   useEffect(() => {
     if (!ready) return;
     canPersist.current = false;
-    const saved = loadProgress();
+    const saved = loadProgress(bookSlug);
     const target = saved?.href === href && saved.ratio > 0.02 && saved.ratio < 0.98 ? saved.ratio : 0;
     let timer: number | undefined;
     // 两帧之后排版才稳定（字号、行距已应用）
@@ -137,7 +140,7 @@ export default function NovelReader(props: NovelReaderProps) {
       cancelAnimationFrame(frame);
       window.clearTimeout(timer);
     };
-  }, [ready, href, persist]);
+  }, [ready, bookSlug, href, persist]);
 
   // ---------- 滚动：进度条、工具栏显隐、定期保存 ----------
   useEffect(() => {
@@ -195,7 +198,7 @@ export default function NovelReader(props: NovelReaderProps) {
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-3 sm:px-5">
-          <Link href="/novel" className={ICON_BTN} aria-label="返回目录" title="目录">
+          <Link href={bookHref} className={ICON_BTN} aria-label="返回目录" title="目录">
             <List size={18} />
           </Link>
           <div className="min-w-0 flex-1">
@@ -323,7 +326,7 @@ export default function NovelReader(props: NovelReaderProps) {
               <span className="line-clamp-1 font-bold">{prev.title}</span>
             </Link>
           ) : <span />}
-          <Link href="/novel" className="nv-line flex flex-col items-center justify-center gap-1 rounded-2xl border px-4 py-3 transition-colors duration-300 hover:bg-current/5">
+          <Link href={bookHref} className="nv-line flex flex-col items-center justify-center gap-1 rounded-2xl border px-4 py-3 transition-colors duration-300 hover:bg-current/5">
             <List size={16} className="nv-muted" />
             <span className="font-bold">目录</span>
           </Link>

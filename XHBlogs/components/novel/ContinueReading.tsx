@@ -10,6 +10,7 @@ import { loadProgress } from '../../lib/novelProgress';
 import type { NovelProgress } from '../../lib/novelProgress';
 
 interface ContinueReadingProps {
+  bookSlug: string;
   firstHref: string;
   /** 当前仍存在的章节网址；本地进度指向已删除的章节时不显示「继续阅读」 */
   validHrefs: string[];
@@ -20,13 +21,13 @@ const PRIMARY =
 const SECONDARY =
   'inline-flex items-center gap-2 rounded-full bg-white/60 px-5 py-3 text-sm font-bold text-slate-700 ring-1 ring-white/50 backdrop-blur-md transition-all duration-300 ease-out hover:bg-white/80 dark:bg-slate-800/60 dark:text-slate-200 dark:ring-white/10 dark:hover:bg-slate-700/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400';
 
-export default function ContinueReading({ firstHref, validHrefs }: ContinueReadingProps) {
+export default function ContinueReading({ bookSlug, firstHref, validHrefs }: ContinueReadingProps) {
   const [progress, setProgress] = useState<NovelProgress | null>(null);
 
   useEffect(() => {
-    const saved = loadProgress();
+    const saved = loadProgress(bookSlug);
     if (saved && validHrefs.includes(saved.href)) setProgress(saved);
-  }, [validHrefs]);
+  }, [bookSlug, validHrefs]);
 
   if (!progress) {
     return (

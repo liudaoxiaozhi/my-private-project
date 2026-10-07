@@ -4,6 +4,7 @@ title: "穿越秘境,我拥有顶级天赋"
 author: ""
 cover: ""
 status: "连载中"
+category: "好友原创"
 tags: []
 ---
 

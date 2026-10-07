@@ -7,7 +7,7 @@ import Navbar from '../../components/Navbar';
 import PageTransition from '../../components/PageTransition';
 import { ToastProvider } from '../../components/ToastProvider';
 import { siteConfig } from '../../siteConfig';
-import { ANIME_EDITABLE, readAnimeList } from '../../lib/server/animeStore';
+import { ANIME_EDITABLE, isBangumiLoggedIn, readAnimeList } from '../../lib/server/animeStore';
 import { isTmdbConfigured } from '../../lib/server/tmdb';
 import AnimeClient from './AnimeClient';
 
@@ -22,7 +22,11 @@ export default function AnimePage() {
         <Navbar />
         <PageTransition>
           <main className="relative z-10 mx-auto mt-24 w-full max-w-6xl px-4 sm:px-6 md:mt-28 lg:px-8">
-            <AnimeClient initialEntries={entries} editable={ANIME_EDITABLE} tmdbEnabled={ANIME_EDITABLE && isTmdbConfigured()} />
+            <AnimeClient
+              initialEntries={entries}
+              editable={ANIME_EDITABLE}
+              initialCredentials={{ tmdb: ANIME_EDITABLE && isTmdbConfigured(), bangumi: ANIME_EDITABLE && isBangumiLoggedIn() }}
+            />
           </main>
         </PageTransition>
       </div>

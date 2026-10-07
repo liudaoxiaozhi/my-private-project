@@ -6,6 +6,9 @@ import path from 'path';
 
 const ENV_FILE = path.join(process.cwd(), '.env.local');
 
+/** Key / Token 只能是字母数字和 . _ -，防止往 .env.local 里写入换行等内容 */
+export const SECRET_PATTERN = /^[A-Za-z0-9._-]{16,1024}$/;
+
 export function setEnvValue(name: string, value: string): void {
   if (!/^[A-Z_][A-Z0-9_]*$/.test(name) || /[\r\n]/.test(value)) throw new Error('非法的环境变量');
   let lines: string[] = [];

@@ -250,6 +250,13 @@ const USER_AGENT = 'xhblogs-anime-tracker/1.0 (local)';
 const BANGUMI_HEADERS = { 'User-Agent': USER_AGENT, Accept: 'application/json' };
 const BANGUMI_API = 'https://api.bgm.tv';
 
+// 可选的 Bangumi Access Token（next.bgm.tv/demo/access-token 生成，存在 .env.local 的 BANGUMI_ACCESS_TOKEN）。
+// 不登录时 Bangumi 会隐藏部分条目，登录后搜索结果与网站上一致。
+const bangumiToken = (): string => (process.env.BANGUMI_ACCESS_TOKEN ?? '').trim();
+export const isBangumiLoggedIn = (): boolean => bangumiToken() !== '';
+
+const BANGUMI_TOKEN_INVALID = 'Bangumi 令牌已失效或不正确，点搜索框下面的「更换」重新填一下';
+
 interface RawSubject {
   id?: number;
   type?: number;
@@ -301,13 +308,19 @@ function toSubject(raw: RawSubject): SearchResult | null {
   };
 }
 
-async function bangumiFetch(url: string, init?: RequestInit): Promise<unknown> {
+async function bangumiFetch(url: string, init?: RequestInit, tokenOverride?: string): Promise<unknown> {
+  const token = tokenOverride ?? bangumiToken();
   const res = await fetch(url, {
     ...init,
-    headers: { ...BANGUMI_HEADERS, ...(init?.body ? { 'Content-Type': 'application/json' } : {}) },
+    headers: {
+      ...BANGUMI_HEADERS,
+      ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     signal: AbortSignal.timeout(12_000),
     cache: 'no-store',
   });
+  if (res.status === 401 && token) throw new AnimeError(BANGUMI_TOKEN_INVALID, 401);
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Bangumi 返回 HTTP ${res.status}`);
   return res.json();
@@ -329,6 +342,7 @@ export async function searchBangumi(keyword: string, subjectId: number | null): 
     })) as { data?: RawSubject[] } | null;
     list = data?.data ?? [];
   } catch (error) {
+    if (error instanceof AnimeError) throw error;
     // 新版搜索接口偶尔不稳定，退回旧版接口（只搜动画）
     console.warn('Bangumi v0 搜索失败，改用旧接口:', error);
     const data = (await bangumiFetch(
@@ -337,4 +351,17 @@ export async function searchBangumi(keyword: string, subjectId: number | null): 
     list = (data?.list ?? []).map((s) => ({ ...s, type: 2 }));
   }
   return list.map(toSubject).filter((s): s is SearchResult => s !== null);
+}
+
+/** 验证 Bangumi Access Token，返回账号昵称 */
+export async function verifyBangumiToken(token: string): Promise<string> {
+  let me: { nickname?: string; username?: string } | null;
+  try {
+    me = (await bangumiFetch(`${BANGUMI_API}/v0/me`, undefined, token)) as typeof me;
+  } catch (error) {
+    if (error instanceof AnimeError) throw new AnimeError('令牌不正确或已过期，重新生成一个试试', 401);
+    console.error('验证 Bangumi 令牌失败:', error);
+    throw new AnimeError('连不上 Bangumi，稍后再试', 502);
+  }
+  return str(me?.nickname, 50) || str(me?.username, 50) || 'Bangumi 用户';
 }

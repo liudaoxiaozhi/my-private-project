@@ -7,6 +7,7 @@ import { useToast } from '../../components/ToastProvider';
 import AnimeCard from './AnimeCard';
 import AnimeDetail from './AnimeDetail';
 import AnimeEditor from './AnimeEditor';
+import type { Credentials } from './AnimeSearch';
 import {
   KIND_LABEL,
   KIND_ORDER,
@@ -68,11 +69,11 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 interface AnimeClientProps {
   initialEntries: AnimeEntry[];
   editable: boolean;
-  /** 服务端是否已配置 TMDB Key；没配置时可以在搜索弹窗里填 */
-  tmdbEnabled: boolean;
+  /** 服务端是否已保存 TMDB Key / Bangumi 令牌；没有时可以在搜索弹窗里填 */
+  initialCredentials: Credentials;
 }
 
-export default function AnimeClient({ initialEntries, editable, tmdbEnabled }: AnimeClientProps) {
+export default function AnimeClient({ initialEntries, editable, initialCredentials }: AnimeClientProps) {
   const { showToast } = useToast();
   const [entries, setEntries] = useState(initialEntries);
   const [tab, setTab] = useState<Tab>(() => (initialEntries.some((e) => e.status === 'watching') ? 'watching' : 'all'));
@@ -81,7 +82,7 @@ export default function AnimeClient({ initialEntries, editable, tmdbEnabled }: A
   const [sort, setSort] = useState<SortKey>('updated');
   const [dialog, setDialog] = useState<Dialog>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [tmdbReady, setTmdbReady] = useState(tmdbEnabled);
+  const [credentials, setCredentials] = useState(initialCredentials);
 
   const counts = useMemo(() => {
     const c: Record<Tab, number> = { all: entries.length, watching: 0, planned: 0, completed: 0, paused: 0 };
@@ -279,10 +280,10 @@ export default function AnimeClient({ initialEntries, editable, tmdbEnabled }: A
           key={dialog.type === 'edit' ? dialog.entry.id : 'create'}
           entry={dialog.type === 'edit' ? dialog.entry : null}
           findExisting={findExisting}
-          tmdbReady={tmdbReady}
-          onTmdbReady={() => {
-            setTmdbReady(true);
-            showToast('TMDB Key 已保存', 'success');
+          credentials={credentials}
+          onCredentialSaved={(service, nickname) => {
+            setCredentials((c) => ({ ...c, [service]: true }));
+            showToast(service === 'tmdb' ? 'TMDB Key 已保存' : `已登录 Bangumi：${nickname ?? ''}`, 'success');
           }}
           onOpenExisting={(entry) => {
             showToast('这部已经添加过了，直接打开编辑', 'info');

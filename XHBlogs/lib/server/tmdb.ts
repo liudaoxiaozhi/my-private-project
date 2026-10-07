@@ -26,9 +26,6 @@ const LANGUAGE = 'zh-CN';
 /** TMDB 的「动画」类型 */
 const GENRE_ANIMATION = 16;
 
-/** Key 只能是字母数字和 . _ -，防止往 .env.local 里写入换行等内容 */
-export const TMDB_KEY_PATTERN = /^[A-Za-z0-9._-]{16,1024}$/;
-
 async function tmdbFetch<T>(pathname: string, params: Record<string, string> = {}, keyOverride?: string): Promise<T> {
   const key = keyOverride ?? apiKey();
   if (!key) throw new AnimeError('还没有配置 TMDB Key：在追番页「电影 / 电视剧」搜索里填一下', 400);

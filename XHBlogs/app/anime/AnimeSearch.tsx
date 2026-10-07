@@ -3,7 +3,7 @@
 //
 // TMDB 的结果要再取一次详情：电视剧拿到每季集数；电影如果属于某个系列（如指环王），让用户选加单部还是整个系列。
 import { useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { ChevronLeft, ExternalLink, Film, KeyRound, Layers, Loader2, Search } from 'lucide-react';
 import AppImage from '../../components/AppImage';
 import {
@@ -21,10 +21,13 @@ import {
 
 type ExistingFinder = (ids: Pick<AnimeInput, 'bangumiId' | 'tmdbId' | 'tmdbType'>) => AnimeEntry | undefined;
 
+export type CredentialService = 'tmdb' | 'bangumi';
+/** 服务端是否已保存 TMDB Key / Bangumi 令牌 */
+export type Credentials = Record<CredentialService, boolean>;
+
 interface AnimeSearchProps {
-  /** 服务端是否已有 TMDB Key */
-  tmdbReady: boolean;
-  onTmdbReady: () => void;
+  credentials: Credentials;
+  onCredentialSaved: (service: CredentialService, nickname?: string) => void;
   findExisting: ExistingFinder;
   onDraft: (draft: AnimeInput) => void;
   onOpenExisting: (entry: AnimeEntry) => void;
@@ -59,16 +62,63 @@ async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
   return data;
 }
 
-/** 切到 TMDB 时还没有 Key：在这里填，验证通过后服务端写进 .env.local */
-function TmdbKeyForm({
+const codeClass = 'rounded bg-black/5 px-1 dark:bg-white/10';
+
+function ExtLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="mx-1 inline-flex items-center gap-0.5 font-bold text-indigo-500 hover:underline">
+      {children} <ExternalLink size={11} />
+    </a>
+  );
+}
+
+const CREDENTIAL_FORMS: Record<
+  CredentialService,
+  { title: string; description: ReactNode; placeholder: string; endpoint: string; cancelText: (saved: boolean) => string }
+> = {
+  tmdb: {
+    title: '填写 TMDB Key',
+    description: (
+      <>
+        搜电影和电视剧要用 TMDB。API Key（32 位）或 Read Access Token 都行，在
+        <ExtLink href="https://www.themoviedb.org/settings/api">TMDB 设置页</ExtLink>
+        能找到。
+      </>
+    ),
+    placeholder: '粘贴你的 TMDB Key',
+    endpoint: '/api/anime/tmdb-key',
+    cancelText: () => '取消，继续用现在的 Key',
+  },
+  bangumi: {
+    title: '登录 Bangumi',
+    description: (
+      <>
+        不登录也能搜，但 Bangumi 会对未登录的请求隐藏一部分条目。在
+        <ExtLink href="https://next.bgm.tv/demo/access-token">Bangumi 令牌页</ExtLink>
+        登录后「创建个人令牌」（有效期可以选长一点），把生成的 Access Token 粘贴到这里。
+      </>
+    ),
+    placeholder: '粘贴 Bangumi Access Token',
+    endpoint: '/api/anime/bangumi-token',
+    cancelText: (saved) => (saved ? '取消，继续用现在的令牌' : '先不登录'),
+  },
+};
+
+/** 填写 TMDB Key / Bangumi 令牌：服务端先验证，通过后写进本机 .env.local */
+function CredentialForm({
+  service,
+  saved,
   inputClassName,
   onSaved,
   onCancel,
 }: {
+  service: CredentialService;
+  saved: boolean;
   inputClassName: string;
-  onSaved: () => void;
+  onSaved: (nickname?: string) => void;
   onCancel?: () => void;
 }) {
+  const config = CREDENTIAL_FORMS[service];
   const [key, setKey] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -79,12 +129,12 @@ function TmdbKeyForm({
     setSaving(true);
     setError('');
     try {
-      await getJson('/api/anime/tmdb-key', {
+      const data = await getJson<{ nickname?: string }>(config.endpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: key.trim() }),
       });
-      onSaved();
+      onSaved(data.nickname);
     } catch (err) {
       setError(err instanceof Error ? err.message : '保存失败');
       setSaving(false);
@@ -94,30 +144,21 @@ function TmdbKeyForm({
   return (
     <form onSubmit={save} className="rounded-2xl border border-indigo-400/40 bg-indigo-500/5 p-4">
       <p className="flex items-center gap-2 text-sm font-black text-slate-900 dark:text-white">
-        <KeyRound size={16} className="text-indigo-500" /> 填写 TMDB Key
+        <KeyRound size={16} className="text-indigo-500" /> {config.title}
       </p>
       <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-        搜电影和电视剧要用 TMDB。API Key（32 位）或 Read Access Token 都行，在
-        <a
-          href="https://www.themoviedb.org/settings/api"
-          target="_blank"
-          rel="noreferrer"
-          className="mx-1 inline-flex items-center gap-0.5 font-bold text-indigo-500 hover:underline"
-        >
-          TMDB 设置页 <ExternalLink size={11} />
-        </a>
-        能找到。只保存在本机的 <code className="rounded bg-black/5 px-1 dark:bg-white/10">XHBlogs/.env.local</code>，不会被提交。
+        {config.description}只保存在本机的 <code className={codeClass}>XHBlogs/.env.local</code>，不会被提交。
       </p>
       <div className="mt-3 flex gap-2">
         <input
           autoFocus
           value={key}
           onChange={(e) => setKey(e.target.value)}
-          placeholder="粘贴你的 TMDB Key"
+          placeholder={config.placeholder}
           autoComplete="off"
           spellCheck={false}
           className={`${inputClassName} font-mono`}
-          aria-label="TMDB Key"
+          aria-label={config.title}
         />
         <button
           type="submit"
@@ -130,14 +171,22 @@ function TmdbKeyForm({
       {error && <p className="mt-2 text-sm font-bold text-red-500">{error}</p>}
       {onCancel && (
         <button type="button" onClick={onCancel} className="mt-2 text-xs font-bold text-slate-500 hover:underline dark:text-slate-400">
-          取消，继续用现在的 Key
+          {config.cancelText(saved)}
         </button>
       )}
     </form>
   );
 }
 
-export default function AnimeSearch({ tmdbReady, onTmdbReady, findExisting, onDraft, onOpenExisting, onManual, inputClassName }: AnimeSearchProps) {
+export default function AnimeSearch({
+  credentials,
+  onCredentialSaved,
+  findExisting,
+  onDraft,
+  onOpenExisting,
+  onManual,
+  inputClassName,
+}: AnimeSearchProps) {
   // 弹窗只在点击后挂载，不参与服务端渲染，可以直接读 localStorage
   const [source, setSource] = useState<SearchSource>(readSource);
   const [query, setQuery] = useState('');
@@ -147,10 +196,12 @@ export default function AnimeSearch({ tmdbReady, onTmdbReady, findExisting, onDr
   const [loadingKey, setLoadingKey] = useState('');
   const [error, setError] = useState('');
   const [choice, setChoice] = useState<{ movie: AnimeInput; collection: { id: number; name: string } } | null>(null);
-  const [changingKey, setChangingKey] = useState(false);
+  /** 正在填写 / 更换哪个凭据 */
+  const [editingCredential, setEditingCredential] = useState<CredentialService | null>(null);
 
   const switchSource = (next: SearchSource) => {
     setSource(next);
+    setEditingCredential(null);
     setResults(null);
     setError('');
     try {
@@ -262,7 +313,13 @@ export default function AnimeSearch({ tmdbReady, onTmdbReady, findExisting, onDr
   }
 
   const current = SOURCES.find((s) => s.id === source)!;
-  const showKeyForm = source === 'tmdb' && (!tmdbReady || changingKey);
+  // TMDB 必须有 Key 才能搜；Bangumi 登录是可选的，只在用户点了「登录」时出现
+  const formService: CredentialService | null =
+    source === 'tmdb' && (!credentials.tmdb || editingCredential === 'tmdb')
+      ? 'tmdb'
+      : source === 'bangumi' && editingCredential === 'bangumi'
+        ? 'bangumi'
+        : null;
 
   return (
     <div>
@@ -281,16 +338,20 @@ export default function AnimeSearch({ tmdbReady, onTmdbReady, findExisting, onDr
         ))}
       </div>
 
-      {showKeyForm ? (
-        <TmdbKeyForm
-          key={changingKey ? 'change' : 'first'}
+      {formService ? (
+        <CredentialForm
+          key={formService}
+          service={formService}
+          saved={credentials[formService]}
           inputClassName={inputClassName}
-          onSaved={() => {
-            setChangingKey(false);
+          onSaved={(nickname) => {
+            setEditingCredential(null);
             setError('');
-            onTmdbReady();
+            setResults(null);
+            onCredentialSaved(formService, nickname);
           }}
-          onCancel={tmdbReady ? () => setChangingKey(false) : undefined}
+          // 第一次填 TMDB Key 时没有可退回的状态，不显示取消
+          onCancel={formService === 'bangumi' || credentials.tmdb ? () => setEditingCredential(null) : undefined}
         />
       ) : (
         <form onSubmit={search} className="flex gap-2">
@@ -311,7 +372,7 @@ export default function AnimeSearch({ tmdbReady, onTmdbReady, findExisting, onDr
           </button>
         </form>
       )}
-      {!showKeyForm && (
+      {!formService && (
         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
           {source === 'tmdb' ? '自动填好海报、每季集数；系列电影可以整套一起记。' : '自动填好封面、集数和首播日期。'}
           搜不到也可以
@@ -319,11 +380,13 @@ export default function AnimeSearch({ tmdbReady, onTmdbReady, findExisting, onDr
             手动填写
           </button>
           。
-          {source === 'tmdb' && (
-            <button type="button" onClick={() => setChangingKey(true)} className="ml-2 font-bold text-slate-400 hover:text-indigo-500 hover:underline">
-              更换 TMDB Key
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setEditingCredential(source)}
+            className="ml-2 font-bold text-slate-400 hover:text-indigo-500 hover:underline"
+          >
+            {source === 'tmdb' ? '更换 TMDB Key' : credentials.bangumi ? '已登录 Bangumi · 更换' : '登录 Bangumi（能搜到全部条目）'}
+          </button>
         </p>
       )}
 

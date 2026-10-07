@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { ExternalLink, Loader2, Minus, PencilLine, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import AnimeModal from './AnimeModal';
-import AnimeSearch from './AnimeSearch';
+import AnimeSearch, { type CredentialService, type Credentials } from './AnimeSearch';
 import PartsProgress from './PartsProgress';
 import { AnimeCover } from './AnimeCard';
 import {
@@ -30,8 +30,8 @@ interface AnimeEditorProps {
   entry: AnimeEntry | null;
   /** 已在列表里的同一部（按 Bangumi / TMDB 编号），用来提示重复添加 */
   findExisting: (ids: Pick<AnimeInput, 'bangumiId' | 'tmdbId' | 'tmdbType'>) => AnimeEntry | undefined;
-  tmdbReady: boolean;
-  onTmdbReady: () => void;
+  credentials: Credentials;
+  onCredentialSaved: (service: CredentialService, nickname?: string) => void;
   onSave: (input: AnimeInput) => Promise<void>;
   onDelete?: () => Promise<void>;
   onOpenExisting: (entry: AnimeEntry) => void;
@@ -66,8 +66,8 @@ const parseTags = (text: string): string[] => [...new Set(text.split(/[,，、\s
 export default function AnimeEditor({
   entry,
   findExisting,
-  tmdbReady,
-  onTmdbReady,
+  credentials,
+  onCredentialSaved,
   onSave,
   onDelete,
   onOpenExisting,
@@ -160,7 +160,7 @@ export default function AnimeEditor({
 
   const isMovie = form.kind === 'movie';
   const multiPart = hasParts(form);
-  const canRefresh = tmdbReady && !!form.tmdbId && (form.tmdbType === 'tv' || form.tmdbType === 'collection');
+  const canRefresh = credentials.tmdb && !!form.tmdbId && (form.tmdbType === 'tv' || form.tmdbType === 'collection');
 
   const footer =
     step === 'form' ? (
@@ -206,8 +206,8 @@ export default function AnimeEditor({
     >
       {step === 'search' ? (
         <AnimeSearch
-          tmdbReady={tmdbReady}
-          onTmdbReady={onTmdbReady}
+          credentials={credentials}
+          onCredentialSaved={onCredentialSaved}
           findExisting={findExisting}
           onDraft={applyDraft}
           onOpenExisting={onOpenExisting}

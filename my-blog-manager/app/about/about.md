@@ -23,6 +23,8 @@ description: 'ftcovo 的自我介绍'
 
 本站基于开源博客 [XinghuisamaBlogs](https://github.com/heiehiehi/XinghuisamaBlogs) 改造而来，感谢原作者的开源。
 
+站内的背景与「插画收藏」相册里的插画都来自网络画师（作品上保留了原签名），版权归原作者所有；如果你是作者且不希望在这里展示，请发邮件告诉我，我会第一时间删除。
+
 **✉️ 联系我**
 
 想聊天、交换友链，或者只是路过打个招呼，都欢迎发邮件到 fatiaochengovo@gmail.com ，也可以点首页名片上的 Gmail 图标一键复制地址。

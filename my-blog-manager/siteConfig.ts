@@ -22,16 +22,16 @@ export const siteConfig = {
   useGradient: false,
   themeColors: ["#a18cd1", "#fbc2eb", "#a1c4fd", "#c2e9fb"], // 呼吸流动的颜色组合
 // 修改这里：变成图片数组
-  bgImages: ["/images/bg/bg-ocean.webp", "/images/bg/bg-wings.webp"],
+  bgImages: ["/images/bg/bg-madoka.webp", "/images/bg/bg-wings.webp"],
 
   // 👇 【新增】移动端专用竖版背景（屏幕宽度 < 768px 时生效）；留空数组则沿用上面的 bgImages
-  bgImagesMobile: ["/images/bg/bg-mobile-blue.webp", "/images/bg/bg-mobile-cat.webp"],
+  bgImagesMobile: ["/images/bg/bg-mobile-saber.webp", "/images/bg/bg-mobile-miku.webp"],
 
   // 4. 文章默认封面图 (当 Markdown 没写 cover 时显示)
   defaultPostCover: "/images/bg/bg-ocean.webp",
 
   // 5. 首页照片墙预览图
-  photoWallImage: "/images/bg/bg-wings.webp",
+  photoWallImage: "/images/gallery/cover-miku-ukiyoe.webp",
   // 网易云歌单已停用：音乐全部来自 XHBlogs/public/music/（见该目录下的 README.md）
   cloudMusicIds: [],
   social: {

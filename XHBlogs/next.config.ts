@@ -4,6 +4,10 @@ const nextConfig: NextConfig = {
   // 🚨 核心修改 1：关掉纯静态导出，让 Vercel 帮你把 API 跑起来！
   // output: 'export',
 
+  // Docker 部署时由 Dockerfile 设置 BUILD_STANDALONE=true，输出可独立运行的 server.js；
+  // Vercel 部署不设置这个变量，行为不变。
+  output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
+
   // 🚨 核心修改 2：Vercel 不需要强制加斜杠，关掉它能避免很多 API 路径匹配错误
   // trailingSlash: true,
 

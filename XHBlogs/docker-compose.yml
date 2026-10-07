@@ -1,0 +1,19 @@
+# docker compose up -d --build
+# 换歌：把文件放进 public/music/ 后重新执行上面这条命令
+services:
+  blog:
+    build:
+      context: .
+      args:
+        # 国内服务器构建时取消下一行注释
+        # NPM_REGISTRY: https://registry.npmmirror.com
+        SITE_URL: ${SITE_URL:-}
+    image: xhblogs:latest
+    container_name: xhblogs
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    # GEMINI_API_KEY、GITALK_CLIENT_SECRET 等密钥放在 .env.local（参考 .env.example）
+    env_file:
+      - path: .env.local
+        required: false   # 没有这个文件也能启动（需要 Docker Compose 2.24+）

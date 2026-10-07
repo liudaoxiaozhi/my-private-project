@@ -20,9 +20,28 @@ export interface LyricLine {
   text: string;
 }
 
+/** scripts/build-music-manifest.mjs 生成的本地歌单条目（public/music/playlist.json） */
+export interface LocalTrack {
+  id: string;
+  title: string;
+  /** 文件名里没有「歌手 - 」时为空字符串 */
+  artist: string;
+  src: string;
+  cover?: string;
+  /** 同名 .lrc 歌词地址，播放到该曲时再按需加载 */
+  lrcUrl?: string;
+}
+
+export interface LocalPlaylistManifest {
+  tracks: LocalTrack[];
+}
+
+export type SongSource = 'local' | 'netease';
+
 /** 播放器内部使用的歌曲 */
 export interface Song {
   id: string;
+  source: SongSource;
   title: string;
   artist: string;
   cover: string;
@@ -30,4 +49,6 @@ export interface Song {
   src: string;
   /** 已解析好的歌词，可能为空数组 */
   lyrics: LyricLine[];
+  /** 尚未加载的歌词地址（本地歌曲），加载后写入 lyrics */
+  lrcUrl?: string;
 }

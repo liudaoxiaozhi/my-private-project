@@ -2,9 +2,49 @@
 
 import { createContext, useContext, useState, useRef, useEffect, ReactNode } from 'react';
 import { siteConfig } from '../siteConfig';
-import type { LyricLine, MusicApiSong, Song } from '../lib/music';
+import type { LocalPlaylistManifest, LyricLine, MusicApiSong, Song } from '../lib/music';
 
 const DEFAULT_COVER = 'https://bu.dusays.com/2026/03/24/69c24230a5ff8.jpg';
+
+const PURE_MUSIC_TEXT = '♪ 纯享音乐 ♪';
+
+/** 本地歌单：public/music/playlist.json（构建时生成）。文件不存在或为空时返回 [] */
+async function fetchLocalSongs(): Promise<Song[]> {
+  const res = await fetch('/music/playlist.json', { cache: 'no-store' });
+  if (!res.ok) return [];
+  const manifest = (await res.json()) as Partial<LocalPlaylistManifest>;
+  return (Array.isArray(manifest.tracks) ? manifest.tracks : [])
+    .filter((t) => typeof t?.src === 'string' && t.src)
+    .map((t) => ({
+      id: t.id,
+      source: 'local' as const,
+      title: t.title || '未知歌曲',
+      artist: t.artist || '未知歌手',
+      cover: t.cover || DEFAULT_COVER,
+      src: t.src,
+      lyrics: [],
+      lrcUrl: t.lrcUrl,
+    }));
+}
+
+/** 网易云歌单：siteConfig.cloudMusicIds → /api/music */
+async function fetchNeteaseSongs(): Promise<Song[]> {
+  const ids = siteConfig.cloudMusicIds ?? [];
+  if (ids.length === 0) return [];
+  const res = await fetch(`/api/music?ids=${ids.join(',')}`);
+  const rawResults = (await res.json()) as MusicApiSong[];
+  return (Array.isArray(rawResults) ? rawResults : [])
+    .filter(isPlayable)
+    .map((song) => ({
+      id: song.id,
+      source: 'netease' as const,
+      title: song.name || '未知歌曲',
+      artist: song.artist || song.author || '未知歌手',
+      cover: song.cover || song.pic || DEFAULT_COVER,
+      src: song.url,
+      lyrics: song.lrc ? parseLrc(song.lrc) : [],
+    }));
+}
 
 /** 过滤掉取不到播放地址的歌曲 */
 function isPlayable(song: MusicApiSong | null | undefined): song is MusicApiSong & { url: string } {
@@ -89,38 +129,29 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const [playMode, setPlayMode] = useState<PlayMode>('loop');
 
   const audioRef = useRef<HTMLAudioElement>(null);
+  /** 连续加载失败的次数；整张歌单都失败时停止跳歌，避免无限循环 */
+  const failStreakRef = useRef(0);
 
   useEffect(() => {
     let isMounted = true;
-    const fetchMusicData = async () => {
-      try {
-        const res = await fetch(`/api/music?ids=${siteConfig.cloudMusicIds.join(',')}`);
-        const rawResults = (await res.json()) as MusicApiSong[];
+    const loadPlaylist = async () => {
+      // 两个来源并行加载，任意一个失败不影响另一个；本地歌曲排在前面
+      const [local, netease] = await Promise.allSettled([fetchLocalSongs(), fetchNeteaseSongs()]);
+      if (!isMounted) return;
 
-        const mergedPlaylist: Song[] = (Array.isArray(rawResults) ? rawResults : [])
-          .filter(isPlayable)
-          .map((song) => ({
-            id: song.id,
-            title: song.name || '未知歌曲',
-            artist: song.artist || song.author || '未知歌手',
-            cover: song.cover || song.pic || DEFAULT_COVER,
-            src: song.url,
-            lyrics: song.lrc ? parseLrc(song.lrc) : [],
-          }));
+      const merged: Song[] = [
+        ...(local.status === 'fulfilled' ? local.value : []),
+        ...(netease.status === 'fulfilled' ? netease.value : []),
+      ];
+      if (local.status === 'rejected') console.warn('[music] 本地歌单加载失败：', local.reason);
+      if (netease.status === 'rejected') console.warn('[music] 网易云歌单加载失败：', netease.reason);
 
-        if (isMounted) {
-          if (mergedPlaylist.length > 0) setPlaylist(mergedPlaylist);
-          else setCurrentLyric("云端链路受阻");
-          setIsLoading(false);
-        }
-      } catch (error) {
-        if (isMounted) { setCurrentLyric("网络初始化失败"); setIsLoading(false); }
-      }
+      if (merged.length > 0) setPlaylist(merged);
+      else setCurrentLyric('歌单还是空的');
+      setIsLoading(false);
     };
 
-    if (siteConfig.cloudMusicIds?.length > 0) fetchMusicData();
-    else setIsLoading(false);
-
+    loadPlaylist();
     return () => { isMounted = false; };
   }, []);
 
@@ -130,19 +161,32 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     const currentSong = playlist[currentIndex];
     setLyrics([]);
     setCurrentLyric("♪ 正在缓冲 ♪");
-    if (currentSong.lyrics && currentSong.lyrics.length > 0) {
-      if (isMounted) {
-        setLyrics(currentSong.lyrics);
-        setCurrentLyric(currentSong.lyrics[0]?.text || "\u266a \u7eaf\u4eab\u97f3\u4e50 \u266a");
-      }
+    if (currentSong.lyrics.length > 0) {
+      // 网易云歌词随歌单一起返回；本地歌词加载过一次后也会缓存在这里
+      setLyrics(currentSong.lyrics);
+      setCurrentLyric(currentSong.lyrics[0]?.text || PURE_MUSIC_TEXT);
+    } else if (currentSong.lrcUrl) {
+      // 本地歌曲：切到这首时才加载同名 .lrc
+      fetch(currentSong.lrcUrl)
+        .then((res) => (res.ok ? res.text() : ''))
+        .then((text) => {
+          if (!isMounted) return;
+          const parsed = parseLrc(text);
+          setLyrics(parsed);
+          setCurrentLyric(parsed[0]?.text || PURE_MUSIC_TEXT);
+          // 不可变更新，供音乐页的滚动歌词使用；只改内容不改长度，不会重新触发本 effect
+          setPlaylist((prev) => prev.map((s) => (s.id === currentSong.id ? { ...s, lyrics: parsed } : s)));
+        })
+        .catch(() => { if (isMounted) setCurrentLyric(PURE_MUSIC_TEXT); });
+    } else {
+      setCurrentLyric(PURE_MUSIC_TEXT);
     }
-    // 歌词已由 /api/music 一并返回并在加载歌单时解析；旧版按 lrcUrl 二次拉取的分支已无数据源，已移除
 
     if (isPlaying && audioRef.current) {
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => setIsPlaying(false));
-      }
+      audioRef.current.play().catch((err: unknown) => {
+        // 只有浏览器拦截自动播放时才暂停；加载失败交给 onError 自动跳到下一首
+        if (err instanceof DOMException && err.name === 'NotAllowedError') setIsPlaying(false);
+      });
     }
     return () => { isMounted = false; };
   }, [currentIndex, playlist.length]); // 移除 playlist 依赖防止无限循环，只依赖长度
@@ -211,6 +255,27 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  /**
+   * 加载失败（VIP、地区版权限制、文件不存在、格式不支持）时自动跳到下一首。
+   * 按顺序跳而不是随机跳，保证每首都会尝试到；整张歌单都失败则停止。
+   */
+  const handleAudioError = () => {
+    const failed = playlist[currentIndex];
+    if (!failed) return;
+    console.warn(`[music] 无法播放「${failed.title}」（${failed.id}），可能是 VIP、地区版权限制或文件不存在，已自动跳过`);
+    failStreakRef.current += 1;
+    if (failStreakRef.current >= playlist.length) {
+      failStreakRef.current = 0;
+      setIsPlaying(false);
+      setCurrentLyric('歌单中的歌曲暂时都无法播放');
+      return;
+    }
+    setCurrentIndex((prev) => (prev + 1) % playlist.length);
+  };
+
+  /** 能正常加载就清零失败计数 */
+  const handleCanPlay = () => { failStreakRef.current = 0; };
+
   const seekToPercent = (percent: number) => {
     const newProgress = Math.min(100, Math.max(0, percent));
     setProgress(newProgress);
@@ -253,6 +318,9 @@ export function MusicProvider({ children }: { children: ReactNode }) {
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleEnded} // 使用我们重写的结束处理
           onLoadedMetadata={handleTimeUpdate}
+          onCanPlay={handleCanPlay}
+          onError={handleAudioError}
+          preload="metadata"
         />
       )}
     </MusicContext.Provider>

@@ -13,6 +13,7 @@ import {
   STATUS_LABEL,
   STATUS_ORDER,
   bumpProgress,
+  isSameWork,
   toInput,
   withStatus,
   type AnimeEntry,
@@ -64,7 +65,14 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-export default function AnimeClient({ initialEntries, editable }: { initialEntries: AnimeEntry[]; editable: boolean }) {
+interface AnimeClientProps {
+  initialEntries: AnimeEntry[];
+  editable: boolean;
+  /** 服务端是否已配置 TMDB Key；没配置时可以在搜索弹窗里填 */
+  tmdbEnabled: boolean;
+}
+
+export default function AnimeClient({ initialEntries, editable, tmdbEnabled }: AnimeClientProps) {
   const { showToast } = useToast();
   const [entries, setEntries] = useState(initialEntries);
   const [tab, setTab] = useState<Tab>(() => (initialEntries.some((e) => e.status === 'watching') ? 'watching' : 'all'));
@@ -73,6 +81,7 @@ export default function AnimeClient({ initialEntries, editable }: { initialEntri
   const [sort, setSort] = useState<SortKey>('updated');
   const [dialog, setDialog] = useState<Dialog>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [tmdbReady, setTmdbReady] = useState(tmdbEnabled);
 
   const counts = useMemo(() => {
     const c: Record<Tab, number> = { all: entries.length, watching: 0, planned: 0, completed: 0, paused: 0 };
@@ -82,7 +91,11 @@ export default function AnimeClient({ initialEntries, editable }: { initialEntri
 
   const stats = useMemo(() => {
     const episodes = entries.reduce((sum, e) => sum + (e.kind === 'movie' ? 0 : e.progress), 0);
-    const movies = entries.filter((e) => e.kind === 'movie' && e.status === 'completed').length;
+    // 系列电影按看过的部数算
+    const movies = entries.reduce(
+      (sum, e) => sum + (e.kind !== 'movie' ? 0 : e.parts.length > 1 ? e.progress : e.status === 'completed' ? 1 : 0),
+      0,
+    );
     const rated = entries.filter((e) => e.rating > 0);
     const avg = rated.length ? (rated.reduce((s, e) => s + e.rating, 0) / rated.length).toFixed(1) : '—';
     return { episodes, movies, avg };
@@ -107,7 +120,7 @@ export default function AnimeClient({ initialEntries, editable }: { initialEntri
   const upsert = (entry: AnimeEntry) =>
     setEntries((list) => (list.some((e) => e.id === entry.id) ? list.map((e) => (e.id === entry.id ? entry : e)) : [entry, ...list]));
 
-  const findByBangumiId = (id: number) => entries.find((e) => e.bangumiId === id);
+  const findExisting = (ids: Pick<AnimeInput, 'bangumiId' | 'tmdbId' | 'tmdbType'>) => entries.find((e) => isSameWork(e, ids));
 
   const saveEntry = async (id: string | null, input: AnimeInput): Promise<AnimeEntry> => {
     const { entry } = id
@@ -222,7 +235,7 @@ export default function AnimeClient({ initialEntries, editable }: { initialEntri
                   onClick={() => setDialog({ type: 'create' })}
                   className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-indigo-500 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-600"
                 >
-                  <Plus size={15} strokeWidth={3} /> 从 Bangumi 搜一部
+                  <Plus size={15} strokeWidth={3} /> 搜一部番剧 / 电影 / 电视剧
                 </button>
               </>
             ) : (
@@ -244,6 +257,7 @@ export default function AnimeClient({ initialEntries, editable }: { initialEntri
                 busy={busyId === entry.id}
                 onOpen={() => setDialog({ type: editable ? 'edit' : 'view', entry })}
                 onBump={() => quickUpdate(entry, bumpProgress(toInput(entry)))}
+                bumpLabel={entry.kind === 'movie' ? '1 部' : '1 集'}
                 onFinishMovie={() => quickUpdate(entry, withStatus(toInput(entry), 'completed'))}
               />
             ))}
@@ -264,7 +278,12 @@ export default function AnimeClient({ initialEntries, editable }: { initialEntri
           // 换条目时重新挂载，表单状态不串
           key={dialog.type === 'edit' ? dialog.entry.id : 'create'}
           entry={dialog.type === 'edit' ? dialog.entry : null}
-          findByBangumiId={findByBangumiId}
+          findExisting={findExisting}
+          tmdbReady={tmdbReady}
+          onTmdbReady={() => {
+            setTmdbReady(true);
+            showToast('TMDB Key 已保存', 'success');
+          }}
           onOpenExisting={(entry) => {
             showToast('这部已经添加过了，直接打开编辑', 'info');
             setDialog({ type: 'edit', entry });

@@ -7,6 +7,8 @@ import {
   KIND_LABEL,
   STATUS_LABEL,
   STATUS_STYLE,
+  hasParts,
+  isSingleMovie,
   progressRatio,
   progressText,
   type AnimeEntry,
@@ -55,14 +57,15 @@ interface AnimeCardProps {
   busy: boolean;
   onOpen: () => void;
   onBump: () => void;
+  bumpLabel: string;
   onFinishMovie: () => void;
 }
 
-export default function AnimeCard({ entry, eager, editable, busy, onOpen, onBump, onFinishMovie }: AnimeCardProps) {
+export default function AnimeCard({ entry, eager, editable, busy, onOpen, onBump, bumpLabel, onFinishMovie }: AnimeCardProps) {
   const ratio = progressRatio(entry);
-  const isMovie = entry.kind === 'movie';
-  const showBump = editable && !isMovie && entry.status !== 'completed';
-  const showFinish = editable && isMovie && entry.status !== 'completed';
+  const singleMovie = isSingleMovie(entry);
+  const showBump = editable && !singleMovie && entry.status !== 'completed';
+  const showFinish = editable && singleMovie && entry.status !== 'completed';
   const year = entry.airDate.slice(0, 4);
 
   return (
@@ -92,7 +95,9 @@ export default function AnimeCard({ entry, eager, editable, busy, onOpen, onBump
         </div>
         <h3 className="mt-3 line-clamp-2 text-[15px] font-black leading-snug text-slate-900 dark:text-white">{entry.title}</h3>
         <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
-          {[KIND_LABEL[entry.kind], year].filter(Boolean).join(' · ')}
+          {[KIND_LABEL[entry.kind], hasParts(entry) ? `${entry.parts.length} ${entry.kind === 'movie' ? '部' : '季'}` : '', year]
+            .filter(Boolean)
+            .join(' · ')}
           {entry.originalTitle && <span className="opacity-80"> · {entry.originalTitle}</span>}
         </p>
       </button>
@@ -105,10 +110,10 @@ export default function AnimeCard({ entry, eager, editable, busy, onOpen, onBump
               type="button"
               onClick={onBump}
               disabled={busy}
-              title="看完一集"
+              title={`看完${bumpLabel}`}
               className="flex shrink-0 items-center gap-0.5 rounded-full bg-indigo-500 px-2 py-0.5 text-[11px] font-black text-white shadow-sm transition-all hover:bg-indigo-600 active:scale-95 disabled:opacity-50"
             >
-              <Plus size={12} strokeWidth={3} /> 1 集
+              <Plus size={12} strokeWidth={3} /> {bumpLabel}
             </button>
           )}
           {showFinish && (
@@ -122,7 +127,7 @@ export default function AnimeCard({ entry, eager, editable, busy, onOpen, onBump
             </button>
           )}
         </div>
-        {!isMovie && (
+        {!singleMovie && (
           <div
             className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-500/15 dark:bg-white/10"
             role="progressbar"

@@ -2,17 +2,25 @@
 //
 // 数据就是 data/anime.json 里的一个数组，可以直接手改；读的时候会补齐缺省字段。
 // 写入只在本地开发模式（npm run dev / 本地预览.bat）开放：线上与 next start 下页面只读。
-// Bangumi 封面会下载到 public/anime/covers/，这样不依赖外链，部署后也能显示。
+// Bangumi / TMDB 封面会下载到 public/anime/covers/，这样不依赖外链，部署后也能显示。
+// TMDB 的搜索与详情见 lib/server/tmdb.ts。
 import fs from 'fs';
 import path from 'path';
 import {
   isAnimeKind,
   isAnimeStatus,
+  isSameWork,
   type AnimeEntry,
   type AnimeInput,
   type AnimeKind,
-  type BangumiSubject,
+  type AnimePart,
+  type SearchResult,
+  type TmdbType,
 } from '../anime';
+import { AnimeError, cover, date, int, str } from './animeClean';
+import { TMDB_IMAGE_HOST } from './tmdb';
+
+export { AnimeError };
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'anime.json');
 const PUBLIC_DIR = path.join(process.cwd(), 'public');
@@ -24,43 +32,38 @@ export const ANIME_EDITABLE = process.env.NODE_ENV === 'development';
 
 // ============================== 清洗 ==============================
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const score10 = (value: unknown): number =>
+  typeof value === 'number' && Number.isFinite(value) ? Math.min(10, Math.max(0, Math.round(value * 10) / 10)) : 0;
 
-function str(value: unknown, max: number): string {
-  return typeof value === 'string' ? value.trim().slice(0, max) : '';
-}
+const positiveId = (value: unknown): number | null => {
+  const n = int(value, 0, 999_999_999);
+  return n > 0 ? n : null;
+};
 
-function int(value: unknown, min: number, max: number): number {
-  const n = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
-  if (!Number.isFinite(n)) return min;
-  return Math.min(max, Math.max(min, Math.round(n)));
-}
+const TMDB_TYPES: readonly TmdbType[] = ['movie', 'tv', 'collection'];
 
-function date(value: unknown): string {
-  const s = str(value, 10);
-  return DATE_RE.test(s) ? s : '';
-}
-
-/** 封面只接受站内路径或 http(s) 外链，挡掉 javascript: 之类 */
-function cover(value: unknown): string {
-  const s = str(value, 1000);
-  if (s.startsWith('/') && !s.startsWith('//')) return s;
-  try {
-    const url = new URL(s);
-    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : '';
-  } catch {
-    return '';
-  }
+function sanitizeParts(value: unknown): AnimePart[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .slice(0, 100)
+    .map((raw) => {
+      const p = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+      return { title: str(p.title, 200), episodes: int(p.episodes, 0, 9999), airDate: date(p.airDate) };
+    })
+    .filter((p) => p.title || p.episodes > 0);
 }
 
 export function sanitizeInput(raw: unknown): AnimeInput {
   const o = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
-  const totalEpisodes = int(o.totalEpisodes, 0, 9999);
+  const parts = sanitizeParts(o.parts);
+  // 分季时总集数以各季之和为准
+  const partsTotal = parts.reduce((sum, p) => sum + p.episodes, 0);
+  const totalEpisodes = parts.length > 0 && partsTotal > 0 ? Math.min(partsTotal, 99_999) : int(o.totalEpisodes, 0, 9999);
+  const tmdbId = positiveId(o.tmdbId);
+  const tmdbType = TMDB_TYPES.find((t) => t === o.tmdbType) ?? null;
   const tags = Array.isArray(o.tags)
     ? [...new Set(o.tags.map((t) => str(t, 20)).filter(Boolean))].slice(0, 12)
     : [];
-  const bangumiId = int(o.bangumiId, 0, 999_999_999);
-  const score = typeof o.bangumiScore === 'number' && Number.isFinite(o.bangumiScore) ? o.bangumiScore : 0;
   return {
     title: str(o.title, 200),
     originalTitle: str(o.originalTitle, 200),
@@ -69,14 +72,18 @@ export function sanitizeInput(raw: unknown): AnimeInput {
     cover: cover(o.cover),
     progress: int(o.progress, 0, totalEpisodes > 0 ? totalEpisodes : 9999),
     totalEpisodes,
+    parts,
     rating: int(o.rating, 0, 10),
     comment: str(o.comment, 2000),
     tags,
     airDate: date(o.airDate),
     startedAt: date(o.startedAt),
     finishedAt: date(o.finishedAt),
-    bangumiId: bangumiId > 0 ? bangumiId : null,
-    bangumiScore: Math.min(10, Math.max(0, Math.round(score * 10) / 10)),
+    bangumiId: positiveId(o.bangumiId),
+    bangumiScore: score10(o.bangumiScore),
+    tmdbId: tmdbId && tmdbType ? tmdbId : null,
+    tmdbType: tmdbId && tmdbType ? tmdbType : null,
+    tmdbScore: score10(o.tmdbScore),
   };
 }
 
@@ -140,21 +147,18 @@ function serialized<T>(task: () => Promise<T>): Promise<T> {
   return run;
 }
 
-export class AnimeError extends Error {
-  constructor(message: string, readonly status: number) {
-    super(message);
-  }
-}
 
 export function createAnime(raw: unknown): Promise<AnimeEntry> {
   return serialized(async () => {
     const input = sanitizeInput(raw);
     if (!input.title) throw new AnimeError('标题不能为空', 400);
     const list = readAnimeList();
-    if (input.bangumiId && list.some((e) => e.bangumiId === input.bangumiId)) {
-      throw new AnimeError('这部已经在列表里了', 409);
-    }
-    const id = input.bangumiId ? `bgm-${input.bangumiId}` : `m-${Date.now().toString(36)}`;
+    if (list.some((e) => isSameWork(e, input))) throw new AnimeError('这部已经在列表里了', 409);
+    const id = input.bangumiId
+      ? `bgm-${input.bangumiId}`
+      : input.tmdbId
+        ? `tmdb-${input.tmdbType}-${input.tmdbId}`
+        : `m-${Date.now().toString(36)}`;
     const now = new Date().toISOString();
     const entry: AnimeEntry = { id, ...input, cover: await localizeCover(input.cover, id), createdAt: now, updatedAt: now };
     writeAnimeList([entry, ...list]);
@@ -191,8 +195,9 @@ export function deleteAnime(id: string): Promise<void> {
 
 // ============================== 封面 ==============================
 
-/** 只下载 Bangumi 图床的图片，其他外链原样保存 */
+/** 只下载 Bangumi / TMDB 图床的图片，其他外链原样保存 */
 const BANGUMI_IMAGE_HOST = /(^|\.)(bgm\.tv|bangumi\.tv|chii\.in)$/i;
+const canDownloadCover = (host: string): boolean => BANGUMI_IMAGE_HOST.test(host) || host === TMDB_IMAGE_HOST;
 const COVER_EXT: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -208,9 +213,9 @@ async function localizeCover(src: string, id: string): Promise<string> {
   } catch {
     return src;
   }
-  if (!BANGUMI_IMAGE_HOST.test(url.hostname)) return src;
+  if (!canDownloadCover(url.hostname)) return src;
   try {
-    const res = await fetch(url, { headers: BANGUMI_HEADERS, signal: AbortSignal.timeout(15_000) });
+    const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(15_000) });
     const ext = COVER_EXT[(res.headers.get('content-type') ?? '').split(';')[0].trim()];
     if (!res.ok || !ext) throw new Error(`HTTP ${res.status} ${res.headers.get('content-type')}`);
     const buf = Buffer.from(await res.arrayBuffer());
@@ -241,7 +246,8 @@ function removeOwnCover(coverPath: string, id: string): void {
 // ============================== Bangumi 搜索 ==============================
 
 // Bangumi 要求带上能识别来源的 User-Agent
-const BANGUMI_HEADERS = { 'User-Agent': 'xhblogs-anime-tracker/1.0 (local)', Accept: 'application/json' };
+const USER_AGENT = 'xhblogs-anime-tracker/1.0 (local)';
+const BANGUMI_HEADERS = { 'User-Agent': USER_AGENT, Accept: 'application/json' };
 const BANGUMI_API = 'https://api.bgm.tv';
 
 interface RawSubject {
@@ -268,7 +274,7 @@ function kindOf(type: number | undefined, platform: string): AnimeKind {
   return type === 6 ? 'drama' : 'anime';
 }
 
-function toSubject(raw: RawSubject): BangumiSubject | null {
+function toSubject(raw: RawSubject): SearchResult | null {
   if (!raw || typeof raw.id !== 'number') return null;
   const name = str(raw.name, 200);
   const nameCn = str(raw.name_cn, 200);
@@ -276,7 +282,9 @@ function toSubject(raw: RawSubject): BangumiSubject | null {
   const airDate = date(raw.date) || date(raw.air_date);
   const score = raw.rating?.score ?? raw.score ?? 0;
   return {
+    source: 'bangumi',
     id: raw.id,
+    mediaType: null,
     title: nameCn || name,
     originalTitle: name,
     kind: kindOf(raw.type, platform),
@@ -306,7 +314,7 @@ async function bangumiFetch(url: string, init?: RequestInit): Promise<unknown> {
 }
 
 /** 关键词搜索（动画 + 三次元），或直接按条目 id 取详情 */
-export async function searchBangumi(keyword: string, subjectId: number | null): Promise<BangumiSubject[]> {
+export async function searchBangumi(keyword: string, subjectId: number | null): Promise<SearchResult[]> {
   if (subjectId) {
     const raw = (await bangumiFetch(`${BANGUMI_API}/v0/subjects/${subjectId}`)) as RawSubject | null;
     const subject = raw ? toSubject(raw) : null;
@@ -328,5 +336,5 @@ export async function searchBangumi(keyword: string, subjectId: number | null): 
     )) as { list?: RawSubject[] } | null;
     list = (data?.list ?? []).map((s) => ({ ...s, type: 2 }));
   }
-  return list.map(toSubject).filter((s): s is BangumiSubject => s !== null);
+  return list.map(toSubject).filter((s): s is SearchResult => s !== null);
 }

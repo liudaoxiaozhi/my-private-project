@@ -1,6 +1,6 @@
 'use client';
 // app/anime/AnimeDetail.tsx —— 只读模式（线上 / 正式预览）下点开卡片看到的详情
-import { ExternalLink, Star } from 'lucide-react';
+import { Check, ExternalLink, Star } from 'lucide-react';
 import AnimeModal from './AnimeModal';
 import { AnimeCover } from './AnimeCard';
 import {
@@ -8,7 +8,10 @@ import {
   STATUS_LABEL,
   STATUS_STYLE,
   bangumiUrl,
+  hasParts,
   progressText,
+  progressThroughPart,
+  tmdbUrl,
   type AnimeEntry,
 } from '../../lib/anime';
 
@@ -58,6 +61,47 @@ export default function AnimeDetail({ entry, onClose }: { entry: AnimeEntry; onC
             <p className="mt-4 whitespace-pre-wrap rounded-2xl bg-slate-500/5 px-4 py-3 text-sm leading-relaxed text-slate-700 dark:bg-white/5 dark:text-slate-200">
               {entry.comment}
             </p>
+          )}
+
+          {hasParts(entry) && (
+            <ol className="mt-4 space-y-1">
+              {entry.parts.map((part, i) => {
+                const end = progressThroughPart(entry.parts, i);
+                const done = entry.status === 'completed' || entry.progress >= end;
+                const watched = Math.min(part.episodes, Math.max(0, entry.progress - (end - part.episodes)));
+                const isMovie = entry.kind === 'movie';
+                return (
+                  <li key={`${i}-${part.title}`} className="flex items-center gap-2 text-sm">
+                    <span className="w-12 shrink-0 text-xs font-bold text-slate-400">第 {i + 1} {isMovie ? '部' : '季'}</span>
+                    <span className="min-w-0 flex-1 truncate text-slate-700 dark:text-slate-200">
+                      {part.title}
+                      {part.airDate && <span className="ml-1.5 text-xs tabular-nums text-slate-400">{part.airDate.slice(0, 4)}</span>}
+                    </span>
+                    {done ? (
+                      <Check size={14} strokeWidth={3} className="shrink-0 text-indigo-500" aria-label="看完" />
+                    ) : (
+                      !isMovie && (
+                        <span className="shrink-0 text-xs tabular-nums text-slate-400">
+                          {watched > 0 ? `${watched} / ` : ''}
+                          {part.episodes} 集
+                        </span>
+                      )
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+
+          {entry.tmdbId && entry.tmdbType && (
+            <a
+              href={tmdbUrl(entry.tmdbType, entry.tmdbId)}
+              target="_blank"
+              rel="noreferrer"
+              className="mr-4 mt-4 inline-flex items-center gap-1 text-xs font-bold text-indigo-500 hover:underline"
+            >
+              在 TMDB 查看{entry.tmdbScore > 0 ? `（${entry.tmdbScore.toFixed(1)} 分）` : ''} <ExternalLink size={12} />
+            </a>
           )}
 
           {entry.bangumiId && (

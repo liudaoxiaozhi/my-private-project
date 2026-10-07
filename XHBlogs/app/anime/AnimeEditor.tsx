@@ -1,10 +1,11 @@
 'use client';
-// app/anime/AnimeEditor.tsx —— 添加（先搜 Bangumi，再确认信息）/ 编辑追番条目
+// app/anime/AnimeEditor.tsx —— 添加（先搜 Bangumi / TMDB，再确认信息）/ 编辑追番条目
 import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
-import { ExternalLink, Loader2, Minus, PencilLine, Plus, Search, Trash2 } from 'lucide-react';
-import AppImage from '../../components/AppImage';
+import { ExternalLink, Loader2, Minus, PencilLine, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import AnimeModal from './AnimeModal';
+import AnimeSearch from './AnimeSearch';
+import PartsProgress from './PartsProgress';
 import { AnimeCover } from './AnimeCard';
 import {
   KIND_LABEL,
@@ -13,19 +14,24 @@ import {
   STATUS_ORDER,
   bangumiUrl,
   emptyInput,
-  inputFromSubject,
+  hasParts,
+  isSingleMovie,
   toInput,
+  tmdbUrl,
+  withProgress,
   withStatus,
   type AnimeEntry,
   type AnimeInput,
-  type BangumiSubject,
+  type TmdbDetail,
 } from '../../lib/anime';
 
 interface AnimeEditorProps {
   /** 有值时为编辑模式 */
   entry: AnimeEntry | null;
-  /** 已在列表里的条目，用来提示重复添加 */
-  findByBangumiId: (id: number) => AnimeEntry | undefined;
+  /** 已在列表里的同一部（按 Bangumi / TMDB 编号），用来提示重复添加 */
+  findExisting: (ids: Pick<AnimeInput, 'bangumiId' | 'tmdbId' | 'tmdbType'>) => AnimeEntry | undefined;
+  tmdbReady: boolean;
+  onTmdbReady: () => void;
   onSave: (input: AnimeInput) => Promise<void>;
   onDelete?: () => Promise<void>;
   onOpenExisting: (entry: AnimeEntry) => void;
@@ -55,124 +61,18 @@ const toInt = (value: string): number => {
 
 const parseTags = (text: string): string[] => [...new Set(text.split(/[,，、\s]+/).map((t) => t.trim()).filter(Boolean))];
 
-// ============================== 搜索 ==============================
-
-function BangumiSearch({
-  onPick,
-  onManual,
-  findByBangumiId,
-}: {
-  onPick: (subject: BangumiSubject) => void;
-  onManual: (title: string) => void;
-  findByBangumiId: (id: number) => AnimeEntry | undefined;
-}) {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<BangumiSubject[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const search = async (e: FormEvent) => {
-    e.preventDefault();
-    const q = query.trim();
-    if (!q || loading) return;
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch(`/api/anime/search?q=${encodeURIComponent(q)}`);
-      const data = (await res.json().catch(() => ({}))) as { results?: BangumiSubject[]; error?: string };
-      if (!res.ok) throw new Error(data.error || `搜索失败（HTTP ${res.status}）`);
-      setResults(data.results ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '搜索失败');
-      setResults(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div>
-      <form onSubmit={search} className="flex gap-2">
-        <input
-          autoFocus
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="番名，或 Bangumi 条目链接 / 编号"
-          className={INPUT}
-          aria-label="搜索 Bangumi"
-        />
-        <button
-          type="submit"
-          disabled={loading || !query.trim()}
-          className="flex shrink-0 items-center gap-1.5 rounded-xl bg-indigo-500 px-4 text-sm font-bold text-white transition-colors hover:bg-indigo-600 disabled:opacity-50"
-        >
-          {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />} 搜索
-        </button>
-      </form>
-      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-        从 <a href="https://bgm.tv" target="_blank" rel="noreferrer" className="font-bold text-indigo-500 hover:underline">Bangumi</a> 自动填好封面、集数和首播日期；搜不到也可以
-        <button type="button" onClick={() => onManual(query.trim())} className="ml-1 font-bold text-indigo-500 hover:underline">
-          手动填写
-        </button>
-        。
-      </p>
-
-      {error && <p className="mt-4 rounded-xl bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-300">{error}</p>}
-
-      {results && results.length === 0 && (
-        <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">没有搜到，换个名字（原名 / 简称）试试，或者手动填写。</p>
-      )}
-
-      {results && results.length > 0 && (
-        <ul className="mt-4 space-y-1.5">
-          {results.map((s) => {
-            const existing = findByBangumiId(s.id);
-            return (
-              <li key={s.id}>
-                <button
-                  type="button"
-                  onClick={() => onPick(s)}
-                  className="flex w-full items-start gap-3 rounded-2xl p-2 text-left transition-colors hover:bg-indigo-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
-                >
-                  <div className="relative aspect-[3/4] w-14 shrink-0 overflow-hidden rounded-lg bg-slate-200 dark:bg-slate-800">
-                    {s.cover && <AppImage src={s.cover} alt="" fill sizes="56px" className="object-cover" referrerPolicy="no-referrer" />}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-2">
-                      <span className="truncate text-sm font-black text-slate-900 dark:text-white">{s.title}</span>
-                      {existing && (
-                        <span className="shrink-0 rounded-full bg-indigo-500/15 px-2 py-px text-[10px] font-bold text-indigo-600 dark:text-indigo-300">
-                          已添加 · {STATUS_LABEL[existing.status]}
-                        </span>
-                      )}
-                    </p>
-                    {s.originalTitle !== s.title && <p className="truncate text-xs text-slate-500 dark:text-slate-400">{s.originalTitle}</p>}
-                    <p className="mt-0.5 text-xs font-bold tabular-nums text-slate-500 dark:text-slate-400">
-                      {[
-                        KIND_LABEL[s.kind],
-                        s.platform && s.platform !== KIND_LABEL[s.kind] ? s.platform : '',
-                        s.airDate.slice(0, 4),
-                        s.totalEpisodes > 0 && s.kind !== 'movie' ? `${s.totalEpisodes} 集` : '',
-                        s.score > 0 ? `Bangumi ${s.score.toFixed(1)}` : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </p>
-                    {s.summary && <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500/90 dark:text-slate-400/90">{s.summary}</p>}
-                  </div>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
-  );
-}
-
 // ============================== 表单 ==============================
 
-export default function AnimeEditor({ entry, findByBangumiId, onSave, onDelete, onOpenExisting, onClose }: AnimeEditorProps) {
+export default function AnimeEditor({
+  entry,
+  findExisting,
+  tmdbReady,
+  onTmdbReady,
+  onSave,
+  onDelete,
+  onOpenExisting,
+  onClose,
+}: AnimeEditorProps) {
   const isEdit = entry !== null;
   const [step, setStep] = useState<'search' | 'form'>(isEdit ? 'form' : 'search');
   const [form, setForm] = useState<AnimeInput>(() => (entry ? toInput(entry) : emptyInput()));
@@ -181,19 +81,14 @@ export default function AnimeEditor({ entry, findByBangumiId, onSave, onDelete, 
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   const update = (patch: Partial<AnimeInput>) => {
     setForm((f) => ({ ...f, ...patch }));
     setDirty(true);
   };
 
-  const pick = (subject: BangumiSubject) => {
-    const existing = findByBangumiId(subject.id);
-    if (existing) {
-      onOpenExisting(existing);
-      return;
-    }
-    const next = inputFromSubject(subject);
+  const applyDraft = (next: AnimeInput) => {
     setForm(next);
     setTagsText(next.tags.join(' '));
     setStep('form');
@@ -204,6 +99,31 @@ export default function AnimeEditor({ entry, findByBangumiId, onSave, onDelete, 
     setForm({ ...emptyInput(), title });
     setTagsText('');
     setStep('form');
+  };
+
+  const setProgress = (progress: number) => {
+    setForm((f) => withProgress(f, progress));
+    setDirty(true);
+  };
+
+  /** 剧还在更新时，从 TMDB 重新拿季 / 集数（已看进度保留） */
+  const refreshFromTmdb = async () => {
+    if (!form.tmdbId || !form.tmdbType || refreshing) return;
+    setRefreshing(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/anime/tmdb?type=${form.tmdbType}&id=${form.tmdbId}`);
+      const data = (await res.json().catch(() => ({}))) as Partial<TmdbDetail> & { error?: string };
+      if (!res.ok || !data.draft) throw new Error(data.error || `更新失败（HTTP ${res.status}）`);
+      const { parts, totalEpisodes, tmdbScore, cover } = data.draft;
+      // 出了新一季时，「看过」会自动回到「在看」
+      setForm((f) => withProgress({ ...f, parts, totalEpisodes, tmdbScore, cover: f.cover || cover }, f.progress));
+      setDirty(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '更新失败');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const submit = async (e?: FormEvent) => {
@@ -239,6 +159,8 @@ export default function AnimeEditor({ entry, findByBangumiId, onSave, onDelete, 
   };
 
   const isMovie = form.kind === 'movie';
+  const multiPart = hasParts(form);
+  const canRefresh = tmdbReady && !!form.tmdbId && (form.tmdbType === 'tv' || form.tmdbType === 'collection');
 
   const footer =
     step === 'form' ? (
@@ -283,7 +205,15 @@ export default function AnimeEditor({ entry, findByBangumiId, onSave, onDelete, 
       confirmClose={() => !dirty || window.confirm('还没保存，确定要关闭吗？')}
     >
       {step === 'search' ? (
-        <BangumiSearch onPick={pick} onManual={manual} findByBangumiId={findByBangumiId} />
+        <AnimeSearch
+          tmdbReady={tmdbReady}
+          onTmdbReady={onTmdbReady}
+          findExisting={findExisting}
+          onDraft={applyDraft}
+          onOpenExisting={onOpenExisting}
+          onManual={manual}
+          inputClassName={INPUT}
+        />
       ) : (
         <form id="anime-editor-form" onSubmit={submit} className="space-y-5">
           <div className="flex gap-4">
@@ -308,10 +238,35 @@ export default function AnimeEditor({ entry, findByBangumiId, onSave, onDelete, 
                   {form.bangumiScore > 0 && <span className="text-slate-500 dark:text-slate-400">站内 {form.bangumiScore.toFixed(1)} 分</span>}
                 </a>
               )}
+              {form.tmdbId && form.tmdbType && (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <a
+                    href={tmdbUrl(form.tmdbType, form.tmdbId)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex flex-wrap items-center gap-x-1 text-xs font-bold text-indigo-500 hover:underline"
+                  >
+                    TMDB #{form.tmdbId} <ExternalLink size={12} />
+                    {form.tmdbScore > 0 && <span className="text-slate-500 dark:text-slate-400">评分 {form.tmdbScore.toFixed(1)}</span>}
+                  </a>
+                  {canRefresh && (
+                    <button
+                      type="button"
+                      onClick={refreshFromTmdb}
+                      disabled={refreshing}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-indigo-500 disabled:opacity-50 dark:text-slate-400"
+                      title="出了新一季 / 新一部时点一下"
+                    >
+                      <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+                      {form.tmdbType === 'tv' ? '更新季 / 集数' : '更新系列'}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
-          <Field label="封面地址（Bangumi 封面保存时会自动下载到本地）">
+          <Field label="封面地址（Bangumi / TMDB 的封面保存时会自动下载到本地）">
             <input
               value={form.cover}
               onChange={(e) => update({ cover: e.target.value })}
@@ -352,13 +307,28 @@ export default function AnimeEditor({ entry, findByBangumiId, onSave, onDelete, 
             </div>
           </div>
 
-          {!isMovie && (
+          {multiPart && (
+            <div>
+              <span className="mb-1.5 block text-xs font-bold text-slate-500 dark:text-slate-400">
+                进度（{isMovie ? `共 ${form.parts.length} 部` : `共 ${form.parts.length} 季 ${form.totalEpisodes} 集`}）
+              </span>
+              <PartsProgress
+                parts={form.parts}
+                progress={form.progress}
+                isMovie={isMovie}
+                inputClassName={INPUT_BASE}
+                onChange={setProgress}
+              />
+            </div>
+          )}
+
+          {!multiPart && !isSingleMovie(form) && (
             <div>
               <span className="mb-1.5 block text-xs font-bold text-slate-500 dark:text-slate-400">进度</span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => update({ progress: Math.max(0, form.progress - 1) })}
+                  onClick={() => setProgress(form.progress - 1)}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
                   aria-label="少看一集"
                 >
@@ -367,16 +337,14 @@ export default function AnimeEditor({ entry, findByBangumiId, onSave, onDelete, 
                 <input
                   inputMode="numeric"
                   value={form.progress || ''}
-                  onChange={(e) => update({ progress: toInt(e.target.value) })}
+                  onChange={(e) => setProgress(toInt(e.target.value))}
                   placeholder="0"
                   className={`${INPUT_BASE} w-20 text-center tabular-nums`}
                   aria-label="已看集数"
                 />
                 <button
                   type="button"
-                  onClick={() =>
-                    update({ progress: form.totalEpisodes > 0 ? Math.min(form.totalEpisodes, form.progress + 1) : form.progress + 1 })
-                  }
+                  onClick={() => setProgress(form.progress + 1)}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
                   aria-label="多看一集"
                 >
@@ -386,7 +354,15 @@ export default function AnimeEditor({ entry, findByBangumiId, onSave, onDelete, 
                 <input
                   inputMode="numeric"
                   value={form.totalEpisodes || ''}
-                  onChange={(e) => update({ totalEpisodes: toInt(e.target.value) })}
+                  onChange={(e) => {
+                    const totalEpisodes = toInt(e.target.value);
+                    // 只有一季时，总集数就是这一季的集数
+                    update(
+                      form.parts.length === 1
+                        ? { totalEpisodes, parts: [{ ...form.parts[0], episodes: totalEpisodes }] }
+                        : { totalEpisodes },
+                    );
+                  }}
                   placeholder="?"
                   className={`${INPUT_BASE} w-20 text-center tabular-nums`}
                   aria-label="总集数"

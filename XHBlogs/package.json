@@ -8,7 +8,8 @@
     "music": "node scripts/build-music-manifest.mjs",
     "images": "node scripts/build-image-meta.mjs",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:e2e": "node scripts/e2e.mjs"
   },
   "dependencies": {
     "@shikijs/transformers": "^4.5.0",
@@ -52,6 +53,7 @@
     "unified": "^11.0.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^20",

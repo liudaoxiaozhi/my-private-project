@@ -1,0 +1,32 @@
+// playwright.config.ts —— 端到端测试配置。平时用 npm run test:e2e 运行（会先放入测试内容并构建，见 scripts/e2e.mjs）
+import { defineConfig, devices } from '@playwright/test';
+
+const PORT = Number(process.env.E2E_PORT || 3123);
+const BASE_URL = `http://localhost:${PORT}`;
+
+export default defineConfig({
+  testDir: './e2e',
+  // 不少用例在量动画时长、等滚动恢复，并行跑会互相抢 CPU，结果不稳定
+  workers: 1,
+  fullyParallel: false,
+  timeout: 90_000,
+  expect: { timeout: 5_000 },
+  // 动画、滚动相关的断言对机器负载敏感，失败时自动重试一次；重试才过的会在报告里标成 flaky
+  retries: 1,
+  reporter: [['list'], ['html', { open: 'never' }]],
+  use: {
+    baseURL: BASE_URL,
+    viewport: { width: 1440, height: 900 },
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+  },
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } }],
+  webServer: {
+    command: `npx next start -p ${PORT}`,
+    url: BASE_URL,
+    env: { NEXT_DIST_DIR: '.next-e2e' },
+    // 端口上已经有别的服务（比如没关的 dev server）时直接报错，免得测到没有测试内容的旧版本
+    reuseExistingServer: false,
+    timeout: 60_000,
+  },
+});

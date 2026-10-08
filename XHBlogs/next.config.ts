@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   // Vercel 部署不设置这个变量，行为不变。
   output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
 
+  // 端到端测试（npm run test:e2e）构建到单独的 .next-e2e 目录，测试用的示例文章不会混进正式构建
+  distDir: process.env.NEXT_DIST_DIR || '.next',
+
   // 🚨 核心修改 2：Vercel 不需要强制加斜杠，关掉它能避免很多 API 路径匹配错误
   // trailingSlash: true,
 

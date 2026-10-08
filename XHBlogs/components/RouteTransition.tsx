@@ -57,7 +57,7 @@ export default function RouteTransition({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   return (
-    <div ref={ref} className="flex flex-1 flex-col">
+    <div ref={ref} data-route-content className="flex flex-1 flex-col">
       {children}
     </div>
   );

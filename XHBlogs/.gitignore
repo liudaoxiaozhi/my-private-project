@@ -12,6 +12,12 @@
 
 # testing
 /coverage
+# 端到端测试（npm run test:e2e）：单独的构建目录、报告，以及测试期间临时放进来的内容
+/.next-e2e/
+/test-results/
+/playwright-report/
+/posts/zz-e2e-*
+/chatters/zz-e2e-*
 
 # next.js
 /.next/

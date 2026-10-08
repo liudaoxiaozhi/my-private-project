@@ -338,7 +338,7 @@ export default function CommandPalette() {
             role="dialog"
             aria-modal="true"
             aria-label="搜索与命令"
-            className="relative flex max-h-[70vh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-white/50 bg-white/90 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/90"
+            className="glass-float rounded-3xl relative flex max-h-[70vh] w-full max-w-xl flex-col overflow-hidden"
             initial={{ opacity: 0, y: -12, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 380, damping: 30 } }}
             exit={{ opacity: 0, y: -8, scale: 0.98, transition: { duration: 0.12 } }}

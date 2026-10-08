@@ -102,7 +102,7 @@ export default async function Post({ params }: PostPageProps) {
         suppressHydrationWarning
       >
 
-        <article className="flex-1 min-w-0 bg-white/60 dark:bg-slate-800/50 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/40 dark:border-white/10 overflow-hidden transition-colors duration-700">
+        <article className="glass-card flex-1 min-w-0 overflow-hidden transition-colors duration-700">
           <div className="w-full aspect-video bg-slate-200 dark:bg-slate-700 relative group">
             <AppImage data-vt-hero src={cover} alt={post.title} fill sizes="(min-width: 1024px) 800px, 95vw" loading="eager" fetchPriority="high" className="w-full h-full object-cover opacity-90 transition-transform duration-1000 group-hover:scale-105" />
           </div>
@@ -167,7 +167,7 @@ export default async function Post({ params }: PostPageProps) {
         </article>
 
         <aside className="w-full lg:w-[320px] flex flex-col gap-6 flex-shrink-0">
-          <div className="bg-white/60 dark:bg-slate-800/50 backdrop-blur-xl rounded-3xl p-6 border border-white/40 dark:border-white/10 shadow-xl text-center">
+          <div className="glass-card p-6 text-center">
             <div className="w-20 h-20 mx-auto rounded-full p-1 bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-md mb-4 transition-transform duration-500 hover:rotate-3">
               <AppImage src={siteConfig.avatarUrl} alt={siteConfig.authorName} width={160} height={160} className="w-full h-full rounded-full object-cover bg-white" />
             </div>
@@ -179,7 +179,7 @@ export default async function Post({ params }: PostPageProps) {
           <SidebarLyric />
 
           {relatedPosts.length > 0 && (
-            <div className="bg-white/60 dark:bg-slate-800/50 backdrop-blur-xl rounded-3xl p-6 border border-white/40 dark:border-white/10 shadow-xl">
+            <div className="glass-card p-6">
               <h3 className="font-black text-slate-900 dark:text-white mb-4 border-l-4 border-indigo-500 pl-2 text-sm">RELATED</h3>
               <div className="space-y-4">
                 {relatedPosts.map((p) => (

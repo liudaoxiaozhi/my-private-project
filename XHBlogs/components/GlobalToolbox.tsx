@@ -40,7 +40,7 @@ export default function GlobalToolbox() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
             transition={{ duration: 0.3, type: "spring", stiffness: 300, damping: 25 }}
-            className="mb-2 bg-white/70 dark:bg-slate-800/80 backdrop-blur-2xl border border-white/50 dark:border-white/10 shadow-2xl rounded-3xl p-4 w-72 flex flex-col gap-4 overflow-hidden"
+            className="glass-float rounded-3xl mb-2 p-4 w-72 flex flex-col gap-4 overflow-hidden"
           >
             {/* 动态渲染：工具箱导航栏 */}
             <div className="flex flex-wrap gap-2 border-b border-slate-300/50 dark:border-slate-700/50 pb-3">

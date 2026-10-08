@@ -109,7 +109,7 @@ export default function ArticleProgress({ storageKey }: { storageKey: string }) 
         {resumeRatio !== null && (
           <motion.div
             role="status"
-            className="fixed bottom-6 left-1/2 z-[95] flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/50 bg-white/85 p-1.5 pl-4 text-sm shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-800/85"
+            className="glass-float rounded-full fixed bottom-6 left-1/2 z-[95] flex -translate-x-1/2 items-center gap-1 p-1.5 pl-4 text-sm"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}

@@ -125,7 +125,7 @@ export default function AboutClient({
   };
 
   return (
-    <div className="bg-white/60 dark:bg-slate-800/50 backdrop-blur-xl rounded-[40px] shadow-2xl border border-white/40 dark:border-white/10 overflow-hidden transition-colors duration-700 relative">
+    <div className="glass-card overflow-hidden transition-colors duration-700 relative">
 
       <div className="w-full h-40 sm:h-48 md:h-64 relative bg-slate-200 dark:bg-slate-700 overflow-hidden group">
         <AppImage src={coverImage} alt="关于我" fill sizes="(min-width: 1024px) 1100px, 100vw" loading="eager" fetchPriority="high" className="w-full h-full object-cover opacity-90 transition-transform duration-1000 group-hover:scale-105" />
@@ -306,7 +306,7 @@ export default function AboutClient({
 
                       <Link
                         href={targetUrl}
-                        className="flex flex-col md:flex-row md:items-center gap-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md p-4 rounded-2xl border border-white/50 dark:border-white/5 shadow-sm hover:shadow-lg transition-all group-hover:-translate-y-1 cursor-pointer block relative overflow-hidden"
+                        className="glass-panel rounded-2xl flex flex-col md:flex-row md:items-center gap-3 p-4 hover:shadow-lg transition-all group-hover:-translate-y-1 cursor-pointer block relative overflow-hidden"
                       >
                         <div className="flex items-center gap-3 w-full md:w-auto">
                           <AppImage src={siteConfig.avatarUrl} alt={siteConfig.authorName} width={80} height={80} className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-white dark:border-slate-700 shadow-sm shrink-0" />

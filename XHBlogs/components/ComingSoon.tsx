@@ -11,7 +11,7 @@ export default function ComingSoon({ title, description, Icon }: ComingSoonProps
   return (
     <div className="relative min-h-screen pb-24">
       <main className="relative z-10 mx-auto mt-24 w-full max-w-3xl px-4 sm:px-6 md:mt-28">
-        <section className="flex flex-col items-center rounded-3xl border border-white/40 bg-white/55 px-6 py-16 text-center shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-800/55">
+        <section className="glass-card flex flex-col items-center px-6 py-16 text-center">
           <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-300">
             <Icon size={30} />
           </span>

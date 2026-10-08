@@ -87,7 +87,7 @@ export default function ArticleReaderSettings({ allowFocus = true }: { allowFocu
           <motion.div
             role="dialog"
             aria-label="阅读设置"
-            className="absolute right-0 top-full z-30 mt-2 w-[min(20rem,calc(100vw-2.5rem))] rounded-2xl border border-white/60 bg-white/95 p-4 text-sm text-slate-700 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-800/95 dark:text-slate-200"
+            className="glass-float rounded-2xl absolute right-0 top-full z-30 mt-2 w-[min(20rem,calc(100vw-2.5rem))] p-4 text-sm text-slate-700 dark:text-slate-200"
             initial={{ opacity: 0, y: -6, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.97 }}

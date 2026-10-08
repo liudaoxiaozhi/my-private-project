@@ -105,7 +105,7 @@ export default async function ChatterDetail({ params }: ChatterPageProps) {
         suppressHydrationWarning
       >
 
-        <article className="flex-1 min-w-0 bg-white/60 dark:bg-slate-800/50 backdrop-blur-xl rounded-[40px] shadow-2xl border border-white/40 dark:border-white/10 overflow-hidden transition-colors duration-700">
+        <article className="glass-card flex-1 min-w-0 overflow-hidden transition-colors duration-700">
           {chatterData.cover && (
             <div className="w-full aspect-video bg-slate-200 dark:bg-slate-700 relative group">
               <AppImage data-vt-hero src={chatterData.cover} alt={chatterData.title} fill sizes="(min-width: 1024px) 800px, 95vw" loading="eager" fetchPriority="high" className="w-full h-full object-cover opacity-90 transition-transform duration-1000 group-hover:scale-105" />
@@ -168,7 +168,7 @@ export default async function ChatterDetail({ params }: ChatterPageProps) {
         </article>
 
         <aside className="w-full lg:w-[320px] flex flex-col gap-6 flex-shrink-0">
-          <div className="bg-white/60 dark:bg-slate-800/50 backdrop-blur-xl rounded-3xl p-6 border border-white/40 dark:border-white/10 shadow-xl text-center">
+          <div className="glass-card p-6 text-center">
             <div className="w-20 h-20 mx-auto rounded-full p-1 bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-md mb-4 hover:rotate-3 transition-transform">
               <AppImage src={siteConfig.avatarUrl} alt={siteConfig.authorName} width={160} height={160} className="w-full h-full rounded-full object-cover bg-white" />
             </div>
@@ -179,7 +179,7 @@ export default async function ChatterDetail({ params }: ChatterPageProps) {
 
           <SidebarLyric />
 
-          <div className="bg-white/60 dark:bg-slate-800/50 backdrop-blur-xl rounded-3xl p-6 border border-white/40 dark:border-white/10 shadow-xl">
+          <div className="glass-card p-6">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black text-slate-800 dark:text-white tracking-wider">{yearStr}年{monthNum}月</h3>
             </div>
@@ -200,7 +200,7 @@ export default async function ChatterDetail({ params }: ChatterPageProps) {
             </div>
           </div>
 
-          <div className="bg-white/60 dark:bg-slate-800/50 backdrop-blur-xl rounded-3xl p-6 border border-white/40 dark:border-white/10 shadow-xl">
+          <div className="glass-card p-6">
             <h3 className="font-black text-slate-900 dark:text-white mb-4 border-l-4 border-indigo-500 pl-2 text-xs tracking-widest uppercase">Recent Records</h3>
             <div className="space-y-4">
               {recentChatters.map(p => (

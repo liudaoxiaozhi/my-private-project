@@ -121,7 +121,7 @@ export default function TimelineClient({ posts: initialPosts, tags }: TimelineCl
               setIsDropdownOpen(true);
             }}
             onFocus={() => setIsDropdownOpen(true)}
-            className="w-full bg-white/40 dark:bg-slate-800/40 backdrop-blur-xl border border-white/40 dark:border-white/5 rounded-2xl px-6 py-4 pl-14 text-slate-800 dark:text-white shadow-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder-slate-400 font-medium relative z-20"
+            className="glass-panel rounded-2xl w-full px-6 py-4 pl-14 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder-slate-400 font-medium relative z-20"
           />
           <Search className="w-6 h-6 absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors z-20" />
 
@@ -132,7 +132,7 @@ export default function TimelineClient({ posts: initialPosts, tags }: TimelineCl
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.98 }}
                 transition={{ duration: 0.2 }}
-                className="absolute top-full left-0 right-0 mt-3 bg-white/80 dark:bg-slate-900/90 backdrop-blur-2xl border border-slate-200/50 dark:border-slate-700/50 rounded-2xl shadow-2xl overflow-hidden max-h-[360px] overflow-y-auto z-[100]"
+                className="glass-float rounded-2xl absolute top-full left-0 right-0 mt-3 overflow-hidden max-h-[360px] overflow-y-auto z-[100]"
               >
                 {searchResults.length > 0 ? (
                   <div className="flex flex-col py-2">
@@ -167,7 +167,7 @@ export default function TimelineClient({ posts: initialPosts, tags }: TimelineCl
           </AnimatePresence>
         </div>
 
-        <div className="w-full flex flex-col md:flex-row justify-between items-center gap-6 bg-white/30 dark:bg-slate-800/30 backdrop-blur-md p-4 rounded-3xl border border-white/20 dark:border-white/5">
+        <div className="glass-panel rounded-2xl w-full flex flex-col md:flex-row justify-between items-center gap-6 p-4">
           <div className="flex flex-wrap justify-center md:justify-start gap-2 flex-1">
             <button onClick={() => setSelectedTag('All')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${selectedTag === 'All' ? 'bg-indigo-500 text-white shadow-md' : 'bg-white/50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400 hover:bg-white'}`}>
               全部档案
@@ -222,7 +222,7 @@ export default function TimelineClient({ posts: initialPosts, tags }: TimelineCl
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 pt-4 pb-10">
                 {timelinePosts.map((post, idx) => (
                   <motion.div key={post.slug} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: idx * 0.05 }}>
-                    <div className="bg-white/60 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/50 rounded-2xl md:rounded-3xl overflow-hidden shadow-lg flex flex-col h-full group relative hover:-translate-y-1 transition-transform duration-300">
+                    <div className="glass-card overflow-hidden flex flex-col h-full group relative hover:-translate-y-1 transition-transform duration-300">
 
                       <Link href={`/posts/${post.slug}`} className="block flex-1 flex flex-col cursor-pointer">
                         {/* 🌟 图片高度自适应：手机变矮，电脑变高 */}

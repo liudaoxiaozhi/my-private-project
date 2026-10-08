@@ -28,7 +28,7 @@ export default function SidebarLyric() {
   if (!currentSong) return null;
 
   return (
-    <div className="bg-white/60 dark:bg-slate-800/50 backdrop-blur-xl rounded-3xl p-6 border border-white/40 dark:border-white/10 shadow-xl transition-colors duration-700">
+    <div className="glass-card p-6 transition-colors duration-700">
       <h3 className="font-black text-slate-900 dark:text-white mb-4 border-l-4 border-indigo-500 pl-2 text-sm">NOW PLAYING</h3>
 
       <div className="flex items-center gap-4 mb-4">

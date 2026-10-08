@@ -117,7 +117,7 @@ export default function ClientTOC({ toc }: { toc: TocItem[] }) {
   return (
     <div
       ref={scrollerRef}
-      className="custom-scrollbar max-h-[75vh] overflow-y-auto rounded-3xl border border-white/40 bg-white/60 p-6 shadow-xl backdrop-blur-xl transition-colors duration-700 dark:border-white/10 dark:bg-slate-800/50"
+      className="glass-card custom-scrollbar max-h-[75vh] overflow-y-auto p-6 transition-colors duration-700"
     >
       <h3 className="mb-4 border-l-4 border-indigo-500 pl-2 text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white">
         Table of Contents
@@ -156,7 +156,7 @@ export function MobileTOC({ toc }: { toc: TocItem[] }) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="打开目录"
-        className="fixed bottom-[9.5rem] right-4 z-[90] flex h-11 w-11 items-center justify-center rounded-full border border-white/40 bg-white/60 text-slate-700 shadow-xl backdrop-blur-xl transition-all active:scale-90 dark:border-white/10 dark:bg-slate-800/60 dark:text-slate-200 md:bottom-32 md:right-6"
+        className="glass-chip fixed bottom-[9.5rem] right-4 z-[90] flex h-11 w-11 items-center justify-center text-slate-700 transition-all active:scale-90 dark:text-slate-200 md:bottom-32 md:right-6"
       >
         <ListTree size={20} />
       </button>
@@ -177,7 +177,7 @@ export function MobileTOC({ toc }: { toc: TocItem[] }) {
               role="dialog"
               aria-modal="true"
               aria-label="文章目录"
-              className="fixed inset-x-0 bottom-0 z-[101] flex max-h-[72vh] flex-col rounded-t-3xl border-t border-white/40 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/95"
+              className="glass-float fixed inset-x-0 bottom-0 z-[101] flex max-h-[72vh] flex-col rounded-t-3xl pb-[env(safe-area-inset-bottom)]"
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}

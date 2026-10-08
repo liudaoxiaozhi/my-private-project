@@ -41,7 +41,7 @@ export default function SiteDashboard() {
 
   return (
     // 横向铺满 12 列的长条矩阵
-    <div className="md:col-span-12 rounded-3xl bg-white/40 dark:bg-slate-800/50 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl overflow-hidden flex flex-col md:flex-row items-stretch transition-colors duration-700 h-auto md:h-20 group">
+    <div className="glass-card md:col-span-12 overflow-hidden flex flex-col md:flex-row items-stretch transition-colors duration-700 h-auto md:h-20 group">
 
       {/* 左侧：翻页时钟特效 (使用等宽字体) */}
       <div className="bg-slate-900 dark:bg-black text-white px-8 py-4 md:py-0 flex flex-col items-center justify-center shadow-inner relative overflow-hidden group-hover:text-indigo-400 transition-colors duration-300">

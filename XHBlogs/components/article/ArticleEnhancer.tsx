@@ -260,7 +260,7 @@ export default function ArticleEnhancer({ contentId = ARTICLE_CONTENT_ID }: { co
           <motion.div
             key="footnote"
             role="tooltip"
-            className="xh-footnote-popover fixed z-[10000] rounded-2xl border border-white/60 bg-white/95 px-4 py-3 text-sm leading-relaxed text-slate-700 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-800/95 dark:text-slate-200 [&_a]:text-indigo-500 [&_a]:underline [&_code]:rounded [&_code]:bg-indigo-500/10 [&_code]:px-1 [&_p]:m-0"
+            className="glass-float rounded-2xl xh-footnote-popover fixed z-[10000] px-4 py-3 text-sm leading-relaxed text-slate-700 dark:text-slate-200 [&_a]:text-indigo-500 [&_a]:underline [&_code]:rounded [&_code]:bg-indigo-500/10 [&_code]:px-1 [&_p]:m-0"
             style={{
               top: footnote.top,
               bottom: footnote.bottom,

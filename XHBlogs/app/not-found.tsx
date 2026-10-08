@@ -21,7 +21,7 @@ export default function NotFound() {
   return (
     <div className="relative min-h-screen pb-24">
       <main className="relative z-10 mx-auto mt-40 w-full max-w-xl px-4 sm:px-6 md:mt-44">
-        <section className="relative rounded-3xl border border-white/40 bg-white/60 px-6 pb-10 pt-14 text-center shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-800/60 sm:px-10">
+        <section className="glass-card relative px-6 pb-10 pt-14 text-center sm:px-10">
           <AppImage
             src={PET.src}
             alt=""

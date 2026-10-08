@@ -19,7 +19,7 @@ interface ContinueReadingProps {
 const PRIMARY =
   'inline-flex items-center gap-2 rounded-full bg-indigo-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2';
 const SECONDARY =
-  'inline-flex items-center gap-2 rounded-full bg-white/60 px-5 py-3 text-sm font-bold text-slate-700 ring-1 ring-white/50 backdrop-blur-md transition-all duration-300 ease-out hover:bg-white/80 dark:bg-slate-800/60 dark:text-slate-200 dark:ring-white/10 dark:hover:bg-slate-700/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400';
+  'glass-chip inline-flex items-center gap-2 px-5 py-3 text-sm font-bold text-slate-700 transition-all duration-300 ease-out hover:bg-white/80 dark:text-slate-200 dark:hover:bg-slate-700/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400';
 
 export default function ContinueReading({ bookSlug, firstHref, validHrefs }: ContinueReadingProps) {
   const [progress, setProgress] = useState<NovelProgress | null>(null);

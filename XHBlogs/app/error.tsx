@@ -18,7 +18,7 @@ export default function ErrorPage({ error, unstable_retry }: ErrorPageProps) {
   return (
     <div className="relative min-h-screen pb-24">
       <main className="relative z-10 mx-auto mt-32 w-full max-w-xl px-4 sm:px-6 md:mt-36">
-        <section className="rounded-3xl border border-white/40 bg-white/60 px-6 py-12 text-center shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-800/60 sm:px-10">
+        <section className="glass-card px-6 py-12 text-center sm:px-10">
           <p className="text-5xl" aria-hidden="true">🛠️</p>
           <h1 className="mt-4 text-2xl font-black text-slate-900 dark:text-white">出了点小状况</h1>
           <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-slate-600 dark:text-slate-400">

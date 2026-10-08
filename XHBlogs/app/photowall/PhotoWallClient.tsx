@@ -59,7 +59,7 @@ export default function PhotoWallClient() {
                   placeholder="搜索相册名或照片描述..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-12 pl-12 pr-4 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border border-white/50 dark:border-white/10 rounded-full text-sm text-slate-800 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-sm transition-all duration-700"
+                  className="glass-panel rounded-2xl w-full h-12 pl-12 pr-4 text-sm text-slate-800 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-700"
                 />
               </div>
             </div>
@@ -164,7 +164,7 @@ export default function PhotoWallClient() {
                 <p className="text-slate-600 dark:text-slate-400 font-medium text-lg">{currentAlbum.description}</p>
               </div>
 
-              <div className="text-sm font-bold text-slate-500 dark:text-slate-400 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/50 dark:border-white/10 shadow-sm">
+              <div className="glass-panel rounded-2xl text-sm font-bold text-slate-500 dark:text-slate-400 px-5 py-2.5">
                 共 <span className="text-indigo-500 dark:text-indigo-400 text-lg">{currentAlbum.photos.length}</span> 瞬间
               </div>
             </div>

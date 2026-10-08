@@ -59,7 +59,7 @@ export default function ChatterBoard({ chatters }: { chatters: Chatter[] }) {
             placeholder="搜寻被遗忘的思绪..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white/40 dark:bg-slate-800/40 backdrop-blur-xl border border-white/40 dark:border-white/5 rounded-xl md:rounded-2xl px-4 md:px-6 py-3 md:py-4 pl-10 md:pl-14 text-sm md:text-base text-slate-800 dark:text-white shadow-lg md:shadow-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder-slate-400 font-medium"
+            className="glass-panel rounded-2xl w-full px-4 md:px-6 py-3 md:py-4 pl-10 md:pl-14 text-sm md:text-base text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder-slate-400 font-medium"
           />
           <svg className="w-4 h-4 md:w-6 md:h-6 absolute left-5 md:left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
         </div>
@@ -96,7 +96,7 @@ export default function ChatterBoard({ chatters }: { chatters: Chatter[] }) {
               {/* 🌟 核心修改 2：卡片圆角缩小 rounded-2xl */}
               <Link
                 href={`/chatter/${chatter.slug}`}
-                className="block rounded-2xl md:rounded-[32px] bg-white/40 dark:bg-slate-800/40 backdrop-blur-2xl border border-white/50 dark:border-white/5 shadow-md md:shadow-xl hover:shadow-2xl transition-all duration-500 group relative overflow-hidden"
+                className="glass-card block hover:shadow-2xl transition-all duration-500 group relative overflow-hidden"
               >
                 {chatter.cover && (
                   // 🌟 核心修改 3：图片高度自适应 h-28 -> h-52

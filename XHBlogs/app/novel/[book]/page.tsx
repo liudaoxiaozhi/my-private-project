@@ -49,7 +49,7 @@ export default async function BookPage({ params }: BookPageProps) {
       <main className="relative z-10 mx-auto mt-24 w-full max-w-5xl px-4 sm:px-6 md:mt-28 lg:px-8">
         <Link
           href="/novel"
-          className="mb-4 inline-flex items-center gap-1 rounded-full bg-white/50 px-3 py-1.5 text-sm font-bold text-slate-600 ring-1 ring-white/40 backdrop-blur-md transition-colors duration-300 hover:bg-white/70 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-white/10 dark:hover:bg-slate-700/60"
+          className="glass-chip mb-4 inline-flex items-center gap-1 px-3 py-1.5 text-sm font-bold text-slate-600 transition-colors duration-300 hover:bg-white/70 dark:text-slate-300 dark:hover:bg-slate-700/60"
         >
           <ChevronLeft size={16} /> 书架
         </Link>

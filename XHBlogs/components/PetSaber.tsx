@@ -520,7 +520,7 @@ export default function PetSaber() {
           {...dragHandlers}
           aria-label={hidden ? '叫她出来' : '摸摸头（可拖动，方向键也能挪位置）'}
           title={hidden ? '叫她出来' : '摸摸头 · 按住可以拖动'}
-          className={`absolute left-0 touch-none focus-visible:outline-none ${dragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          className={`absolute left-0 touch-none rounded-3xl ${dragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           style={{ width: PET_WIDTH, height: PET_HEIGHT, bottom: PET_BOTTOM, transformOrigin: '50% 100%' }}
           animate={{ y: hidden ? PET_HEIGHT * 0.8 : 0, rotate: hidden ? 0 : dragging ? -6 : dozing ? 7 : tilt, scale: dragging ? 1.04 : 1 }}
           whileHover={hidden || reduceMotion || dragging ? undefined : { y: -8 }}

@@ -16,7 +16,6 @@ const STATIC_ROUTES: ReadonlyArray<{ path: string; priority: number; changeFrequ
   { path: '/bills', priority: 0.3, changeFrequency: 'weekly' },
   { path: '/anime', priority: 0.4, changeFrequency: 'weekly' },
   { path: '/music', priority: 0.4, changeFrequency: 'monthly' },
-  { path: '/tree', priority: 0.4, changeFrequency: 'monthly' },
   { path: '/friends', priority: 0.4, changeFrequency: 'monthly' },
   { path: '/about', priority: 0.5, changeFrequency: 'monthly' },
 ];

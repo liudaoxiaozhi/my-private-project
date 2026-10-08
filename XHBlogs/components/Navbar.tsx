@@ -31,7 +31,6 @@ const NAV_ITEMS: NavItem[] = [
   { name: '项目', href: '/projects' },
   { name: '归档', href: '/timeline' },
   { name: '音乐', href: '/music' },
-  { name: '灵境', href: '/tree' },
   { name: '说说', href: '/moments' },
   { name: '杂谈', href: '/chatter' },
   { name: '书架', href: '/novel' },
@@ -195,10 +194,9 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 🌟 手机端轮盘：把分组展开成平铺链接，并过滤掉「灵境」，保证圆盘自动均匀排布
+  // 🌟 手机端轮盘：把分组展开成平铺链接，保证圆盘自动均匀排布
   const mobileNavLinks: NavLink[] = NAV_ITEMS
-    .flatMap((item) => (isGroup(item) ? item.children.map(({ name, href }) => ({ name, href })) : [item]))
-    .filter((link) => link.href !== '/tree');
+    .flatMap((item) => (isGroup(item) ? item.children.map(({ name, href }) => ({ name, href })) : [item]));
 
   return (
     // 导航栏常驻在根布局里；音乐页是固定深色的沉浸页面，导航栏跟着用深色样式

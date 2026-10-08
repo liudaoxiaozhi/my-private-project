@@ -27,7 +27,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             initial={{ opacity: 0, y: -50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -50, scale: 0.9 }}
-            className={`fixed top-20 left-1/2 -translate-x-1/2 z-[9999] px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-xl border
+            className={`fixed top-20 left-1/2 -translate-x-1/2 z-[10001] px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-xl border
               ${toastMsg.type === 'success' ? 'bg-green-500/90 border-green-400 text-white' : ''}
               ${toastMsg.type === 'warning' ? 'bg-amber-500/90 border-amber-400 text-white' : ''}
               ${toastMsg.type === 'error' ? 'bg-red-500/90 border-red-400 text-white' : ''}

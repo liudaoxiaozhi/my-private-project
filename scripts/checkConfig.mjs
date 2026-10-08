@@ -32,8 +32,6 @@ const commonConfigs = [
   { key: 'icpConfig', snippet: `\n  icpConfig: {\n    name: "萌ICP备 20260240号",\n    link: "https://icp.gov.moe/?keyword=20260240",\n  },` },
   { key: 'geminiConfig', snippet: `\n  geminiConfig: {\n    modelId: "gemini-2.5-flash-lite",\n    systemPrompt: "你现在是一只傲娇、聪明、有点毒舌但很可爱的暹罗猫。\\n                  你的名字叫“煤球”。\\n                  你的主人是一个喜欢折腾代码的极客。\\n                  你说话的特点是：\\n                  1. 必须简短，每次最多一两句话。\\n                  2. 喜欢在句尾加上“喵~”或者“喵呜~”。\\n                  3. 经常抱怨肚子饿，喜欢要小鱼干。\\n                  4. 回复字数最多不能超过100字。\\n                  5. 绝对不要承认自己是一个AI模型，你就是一只真实的猫。\\n                  6.笨猫。",\n    maxOutputTokens: 150,\n    temperature: 0.85,\n  },` },
   { key: 'friendLinkApplyFormat', snippet: `\n  friendLinkApplyFormat: "名称：XingHuiSamaの宝藏之地\\n简介：今天我也要学习吗\\n链接：https://www.xinghuisama.top\\n头像：https://bu.dusays.com/2026/03/24/69c1e38ac1846.jpg",` },
-  // 👇 【新增】：RPG 等级与全图鉴徽章系统开关
-  { key: 'enableLevelSystem', snippet: `\n  // 👇 【新增】：RPG 等级与徽章系统开关 (展示在创意工坊、帝江号与留言板中)\n  enableLevelSystem: true,` }
 ];
 
 // =================================================================

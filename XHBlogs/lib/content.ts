@@ -68,17 +68,6 @@ export interface Moment {
   content: string;
 }
 
-/** 「灵境」创意工坊（/tree）使用的内容条目 */
-export interface WorkshopItem {
-  id: string;
-  slug: string;
-  title: string;
-  type: 'post' | 'chatter' | 'moment';
-  date: string;
-  cover: string | null;
-  content: string;
-}
-
 export interface TagStat {
   name: string;
   count: number;

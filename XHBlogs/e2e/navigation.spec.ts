@@ -171,11 +171,15 @@ test('音乐页导航栏固定深色；小说阅读页没有站点导航栏', as
   await page.goto('/music');
   expect(await page.evaluate(() => !!document.querySelector('header')?.closest('.dark.contents'))).toBe(true);
 
+  // 找一本有章节的书（只有简介的书没有阅读页）
   const index = await (await request.get('/search-index.json')).json();
-  test.skip(!index.books?.length, '书架是空的');
-  await page.goto(index.books[0].href);
-  const chapter = await page.evaluate(() => [...document.querySelectorAll<HTMLAnchorElement>('a[href^="/novel/"]')].map((a) => a.getAttribute('href')!).find((h) => /^\/novel\/[^/]+\/[^/]+\/[^/]+$/.test(h)));
-  test.skip(!chapter, '这本书还没有章节');
+  let chapter: string | undefined;
+  for (const book of (index.books ?? []) as Array<{ href: string }>) {
+    await page.goto(book.href);
+    chapter = await page.evaluate(() => [...document.querySelectorAll<HTMLAnchorElement>('a[href^="/novel/"]')].map((a) => a.getAttribute('href')!).find((h) => /^\/novel\/[^/]+\/[^/]+\/[^/]+$/.test(h)));
+    if (chapter) break;
+  }
+  test.skip(!chapter, '书架上没有带章节的书');
   await page.goto(chapter!);
   await expect(page.locator('header').getByRole('link', { name: '归档' })).toHaveCount(0);
 });

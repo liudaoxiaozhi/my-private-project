@@ -175,6 +175,16 @@ html[data-vt-phase='new'] [data-vt-hero] {
   animation-duration: 0.35s;
 }
 
+/* 特效档位（lib/effects.ts）：首屏就按 <html data-effects> 隐藏对应特效，挂载后组件再整个卸载 */
+html[data-effects='lite'] [data-fx='full'],
+html[data-effects='off'] [data-fx] {
+  display: none !important;
+}
+/* 「阅读」档：强调色随背景直接切换，不做渐变 */
+html[data-effects='off'] {
+  transition: none !important;
+}
+
 /* 站内跳转加载条（components/NavigationProgress.tsx）：先快后慢，停在 85% 等页面就绪 */
 @keyframes nav-progress {
   from { transform: scaleX(0); }

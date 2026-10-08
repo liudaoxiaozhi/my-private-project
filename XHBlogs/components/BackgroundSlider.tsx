@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { siteConfig } from '../siteConfig';
 import { DEFAULT_ACCENT_HUE, getImageMeta, toAccentHue } from '../lib/imageMeta';
+import { useEffectsLevel } from './EffectGate';
 
 /** 每张背景停留时长（毫秒） */
 const SLIDE_INTERVAL_MS = 10_000;
@@ -68,9 +69,11 @@ export default function BackgroundSlider() {
   // 服务端与客户端首帧都从 0 开始，避免 Hydration 不一致
   const [index, setIndex] = useState(0);
   const total = slides.length;
+  // 「阅读」档：背景固定为当前这张，不再轮播
+  const still = useEffectsLevel() === 'off';
 
   useEffect(() => {
-    if (total <= 1) return;
+    if (total <= 1 || still) return;
     const timer = window.setInterval(() => {
       // 标签页在后台时不切换，回到前台不会出现连跳
       if (document.visibilityState === 'visible') {
@@ -78,7 +81,7 @@ export default function BackgroundSlider() {
       }
     }, SLIDE_INTERVAL_MS);
     return () => window.clearInterval(timer);
-  }, [total]);
+  }, [total, still]);
 
   useEffect(() => {
     if (total > 0) applyAccentFor(slides[index]);

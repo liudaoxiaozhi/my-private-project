@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTheme } from './ThemeProvider';
+import { useEffectsLevel } from './EffectGate';
 
 interface Petal {
   id: number;
@@ -50,11 +51,13 @@ export default function Sakura() {
   const pathname = usePathname();
   const { isDark } = useTheme();
   const [petals, setPetals] = useState<Petal[]>([]);
+  // 「简洁」档花瓣减半（「阅读」档整个不挂载，见 EffectGate）
+  const lite = useEffectsLevel() === 'lite';
 
   useEffect(() => {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
     const mobile = window.matchMedia('(max-width: 767px)');
-    const update = () => setPetals(reduce.matches ? [] : makePetals(mobile.matches ? 10 : 24));
+    const update = () => setPetals(reduce.matches ? [] : makePetals((mobile.matches ? 10 : 24) / (lite ? 2 : 1)));
     update();
     reduce.addEventListener('change', update);
     mobile.addEventListener('change', update);
@@ -62,7 +65,7 @@ export default function Sakura() {
       reduce.removeEventListener('change', update);
       mobile.removeEventListener('change', update);
     };
-  }, []);
+  }, [lite]);
 
   if (petals.length === 0 || EXCLUDED.some((re) => re.test(pathname ?? ''))) return null;
 

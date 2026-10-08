@@ -45,7 +45,9 @@ export default function Fireflies() {
 
       {/* 动画引擎 */}
       <style>{`
-        /* 内层：纯粹的光芒呼吸闪烁 */
+        /* 内层：纯粹的光芒呼吸闪烁。
+           🚀 光晕（box-shadow）固定写在元素上，动画只改透明度和缩放：这两项交给 GPU 合成，
+           不像逐帧改 box-shadow 那样每一帧都要重绘。光晕随透明度一起明暗，看起来没有区别 */
         @keyframes fireflyBreathe {
           0%, 100% { 
             opacity: 0; 
@@ -54,7 +56,6 @@ export default function Fireflies() {
           50% { 
             opacity: 1; 
             transform: scale(1.2); 
-            box-shadow: 0 0 10px 3px rgba(100, 255, 150, 0.8), 0 0 20px 6px rgba(50, 255, 100, 0.4);
           }
         }
 
@@ -100,6 +101,7 @@ export default function Fireflies() {
               width: `${fly.size}px`,
               height: `${fly.size}px`,
               backgroundColor: 'rgba(200, 255, 200, 0.9)',
+              boxShadow: '0 0 10px 3px rgba(100, 255, 150, 0.8), 0 0 20px 6px rgba(50, 255, 100, 0.4)',
               animation: `fireflyBreathe ${fly.breatheDuration}s ease-in-out infinite`,
               animationDelay: `${fly.breatheDelay}s`,
             }}

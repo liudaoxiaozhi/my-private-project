@@ -23,6 +23,8 @@ import Navbar from '../components/Navbar';
 import RouteTransition from '../components/RouteTransition';
 import NavigationProgress from '../components/NavigationProgress';
 import { getImageMeta, toAccentHue } from '../lib/imageMeta';
+import { effectsInitScript } from '../lib/effects';
+import EffectGate from '../components/EffectGate';
 import CoverTransition from '../components/CoverTransition';
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -63,6 +65,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         {/* 🌗 必须放在最前：绘制前确定深浅色，避免闪烁（替代旧版「挂载前隐藏整页」） */}
         <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* ✨ 同样放在最前：首屏绘制前定好特效档位（完整 / 简洁 / 阅读），见 lib/effects.ts */}
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: effectsInitScript }} />
         <style
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
@@ -114,19 +118,19 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/40 dark:bg-indigo-900/20 blur-[100px] rounded-full z-[-7] md:mix-blend-overlay"></div>
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-400/30 dark:bg-purple-900/30 blur-[100px] rounded-full z-[-7] md:mix-blend-overlay"></div>
 
-                {/* 隐藏手机端高负载粒子特效；siteConfig.enableParticles 可整体关闭 */}
+                {/* 隐藏手机端高负载粒子特效；siteConfig.enableParticles 可整体关闭；只在「完整」档显示 */}
                 {siteConfig.enableParticles && (
-                  <div className="hidden md:block absolute inset-0 w-full h-full">
+                  <EffectGate min="full" className="hidden md:block absolute inset-0 w-full h-full">
                     <BackgroundEffects />
-                  </div>
+                  </EffectGate>
                 )}
               </div>
 
-              {/* 隐藏手机端弹幕；siteConfig.enableDanmaku 可关闭 */}
+              {/* 隐藏手机端弹幕；siteConfig.enableDanmaku 可关闭；只在「完整」档显示 */}
               {siteConfig.enableDanmaku && (
-                <div className="hidden md:block">
+                <EffectGate min="full" className="hidden md:block">
                   <DanmakuBackground />
-                </div>
+                </EffectGate>
               )}
 
               <div className="relative z-10 flex-1 flex flex-col">
@@ -152,22 +156,24 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 </div>
               </HideOnReader>
 
-              {/* 隐藏手机端点击涟漪；siteConfig.enableClickEffect 可关闭 */}
+              {/* 隐藏手机端点击涟漪；siteConfig.enableClickEffect 可关闭；只在「完整」档显示 */}
               {siteConfig.enableClickEffect && (
                 <HideOnReader>
-                  <div className="hidden md:block">
+                  <EffectGate min="full" className="hidden md:block">
                     <ClickEffect />
-                  </div>
+                  </EffectGate>
                 </HideOnReader>
               )}
             </div>
 
           </MusicProvider>
 
-          {/* 樱花飘落：在内容前面、不拦截点击；阅读页不显示 */}
+          {/* 樱花飘落：在内容前面、不拦截点击；阅读页不显示；「简洁」档花瓣减半，「阅读」档关闭 */}
           {siteConfig.enableSakura && (
             <HideOnReader>
-              <Sakura />
+              <EffectGate min="lite">
+                <Sakura />
+              </EffectGate>
             </HideOnReader>
           )}
 

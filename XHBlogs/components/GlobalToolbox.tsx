@@ -6,6 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 // 【引入你的独立工具模块】
 import CalculatorTool from './toolbox/CalculatorTool';
 import EffectsTool from './toolbox/EffectsTool';
+import AmbientTool from './toolbox/AmbientTool';
+import OmikujiTool from './toolbox/OmikujiTool';
+import PetTool from './toolbox/PetTool';
 // import TomatoClock from './toolbox/TomatoClock'; // 未来扩展预留
 
 // 【核心架构：插件注册表】
@@ -13,6 +16,9 @@ import EffectsTool from './toolbox/EffectsTool';
 const TOOL_REGISTRY = [
   { id: 'calc', name: '计算器', icon: '🧮', component: <CalculatorTool /> },
   { id: 'effects', name: '特效', icon: '✨', component: <EffectsTool /> },
+  { id: 'ambient', name: '白噪音', icon: '🌧️', component: <AmbientTool /> },
+  { id: 'omikuji', name: '御神签', icon: '🎋', component: <OmikujiTool /> },
+  { id: 'pet', name: '桌宠', icon: '🐾', component: <PetTool /> },
   // { id: 'tomato', name: '番茄钟', icon: '🍅', component: <TomatoClock /> },
 ];
 
@@ -34,7 +40,7 @@ export default function GlobalToolbox() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
             transition={{ duration: 0.3, type: "spring", stiffness: 300, damping: 25 }}
-            className="mb-2 bg-white/70 dark:bg-slate-800/80 backdrop-blur-2xl border border-white/50 dark:border-white/10 shadow-2xl rounded-3xl p-4 w-64 flex flex-col gap-4 overflow-hidden"
+            className="mb-2 bg-white/70 dark:bg-slate-800/80 backdrop-blur-2xl border border-white/50 dark:border-white/10 shadow-2xl rounded-3xl p-4 w-72 flex flex-col gap-4 overflow-hidden"
           >
             {/* 动态渲染：工具箱导航栏 */}
             <div className="flex flex-wrap gap-2 border-b border-slate-300/50 dark:border-slate-700/50 pb-3">

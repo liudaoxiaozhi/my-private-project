@@ -7,6 +7,7 @@
 // - 🍔 喂食：本地随机台词，不消耗接口额度
 // - 收起：缩到台子下面只露出呆毛，点一下再出来；收起状态记在浏览器里（只影响自己）
 // - 拖动：按住她或台子拖到页面任意位置（聚焦时也可以用方向键挪），位置同样记在浏览器里
+// - 听指令（lib/petBus.ts）：工具箱「召回桌宠」让她回到默认位置；御神签等让她说一句话
 // 闲着时偶尔歪头、自言自语。系统开启「减少动态效果」时不做循环动画。
 // Hydration：首帧固定为「展开」、默认位置，挂载后再读取本地的收起状态和位置。
 
@@ -15,6 +16,8 @@ import type { FormEvent, KeyboardEvent, MouseEvent, PointerEvent } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { EyeOff, MessageCircle, Send } from 'lucide-react';
 import AppImage from './AppImage';
+import { PET_COMMAND_EVENT } from '../lib/petBus';
+import type { PetCommand } from '../lib/petBus';
 
 const IMG = { src: '/images/pet/saber.webp', width: 360, height: 364, edge: 0.9262 } as const;
 const PET_WIDTH = 150;
@@ -79,6 +82,7 @@ function savePos(p: Pos): void {
 const PET_LINES = ['嗯……被摸头了。', 'Master，请不要一直摸我的头。', '……（呆毛晃了晃）', '这样也不坏。', '骑士的头不是随便摸的……下不为例。'];
 const FEED_LINES = ['汉堡！Master 真是体贴。', '唔，好吃……还有吗？', '补给完毕，随时可以出发。', '这份恩情，我会记住的。', '吃饱了才有力气守护这里。'];
 const MOVE_LINES = ['这里视野不错。', '要搬家吗？好吧。', '……放下来的时候请轻一点。', '这个位置，我会守好的。'];
+const RECALL_LINES = ['我回来了，Master！', '听到召唤了。', '原来你在找我？我一直都在。'];
 const IDLE_LINES = ['Master，写累了就休息一下吧。', '今天的樱花也很漂亮。', '这里的书架，我有好好守着。', '……肚子有点饿了。', '有新的文章吗？我想看看。'];
 
 const pick = (lines: readonly string[]): string => lines[Math.floor(Math.random() * lines.length)];
@@ -105,6 +109,8 @@ export default function PetSaber() {
   const [pos, setPos] = useState<Pos>(DEFAULT_POS);
   const [viewport, setViewport] = useState<Viewport | null>(null);
   const [dragging, setDragging] = useState(false);
+  /** 被召回时平滑地滑回去（拖动时不能有过渡，所以只在这段时间打开） */
+  const [returning, setReturning] = useState(false);
   const speechTimer = useRef<number | undefined>(undefined);
   const heartId = useRef(0);
   const posRef = useRef(pos);
@@ -159,6 +165,38 @@ export default function PetSaber() {
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, [moveTo]);
+
+  // ---------- 听指令：召回 / 说话 ----------
+  useEffect(() => {
+    let returnTimer: number | undefined;
+    const onCommand = (e: Event) => {
+      const command = (e as CustomEvent<PetCommand>).detail;
+      if (command.type === 'recall') {
+        setHidden(false);
+        setShowInput(false);
+        try {
+          window.localStorage.setItem(HIDDEN_KEY, '0');
+        } catch {
+          /* 忽略 */
+        }
+        const home = clampPos(DEFAULT_POS, readViewport());
+        setReturning(true);
+        moveTo(home);
+        savePos(home);
+        setBounce((b) => b + 1);
+        speak(pick(RECALL_LINES), 3000);
+        window.clearTimeout(returnTimer);
+        returnTimer = window.setTimeout(() => setReturning(false), 700);
+      } else if (command.type === 'say') {
+        speak(command.text, command.ms);
+      }
+    };
+    window.addEventListener(PET_COMMAND_EVENT, onCommand);
+    return () => {
+      window.removeEventListener(PET_COMMAND_EVENT, onCommand);
+      window.clearTimeout(returnTimer);
+    };
+  }, [moveTo, speak]);
 
   // ---------- 闲置：偶尔歪头、自言自语 ----------
   useEffect(() => {
@@ -289,7 +327,10 @@ export default function PetSaber() {
   const inputOnRight = viewport !== null && viewport.width - pos.right - BOX_WIDTH < INPUT_ROOM;
 
   return (
-    <div className="group fixed z-[9998] select-none" style={{ width: BOX_WIDTH, right: pos.right, bottom: pos.bottom }}>
+    <div
+      className={`group fixed z-[9998] select-none ${returning ? 'transition-[right,bottom] duration-700 ease-out' : ''}`}
+      style={{ width: BOX_WIDTH, right: pos.right, bottom: pos.bottom }}
+    >
       {/* 💬 气泡 */}
       <div className={`pointer-events-none absolute left-1/2 z-20 flex w-[240px] -translate-x-1/2 justify-center ${bubbleBelow ? 'top-full mt-2' : 'bottom-full'}`}>
         <AnimatePresence>

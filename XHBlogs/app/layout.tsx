@@ -26,6 +26,8 @@ import { getImageMeta, toAccentHue } from '../lib/imageMeta';
 import { effectsInitScript } from '../lib/effects';
 import EffectGate from '../components/EffectGate';
 import CoverTransition from '../components/CoverTransition';
+import CommandPalette from '../components/CommandPalette';
+import EasterEggs from '../components/EasterEggs';
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -97,6 +99,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <SplashScreen />
           <NavigationProgress />
           <CoverTransition />
+          <EasterEggs />
 
           <MusicProvider>
             <div id="app-mount-root" className="flex-1 flex flex-col transition-opacity duration-1000">
@@ -154,6 +157,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <div className="md:hidden block">
                   <MobileBackButton />
                 </div>
+
+                {/* ⌘K 命令面板（需要读取音乐播放状态，放在 MusicProvider 里面） */}
+                <CommandPalette />
               </HideOnReader>
 
               {/* 隐藏手机端点击涟漪；siteConfig.enableClickEffect 可关闭；只在「完整」档显示 */}

@@ -4,47 +4,14 @@ import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, PanInfo } from 'framer-motion';
-import { ChevronDown, Clapperboard, Images, Wallet } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { ChevronDown, Search } from 'lucide-react';
 import { siteConfig } from '../siteConfig';
+import { ALL_NAV_LINKS, NAV_ITEMS, isGroup, matchPath } from '../lib/navigation';
+import type { NavGroup, NavLink } from '../lib/navigation';
+import { openCommandPalette, useModKeyLabel } from '../lib/commandPalette';
 
-interface NavLink {
-  name: string;
-  href: string;
-}
-
-interface NavGroup {
-  name: string;
-  children: Array<NavLink & { Icon: LucideIcon; hint: string }>;
-}
-
-type NavItem = NavLink | NavGroup;
-
-const isGroup = (item: NavItem): item is NavGroup => 'children' in item;
-
-/** 当前页是否属于该链接（子页面也算，例如 /novel/xxx 属于「书架」） */
-const matchPath = (pathname: string | null, href: string): boolean =>
-  !!pathname && (href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`));
-
-const NAV_ITEMS: NavItem[] = [
-  { name: '首页', href: '/' },
-  { name: '项目', href: '/projects' },
-  { name: '归档', href: '/timeline' },
-  { name: '音乐', href: '/music' },
-  { name: '说说', href: '/moments' },
-  { name: '杂谈', href: '/chatter' },
-  { name: '书架', href: '/novel' },
-  {
-    name: '我的',
-    children: [
-      { name: '照片墙', href: '/photowall', Icon: Images, hint: '相册与插画收藏' },
-      { name: '账单', href: '/bills', Icon: Wallet, hint: '收支统计' },
-      { name: '追番', href: '/anime', Icon: Clapperboard, hint: '番剧与电影' },
-    ],
-  },
-  { name: '友链', href: '/friends' },
-  { name: '关于', href: '/about' },
-];
+/** 手机轮盘里的「搜索」不是页面，点了打开命令面板 */
+const SEARCH_HREF = '#search';
 
 /** PC 端「我的」下拉菜单：悬停或点击展开，Esc / 点外面 / 选中后收起 */
 function NavDropdown({ group, pathname }: { group: NavGroup; pathname: string | null }) {
@@ -194,9 +161,9 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 🌟 手机端轮盘：把分组展开成平铺链接，保证圆盘自动均匀排布
-  const mobileNavLinks: NavLink[] = NAV_ITEMS
-    .flatMap((item) => (isGroup(item) ? item.children.map(({ name, href }) => ({ name, href })) : [item]));
+  // 🌟 手机端轮盘：平铺所有页面，最后加一个「搜索」打开 ⌘K 命令面板；圆盘按数量自动均匀排布
+  const mobileNavLinks: NavLink[] = [...ALL_NAV_LINKS, { name: '搜索', href: SEARCH_HREF }];
+  const modKey = useModKeyLabel();
 
   return (
     // 导航栏常驻在根布局里；音乐页是固定深色的沉浸页面，导航栏跟着用深色样式
@@ -220,6 +187,16 @@ export default function Navbar() {
                 </Link>
               );
             })}
+            <button
+              type="button"
+              onClick={openCommandPalette}
+              aria-label="搜索与命令（快捷键 Ctrl/⌘ + K）"
+              title="搜索文章、跳转页面、切换设置"
+              className="flex items-center gap-1.5 rounded-full border border-slate-300/60 bg-white/40 py-1 pl-2.5 pr-1.5 text-xs font-bold text-slate-500 transition-colors hover:border-indigo-400 hover:text-indigo-600 dark:border-white/10 dark:bg-slate-800/40 dark:text-slate-300 dark:hover:text-indigo-400"
+            >
+              <Search size={14} />
+              <kbd className="rounded-md bg-slate-200/70 px-1.5 py-0.5 font-sans text-[10px] font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-300">{modKey} K</kbd>
+            </button>
           </nav>
         </div>
       </header>
@@ -294,7 +271,13 @@ export default function Navbar() {
                         <motion.div style={{ rotate: inverseRotation }} className="w-full h-full">
                           <Link
                             href={link.href}
-                            onClick={() => setIsMobileMenuOpen(false)}
+                            onClick={(e) => {
+                              setIsMobileMenuOpen(false);
+                              if (link.href === SEARCH_HREF) {
+                                e.preventDefault();
+                                openCommandPalette();
+                              }
+                            }}
                             className={`flex items-center justify-center w-full h-full rounded-full transition-all duration-300 ${
                               isActive 
                                 ? 'bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.8)] scale-110' 

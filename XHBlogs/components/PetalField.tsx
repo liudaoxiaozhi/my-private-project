@@ -116,12 +116,24 @@ function seasonShapes(season: Season, p: string): { defs: ReactNode; shapes: str
       return {
         defs: (
           <>
-            {gradient(`${p}g`, ['#ffe4ee', '#ffb7cf', '#f58fb1'])}
-            {/* 花瓣：圆润的上端带一个小缺口，下端收尖 */}
+            {gradient(`${p}g`, ['#ffd3e3', '#ff9fc2', '#ef6f9d'])}
+            {gradient(`${p}deep`, ['#ffc2d6', '#f47aa5', '#d9466f'])}
+            {gradient(`${p}pale`, ['#fff2f6', '#ffc4d8', '#f793b6'])}
+            {/* 花瓣：圆润的上端带一个小缺口，下端收尖；三种深浅 */}
             <path id={`${p}petal`} d={PETAL_PATH} fill={`url(#${p}g)`} />
+            <path id={`${p}deep`} d={PETAL_PATH} fill={`url(#${p}deep)`} />
+            <path id={`${p}pale`} d={PETAL_PATH} fill={`url(#${p}pale)`} />
+            {/* 偶尔整朵落下：五片花瓣绕花心一圈 */}
+            <g id={`${p}bloom`}>
+              {[0, 72, 144, 216, 288].map((deg) => (
+                <path key={deg} d={PETAL_PATH} fill={`url(#${p}pale)`} transform={`rotate(${deg} 12 12) translate(12 12) scale(0.5) translate(-12 -24)`} />
+              ))}
+              <circle cx="12" cy="12" r="1.8" fill="#f7a1bf" />
+            </g>
           </>
         ),
-        shapes: [`${p}petal`],
+        // 普通花瓣多、整朵少
+        shapes: [`${p}petal`, `${p}petal`, `${p}pale`, `${p}deep`, `${p}petal`, `${p}pale`, `${p}bloom`, `${p}petal`, `${p}deep`, `${p}pale`, `${p}petal`, `${p}pale`],
       };
   }
 }
@@ -133,9 +145,11 @@ interface PetalFieldProps {
   /** 只落一次（彩蛋）；默认无限循环 */
   once?: boolean;
   className?: string;
+  /** 阵风周期（秒）：整层花瓣每隔一阵被风吹向一边再回来；不传则没有风 */
+  gust?: number;
 }
 
-export default function PetalField({ pieces, season, opacity = 1, once = false, className = 'z-[55]' }: PetalFieldProps) {
+export default function PetalField({ pieces, season, opacity = 1, once = false, className = 'z-[55]', gust }: PetalFieldProps) {
   const prefix = `pf${useId().replace(/[^a-zA-Z0-9]/g, '')}-`;
   const { defs, shapes } = seasonShapes(season, prefix);
   const iterations = once ? '1 both' : 'infinite';
@@ -144,7 +158,7 @@ export default function PetalField({ pieces, season, opacity = 1, once = false, 
     <div
       aria-hidden="true"
       className={`pointer-events-none fixed inset-0 overflow-hidden transition-opacity duration-1000 ${className}`}
-      style={{ opacity }}
+      style={{ opacity, animation: gust ? `petal-gust ${gust}s ease-in-out infinite` : undefined }}
     >
       <svg width="0" height="0" className="absolute">
         <defs>{defs}</defs>

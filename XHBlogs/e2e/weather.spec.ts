@@ -210,6 +210,7 @@ test.describe('预览（?weather=）', () => {
 
   test('下雪：飘雪花', async ({ page }) => {
     await page.goto('/?weather=snow');
-    await expect.poll(() => page.evaluate(() => [...document.querySelectorAll('.weather-layer use')].some((u) => (u.getAttribute('href') || '').includes('flake')))).toBe(true);
+    // 雪花在前景层（卡片前面）
+    await expect.poll(() => page.evaluate(() => [...document.querySelectorAll('[class*="z-[53]"] use')].some((u) => (u.getAttribute('href') || '').includes('flake')))).toBe(true);
   });
 });

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
+import { useIsClient } from '../lib/useIsClient';
 import { siteConfig } from '../siteConfig';
 
 interface DanmakuItem {
@@ -11,29 +12,39 @@ interface DanmakuItem {
   delay: number;
 }
 
-export default function DanmakuBackground() {
-  const [danmakus, setDanmakus] = useState<DanmakuItem[]>([]);
-
-  useEffect(() => {
-    const list = siteConfig.danmakuList || [];
-    if (list.length === 0) return;
-
-    const generatedDanmakus: DanmakuItem[] = [];
-    const count = 10; // 🚀 15 → 10
-
-    for (let i = 0; i < count; i++) {
+/** 分成几条「车道」，同一车道上的弹幕速度相同、前后均匀错开，不会叠在一起 */
+function makeDanmakus(list: string[]): DanmakuItem[] {
+  const lanes = 4;
+  const perLane = 2;
+  const shuffled = [...list].sort(() => Math.random() - 0.5);
+  const generatedDanmakus: DanmakuItem[] = [];
+  for (let lane = 0; lane < lanes; lane++) {
+    const duration = 30 + Math.random() * 12;
+    for (let k = 0; k < perLane; k++) {
+      const id = lane * perLane + k;
       generatedDanmakus.push({
-        id: i,
-        text: list[Math.floor(Math.random() * list.length)],
-        // 现在容器本身只有 30vh 高，这里的 0-100% 就是在这个 30vh 内部随机
-        // 我们留一点边距 10-90，防止字被切掉一半
-        top: Math.random() * 80 + 10,
-        duration: Math.random() * 20 + 25,
-        delay: Math.random() * 20,
+        id,
+        text: shuffled[id % shuffled.length],
+        // 容器只有 30vh 高，车道均匀分布在 10%～85% 之间
+        top: 10 + (lane * 75) / (lanes - 1),
+        duration,
+        // 负的延迟：一打开就已经在半路上，同一车道相隔半圈
+        delay: -((k + Math.random() * 0.3) * duration) / perLane,
       });
     }
-    setDanmakus(generatedDanmakus);
-  }, []);
+  }
+  return generatedDanmakus;
+}
+
+export default function DanmakuBackground() {
+  // 随机数只在浏览器里生成（首帧和服务端渲染都是空的），避免 Hydration 不一致
+  const isClient = useIsClient();
+  const danmakus = useMemo<DanmakuItem[]>(() => {
+    const list = siteConfig.danmakuList || [];
+    if (!isClient || list.length === 0) return [];
+
+    return makeDanmakus(list);
+  }, [isClient]);
 
   return (
     // 🌟 终极限制：去掉了 bottom-0，换成了 h-[30vh] 强制锁死容器高度！

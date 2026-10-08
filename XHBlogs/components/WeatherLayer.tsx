@@ -1,11 +1,11 @@
 "use client";
-// components/WeatherLayer.tsx —— 跟着真实天气变化的背景特效（数据见 lib/useWeather.ts）
+// components/WeatherLayer.tsx —— 跟着真实天气变化的特效（数据见 lib/useWeather.ts）
 //
-// 放在背景图之上、页面内容之下：雨丝落在毛玻璃卡片后面会被模糊掉，像「窗外在下雨」，不挡文字。
-// - 雨：斜斜的雨丝（大雨更密更快、小雨稀疏），整体蒙一层冷色
-// - 雷雨：雨 + 偶尔一道闪电照亮背景（只在「完整」档）
-// - 雾 / 霾 / 阴天：一层很淡的雾气或色调；晴天白天：右上角一团暖光；下雪：雪花
-// - 「简洁」档雨丝减到四成、不闪电、雾不飘动；「阅读」档整个不挂载（见 app/layout.tsx 的 EffectGate）
+// 分两层，原因是性能：背景里只要有东西在动，所有毛玻璃卡片每一帧都要重新计算模糊。
+// - WeatherLayer（背景、卡片后面）：只放静止的色调——下雨的冷色、雾、霾、阴天、晴天白天右上角的暖光；
+//   雷雨偶尔闪一下（一秒多就结束，只在「完整」档）
+// - WeatherFront（前景、卡片前面，不拦截点击）：会动的雨丝和雪花，颜色调得很淡，不挡字
+// - 「简洁」档雨丝减到四成、不闪电；「阅读」档整个不挂载（见 app/layout.tsx 的 EffectGate）
 // - 系统开了「减少动态效果」：只保留静态色调，不下雨不闪电
 // 样式见 globals.css「天气特效」。网址加 ?weather=rain 等可以预览。
 
@@ -92,40 +92,46 @@ function Lightning() {
   return flash > 0 ? <div key={flash} className="weather-flash" /> : null;
 }
 
-export default function WeatherLayer() {
+function useWeatherScene() {
   const weather = useWeather();
   const level = useEffectsLevel();
   const pathname = usePathname();
   const reduced = useReducedMotion();
-  const lite = level === 'lite';
-  const snow = useMemo(() => (weather?.kind === 'snow' ? makePieces(lite ? 14 : 30) : []), [weather?.kind, lite]);
+  const hidden = !weather || level === 'off' || EXCLUDED.some((re) => re.test(pathname));
+  return { weather: hidden ? null : weather, level, lite: level === 'lite', animate: !reduced };
+}
 
-  if (!weather || level === 'off' || EXCLUDED.some((re) => re.test(pathname))) return null;
-  const { kind, intensity } = weather;
-  const animate = !reduced;
+/** 背景层：静止的天气色调（+ 偶尔的闪电） */
+export default function WeatherLayer() {
+  const { weather, lite, animate } = useWeatherScene();
+  if (!weather) return null;
+  const { kind } = weather;
   const day = isDaytime(siteConfig.timeZone);
 
   return (
     <div className="weather-layer" data-weather={kind} aria-hidden="true">
       {(kind === 'rain' || kind === 'thunder') && <div className="weather-veil weather-veil-rain" />}
-      {(kind === 'rain' || kind === 'thunder') && animate && (
-        <Rain key={`${kind}-${intensity}-${level}`} intensity={kind === 'thunder' ? 'heavy' : intensity} lite={lite} />
-      )}
       {kind === 'thunder' && animate && !lite && <Lightning />}
       {kind === 'cloudy' && <div className="weather-veil weather-veil-cloudy" />}
       {kind === 'haze' && <div className="weather-veil weather-veil-haze" />}
-      {kind === 'fog' && (
-        <div className="weather-veil weather-veil-fog">
-          {animate && !lite && (
-            <>
-              <i className="weather-fog-drift" />
-              <i className="weather-fog-drift weather-fog-drift-2" />
-            </>
-          )}
-        </div>
-      )}
-      {(kind === 'clear' || kind === 'partly') && day && <div className={`weather-sun ${animate && !lite ? 'weather-sun-pulse' : ''}`} />}
-      {kind === 'snow' && animate && <PetalField pieces={snow} season="snow" className="z-0" />}
+      {kind === 'fog' && <div className="weather-veil weather-veil-fog" />}
+      {(kind === 'clear' || kind === 'partly') && day && <div className="weather-sun" />}
+    </div>
+  );
+}
+
+/** 前景层：会动的雨丝 / 雪花 */
+export function WeatherFront() {
+  const { weather, level, lite, animate } = useWeatherScene();
+  const snow = useMemo(() => (weather?.kind === 'snow' ? makePieces(lite ? 14 : 30) : []), [weather?.kind, lite]);
+  if (!weather || !animate) return null;
+  const { kind, intensity } = weather;
+
+  if (kind === 'snow') return <PetalField pieces={snow} season="snow" className="z-[53]" />;
+  if (kind !== 'rain' && kind !== 'thunder') return null;
+  return (
+    <div className="weather-front" data-weather={kind} aria-hidden="true">
+      <Rain key={`${kind}-${intensity}-${level}`} intensity={kind === 'thunder' ? 'heavy' : intensity} lite={lite} />
     </div>
   );
 }

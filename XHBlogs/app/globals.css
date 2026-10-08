@@ -237,13 +237,44 @@ html[data-effects='off'] {
   from { transform: translateX(calc(var(--sway) * -1)); }
   to   { transform: translateX(var(--sway)); }
 }
+/* 阵风：整层花瓣平时几乎不动，隔一阵被吹向左边再慢慢回来 */
+@keyframes petal-gust {
+  0%, 45%  { transform: translate3d(0, 0, 0); }
+  58%      { transform: translate3d(-6vw, 1vh, 0); }
+  72%      { transform: translate3d(-3vw, 0, 0); }
+  100%     { transform: translate3d(0, 0, 0); }
+}
 @keyframes petal-flip {
   0%   { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
   50%  { transform: rotateX(160deg) rotateY(40deg) rotateZ(120deg); }
   100% { transform: rotateX(360deg) rotateY(0deg) rotateZ(260deg); }
 }
 
-/* 天气特效（components/WeatherLayer.tsx）：在背景之上、内容之下，不拦截点击；只动 transform / opacity */
+/* 樱花枝（components/SakuraBranches.tsx）：背景里、静止，只在电脑端 */
+.sakura-branches {
+  position: absolute;
+  inset: 0;
+  z-index: -6;
+  pointer-events: none;
+  display: none;
+}
+@media (min-width: 768px) {
+  .sakura-branches { display: block; }
+}
+.sakura-branch {
+  position: absolute;
+  top: 56px;
+  width: clamp(240px, 28vw, 440px);
+  height: auto;
+  opacity: 0.9;
+}
+.sakura-branch-left  { left: 0; }
+.sakura-branch-right { right: 0; transform: scaleX(-1) translateY(80px); }
+.sakura-branch-wood  { stroke: #6b4a4f; }
+.dark .sakura-branch { opacity: 0.6; }
+.dark .sakura-branch-wood { stroke: #3a2a35; }
+
+/* 天气特效（components/WeatherLayer.tsx）：色调在背景里（静止），雨丝在前景；不拦截点击，只动 transform / opacity */
 .weather-layer {
   position: absolute;
   inset: 0;
@@ -262,6 +293,17 @@ html[data-effects='off'] {
 .dark .weather-veil-rain { background: linear-gradient(to bottom, rgb(2 6 23 / 0.3), rgb(2 6 23 / 0.12)); }
 .dark .weather-veil-haze { background: linear-gradient(to top, rgb(120 100 70 / 0.25), rgb(120 100 70 / 0.08)); }
 .dark .weather-veil-fog  { background: linear-gradient(to top, rgb(148 163 184 / 0.28), rgb(148 163 184 / 0.08) 65%, transparent); }
+
+/* 雨丝在卡片前面（前景层），调得很淡，不挡字 */
+.weather-front {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 53;
+  opacity: 0.55;
+}
+.dark .weather-front { opacity: 0.5; }
 
 /* 雨丝：整层斜一点，每根直直往下落 */
 .weather-rain {
@@ -302,32 +344,6 @@ html[data-effects='off'] {
   100% { opacity: 0; }
 }
 
-/* 雾：两团很大的模糊雾气缓慢左右飘 */
-.weather-fog-drift {
-  position: absolute;
-  left: -20%;
-  bottom: -10%;
-  width: 90%;
-  height: 55%;
-  border-radius: 9999px;
-  background: rgb(241 245 249 / 0.45);
-  filter: blur(60px);
-  animation: fog-drift 38s ease-in-out infinite alternate;
-}
-.weather-fog-drift-2 {
-  left: 40%;
-  bottom: 5%;
-  width: 70%;
-  height: 40%;
-  animation-duration: 52s;
-  animation-direction: alternate-reverse;
-}
-.dark .weather-fog-drift { background: rgb(148 163 184 / 0.18); }
-@keyframes fog-drift {
-  from { transform: translate3d(-8%, 0, 0); }
-  to   { transform: translate3d(12%, -4%, 0); }
-}
-
 /* 晴天白天：右上角一团暖光 */
 .weather-sun {
   position: absolute;
@@ -335,12 +351,6 @@ html[data-effects='off'] {
   background: radial-gradient(circle at 88% -5%, rgb(255 214 140 / 0.5), rgb(255 214 140 / 0.12) 30%, transparent 55%);
 }
 .dark .weather-sun { opacity: 0.4; }
-.weather-sun-pulse { animation: sun-pulse 9s ease-in-out infinite alternate; }
-@keyframes sun-pulse {
-  from { opacity: 0.75; }
-  to   { opacity: 1; }
-}
-.dark .weather-sun-pulse { animation: none; }
 
 /* 卡片光效 / 滚动浮现（components/CardFx.tsx）
    放在 components 层：卡片自己写的 transition、hover 位移等工具类照常生效。

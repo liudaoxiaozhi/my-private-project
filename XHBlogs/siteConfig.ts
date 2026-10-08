@@ -23,6 +23,8 @@ export const siteConfig = {
   themeColors: ["#a18cd1", "#fbc2eb", "#a1c4fd", "#c2e9fb"], // 呼吸流动的颜色组合
 // 修改这里：变成图片数组
   bgImages: ["/images/bg/bg-madoka.webp", "/images/bg/bg-wings.webp"],
+  // 背景插画的模糊程度："none" 不模糊（插画原样显示）、"light" 轻微模糊（推荐）、"strong" 较重模糊
+  bgBlur: "light",
 
   // 👇 【新增】移动端专用竖版背景（屏幕宽度 < 768px 时生效）；留空数组则沿用上面的 bgImages
   bgImagesMobile: ["/images/bg/bg-mobile-saber.webp", "/images/bg/bg-mobile-miku.webp"],
@@ -96,7 +98,7 @@ export const siteConfig = {
   // 👇 【新增】视觉特效开关（电脑端）。觉得卡时可以逐个关掉
   enableParticles: true,   // 背景萤火虫 / 草地（仅电脑端）
   enableSakura: true,      // 全站樱花飘落（日夜都有，夜间更淡；手机端花瓣更少）
-  enableDanmaku: true,     // 背景弹幕
+  enableDanmaku: false,    // 背景弹幕（文字从右往左飘）；默认关闭，背景改为樱花枝 + 前景樱花飘落
   enableClickEffect: true, // 点击涟漪
   enablePet: true,         // 右下角的桌宠（Q 版骑士少女，可聊天 / 喂食 / 收起）
   enableSeasonal: true,    // 节日彩蛋：圣诞与元旦下雪、春节飘红梅、生日撒彩纸（当天替换樱花）

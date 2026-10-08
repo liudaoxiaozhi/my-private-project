@@ -16,7 +16,8 @@ import SplashScreen from "../components/SplashScreen";
 import PetSaber from '../components/PetSaber';
 import DanmakuBackground from '../components/DanmakuBackground';
 import Sakura from '../components/Sakura';
-import WeatherLayer, { WeatherNotice } from '../components/WeatherLayer';
+import WeatherLayer, { WeatherFront, WeatherNotice } from '../components/WeatherLayer';
+import SakuraBranches from '../components/SakuraBranches';
 
 import MobileBackButton from '../components/MobileBackButton';
 import HideOnReader from '../components/HideOnReader';
@@ -125,7 +126,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/40 dark:bg-indigo-900/20 blur-[100px] rounded-full z-[-7] md:mix-blend-overlay"></div>
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-400/30 dark:bg-purple-900/30 blur-[100px] rounded-full z-[-7] md:mix-blend-overlay"></div>
 
-                {/* 跟着真实天气下雨、起雾、出太阳（siteConfig.weather）；「阅读」档不显示 */}
+                {/* 左上、右上两枝樱花（静止，在卡片后面）；「阅读」档不显示 */}
+                {siteConfig.enableSakura && (
+                  <EffectGate min="lite" className="absolute inset-0">
+                    <SakuraBranches />
+                  </EffectGate>
+                )}
+
+                {/* 跟着真实天气的背景色调（siteConfig.weather）；会动的雨丝在下面的 WeatherFront；「阅读」档不显示 */}
                 {siteConfig.weather?.enabled && (
                   <EffectGate min="lite" className="absolute inset-0">
                     <WeatherLayer />
@@ -190,6 +198,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <HideOnReader>
               <EffectGate min="lite">
                 <Sakura />
+              </EffectGate>
+            </HideOnReader>
+          )}
+
+          {/* 下雨、下雪时的雨丝 / 雪花：在内容前面、不拦截点击；阅读页不显示 */}
+          {siteConfig.weather?.enabled && (
+            <HideOnReader>
+              <EffectGate min="lite">
+                <WeatherFront />
               </EffectGate>
             </HideOnReader>
           )}

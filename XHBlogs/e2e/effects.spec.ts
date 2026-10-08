@@ -38,7 +38,8 @@ test('在工具箱里切换档位：对应特效挂载 / 卸载，并记住选�
 });
 
 test('「简洁」档樱花减半；「阅读」档背景不轮播', async ({ page }) => {
-  const petals = () => page.evaluate(() => document.querySelector('[data-fx="lite"] > div')?.querySelectorAll(':scope > div').length ?? 0);
+  // 所有正在飘落的花瓣（远、中、近三层）
+  const petals = () => page.evaluate(() => document.querySelectorAll('div[style*="petal-fall"]').length);
   await page.goto('/');
   await page.evaluate(() => localStorage.setItem('effects-level', 'full'));
   await page.reload();

@@ -65,6 +65,13 @@ function buildSlides(): BackgroundSlide[] {
 
 const slides = buildSlides();
 
+
+/** siteConfig.bgBlur → 模糊程度；放大一点用来盖住模糊后变透明的边缘 */
+const BLUR_CLASS: Record<string, string> = {
+  none: '',
+  light: 'scale-105 blur-[3px]',
+  strong: 'scale-110 blur-md',
+};
 export default function BackgroundSlider() {
   // 服务端与客户端首帧都从 0 开始，避免 Hydration 不一致
   const [index, setIndex] = useState(0);
@@ -98,7 +105,7 @@ export default function BackgroundSlider() {
         模糊直接作用在图片层：静态 filter 只需栅格化一次，滚动时不会逐帧重算，
         比在其上方叠一层全屏 backdrop-filter 省得多。scale-110 用来盖住模糊后的透明边缘。
       */}
-      <div className="absolute inset-0 scale-110 blur-md transform-gpu">
+      <div className={`absolute inset-0 transform-gpu ${BLUR_CLASS[siteConfig.bgBlur ?? 'strong'] ?? BLUR_CLASS.strong}`}>
         {slides.map((slide, i) => {
           const isActive = i === index;
           // 只保留「当前 / 正在淡出的上一张 / 预加载的下一张」，其余不参与渲染合成

@@ -1,20 +1,10 @@
 "use client";
-import { useTheme } from './ThemeProvider';
-import Fireflies from './Fireflies';
+// components/BackgroundEffects.tsx —— 背景里的「完整」档特效（只在电脑端）：底部随风摆动的草地
+//
+// 原来夜间还有萤火虫，已经去掉：背景里一直在动的东西会让所有毛玻璃卡片每一帧重新计算模糊；
+// 夜间的氛围改由前景的樱花（components/Sakura.tsx）负责。
 import WindyGrass from './WindyGrass';
 
 export default function BackgroundEffects() {
-  const { isDark } = useTheme();
-
-  return (
-    <>
-      {/*
-        🚀 性能：只挂载当前主题的特效。夜间是萤火虫；樱花已改为全站前景层（components/Sakura.tsx，在 layout 里挂载）
-      */}
-      {isDark && <Fireflies />}
-
-      {/* 草地一直存在，但它内部会自动改变颜色 */}
-      <WindyGrass />
-    </>
-  );
+  return <WindyGrass />;
 }

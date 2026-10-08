@@ -14,6 +14,7 @@ import {
   toggleAmbient,
 } from '../../lib/ambient';
 import type { AmbientId } from '../../lib/ambient';
+import { useWeather } from '../../lib/useWeather';
 
 const SOUNDS: Array<{ id: AmbientId; name: string; hint: string; Icon: LucideIcon }> = [
   { id: 'rain', name: '雨声', hint: '窗外的小雨', Icon: CloudRain },
@@ -26,6 +27,9 @@ const SOUNDS: Array<{ id: AmbientId; name: string; hint: string; Icon: LucideIco
 export default function AmbientTool() {
   const state = useSyncExternalStore(subscribeAmbient, getAmbientState, getServerAmbientState);
   const anyPlaying = Object.values(state.playing).some(Boolean);
+  // 站长那边正在下雨时，「雨声」的说明换成实况
+  const weather = useWeather();
+  const rainingNow = weather?.kind === 'rain' || weather?.kind === 'thunder';
 
   return (
     <div className="flex flex-col gap-2">
@@ -51,7 +55,11 @@ export default function AmbientTool() {
               </span>
               <span className="min-w-0 flex-1">
                 <span className={`block text-sm font-bold ${on ? 'text-indigo-600 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-200'}`}>{name}</span>
-                <span className="block truncate text-[11px] text-slate-400">{hint}</span>
+                {id === 'rain' && rainingNow ? (
+                  <span className="block truncate text-[11px] font-bold text-sky-500">{weather.city}窗外正在下雨</span>
+                ) : (
+                  <span className="block truncate text-[11px] text-slate-400">{hint}</span>
+                )}
               </span>
             </button>
             {on && (

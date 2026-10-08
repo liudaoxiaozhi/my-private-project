@@ -39,6 +39,7 @@ npx playwright show-report                # 打开上次的测试报告（失败
 | `effects.spec.ts` | 特效档位（完整 / 简洁 / 阅读）、卡片光效和倾斜、滚动浮现 |
 | `toolbox.spec.ts` | 工具箱：白噪音、今日御神签、召回桌宠 |
 | `easter-eggs.spec.ts` | ⌘K 命令面板、控制台 / 标题 / 科乐美秘籍彩蛋、节日飘落、桌宠的招呼 / 瞌睡 / 生气 |
+| `weather.spec.ts` | 天气：NEA / Open-Meteo 数据解析（模拟响应）、首页时间栏、雨 / 雷 / 雾等特效、桌宠和命令面板联动 |
 | `support.ts` | 共用的准备工作（跳过开屏、默认主题、页面报错检查） |
 | `fixtures/` | 测试用的文章和杂谈 |
 
@@ -46,4 +47,5 @@ npx playwright show-report                # 打开上次的测试报告（失败
 
 - 每个用例结束时都会检查页面有没有报错；网络层面的失败（外链图片加载不了、评论区连不上 GitHub）不算。
 - 书架是空的时候，相关用例会自动跳过。
+- 天气相关的页面用例用模拟数据，不需要连得上 data.gov.sg；想看真实效果可以打开 `/?weather=rain`（或 thunder、fog、haze、clear、snow…）预览。
 - 站点关掉了桌宠（`siteConfig.enablePet = false`）时，桌宠相关的用例会失败，可以用 `-g` 跳过或者不管它。

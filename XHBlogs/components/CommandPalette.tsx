@@ -31,6 +31,9 @@ import type { RecentPage } from '../lib/recentPages';
 import { sendPetCommand } from '../lib/petBus';
 import { useIsClient } from '../lib/useIsClient';
 import { siteConfig } from '../siteConfig';
+import { useWeather } from '../lib/useWeather';
+import { isDaytime } from '../lib/weather';
+import { weatherIcon } from './WeatherIcon';
 
 type View = 'search' | 'effects' | 'ambient' | 'omikuji';
 
@@ -84,6 +87,7 @@ export default function CommandPalette() {
   const pathname = usePathname();
   const { isDark, toggleTheme } = useTheme();
   const music = useMusic();
+  const weather = useWeather();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>('search');
   const [query, setQuery] = useState('');
@@ -220,6 +224,20 @@ export default function CommandPalette() {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         },
       },
+      // 天气（站长所在城市）：显示当前天气，选中后去首页时间栏看详情
+      ...(weather
+        ? [{
+            id: 'weather', group: '操作',
+            title: `${weather.city} ${weather.temp !== null ? `${weather.temp}° ` : ''}${weather.text}`,
+            meta: [weather.humidity !== null ? `湿度 ${weather.humidity}%` : '', weather.low !== null && weather.high !== null ? `${weather.low}~${weather.high}°` : ''].filter(Boolean).join(' · ') || undefined,
+            keywords: '天气 weather 下雨 温度 湿度 气温',
+            Icon: weatherIcon(weather.kind, isDaytime(siteConfig.timeZone), weather.intensity),
+            run: () => {
+              go('/');
+              window.setTimeout(() => document.getElementById('site-weather')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 400);
+            },
+          }]
+        : []),
       ...(siteConfig.enablePet
         ? [{ id: 'pet', group: '操作', title: '召回桌宠', keywords: 'pet saber 桌宠 找不到', Icon: PawPrint, run: () => { sendPetCommand({ type: 'recall' }); close(); } }]
         : []),
@@ -240,7 +258,7 @@ export default function CommandPalette() {
       ...fromIndex(index?.books, '书架', BookOpen),
       ...fromIndex(index?.anime, '追番', Clapperboard),
     ];
-  }, [open, isDark, toggleTheme, music, index, close, go, flash]);
+  }, [open, isDark, toggleTheme, music, index, close, go, flash, weather]);
 
   const results = useMemo<Item[]>(() => {
     const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);

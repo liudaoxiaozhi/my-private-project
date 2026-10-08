@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react';
 // 🌟 引入咱们的控制中心配置
 import { siteConfig } from '../siteConfig';
 import { formatClock, formatDateParts, formatUtcOffset, isValidTimeZone, parseInTimeZone } from '../lib/time';
+import { useWeather } from '../lib/useWeather';
+import { isDaytime } from '../lib/weather';
+import type { WeatherReport } from '../lib/weather';
+import { WEATHER_TINT, WeatherGlyph } from './WeatherIcon';
 
 /** 配置里的时区无效（拼错）时回退到访客本地时区，并在控制台提示 */
 const TIME_ZONE = isValidTimeZone(siteConfig.timeZone) ? siteConfig.timeZone : undefined;
@@ -15,6 +19,7 @@ export default function SiteDashboard() {
   const [zoneLabel, setZoneLabel] = useState('');
   const [dateStr, setDateStr] = useState('');
   const [uptimeStr, setUptimeStr] = useState('');
+  const weather = useWeather();
 
   useEffect(() => {
     if (siteConfig.timeZone && !TIME_ZONE) {
@@ -61,6 +66,9 @@ export default function SiteDashboard() {
         </span>
       </div>
 
+      {/* 天气（站长所在城市，见 siteConfig.weather）：拿不到时整块不显示 */}
+      {weather && <WeatherSegment weather={weather} />}
+
       {/* 中间与右侧：状态信息 */}
       <div className="flex-1 px-6 py-4 md:py-0 flex flex-wrap items-center justify-between gap-4 text-xs md:text-sm font-bold text-slate-600 dark:text-slate-300">
 
@@ -96,6 +104,32 @@ export default function SiteDashboard() {
           </a>
         )}
 
+      </div>
+    </div>
+  );
+}
+/** 时钟右边的天气：图标 + 气温 + 描述，下面一行湿度和今天的温度范围 */
+function WeatherSegment({ weather }: { weather: WeatherReport }) {
+  const details = [
+    weather.humidity !== null ? `湿度 ${weather.humidity}%` : null,
+    weather.low !== null && weather.high !== null ? `${weather.low}~${weather.high}°` : null,
+    weather.feelsLike !== null && weather.temp !== null && Math.abs(weather.feelsLike - weather.temp) >= 2 ? `体感 ${weather.feelsLike}°` : null,
+  ].filter(Boolean);
+  return (
+    <div
+      id="site-weather"
+      className="flex items-center gap-3 border-b border-white/30 px-6 py-3 md:border-b-0 md:border-r md:py-0 dark:border-white/10"
+      title={weather.source === 'nea' ? '数据来源：新加坡国家环境局（data.gov.sg）' : weather.source === 'open-meteo' ? '数据来源：Open-Meteo' : '天气预览'}
+    >
+      <WeatherGlyph kind={weather.kind} isDay={isDaytime(TIME_ZONE)} intensity={weather.intensity} className={`h-8 w-8 shrink-0 ${WEATHER_TINT[weather.kind]}`} strokeWidth={1.8} />
+      <div className="leading-tight">
+        <p className="text-sm font-black text-slate-800 dark:text-slate-100">
+          {weather.temp !== null && <span className="mr-1.5 text-xl tabular-nums">{weather.temp}°</span>}
+          {weather.text}
+        </p>
+        <p className="mt-0.5 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+          {[weather.city, ...details].filter(Boolean).join(' · ')}
+        </p>
       </div>
     </div>
   );

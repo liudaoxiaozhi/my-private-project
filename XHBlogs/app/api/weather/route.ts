@@ -1,56 +1,35 @@
-// app/api/weather/route.ts
-import { NextResponse } from 'next/server';
+// app/api/weather/route.ts —— 站长所在城市的当前天气（配置见 siteConfig.weather，数据源见 lib/server/weatherSources.ts）
+//
+// 整个接口每 20 分钟在服务器上更新一次（增量静态再生成），访客的浏览器只读缓存，不会直接请求天气网站。
+// 更新失败时：构建阶段返回 { ok: false }（首页不显示天气）；运行中失败则抛错，Next.js 会继续用上一份成功的数据。
+import { siteConfig } from '../../../siteConfig';
+import { fetchNea, fetchOpenMeteo } from '../../../lib/server/weatherSources';
+import type { WeatherResponse } from '../../../lib/weather';
+
+export const revalidate = 1200;
 
 export async function GET() {
-  const token = process.env.QWEATHER_KEY;
-  const locationId = "101010100"; // 北京
+  const config = siteConfig.weather;
+  if (!config?.enabled) return Response.json({ ok: false, reason: 'disabled' } satisfies WeatherResponse);
 
-  if (!token) {
-    console.error("❌ 环境变量 QWEATHER_KEY (Token) 未找到");
-    return NextResponse.json({ code: "500", message: "Token missing" }, { status: 500 });
-  }
-
-  // 🌟 核心：按照你提供的文档，尝试两个可能的 Host
-  // 如果你有特定的 API Host（例如 xxx.qweather.com），请把第一个换成它
-  const apiHosts = [
-    'https://api.qweather.com/v7/weather/now',
-    'https://devapi.qweather.com/v7/weather/now'
-  ];
-
-  for (const host of apiHosts) {
+  const errors: string[] = [];
+  // 配了新加坡的区域名就先用 NEA，拿不到再用 Open-Meteo
+  if (config.area) {
     try {
-      const url = `${host}?location=${locationId}`;
-      console.log(`📡 尝试使用 Bearer 认证请求: ${host}`);
-
-      const res = await fetch(url, {
-        method: 'GET',
-        headers: {
-          // 🌟 按照文档要求的 Header 认证格式
-          'Authorization': `Bearer ${token}`,
-          'Accept-Encoding': 'gzip',
-          'User-Agent': 'Vercel-Weather-Proxy/1.0'
-        },
-        cache: 'no-store'
-      });
-
-      const data = await res.json();
-
-      // 如果返回 200，说明这套 Bearer 认证终于对上暗号了！
-      if (data.code === "200" || res.status === 200) {
-        console.log(`✅ 认证通过! 来源: ${host}`);
-        return NextResponse.json(data);
-      }
-
-      console.warn(`⚠️ ${host} 认证未通过:`, data);
-
-    } catch (err: unknown) {
-      console.error(`🔥 请求 ${host} 出错:`, err instanceof Error ? err.message : String(err));
-      continue;
+      return Response.json((await fetchNea(config)) satisfies WeatherResponse);
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : String(e));
     }
   }
+  try {
+    return Response.json((await fetchOpenMeteo(config, siteConfig.timeZone)) satisfies WeatherResponse);
+  } catch (e) {
+    errors.push(e instanceof Error ? e.message : String(e));
+  }
 
-  return NextResponse.json({
-    code: "500",
-    message: "认证协议对接失败，请检查是否在 Vercel 填写了正确的 Token"
-  }, { status: 500 });
+  console.warn(`[weather] 天气获取失败：${errors.join('；')}`);
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return Response.json({ ok: false, reason: 'unavailable' } satisfies WeatherResponse);
+  }
+  throw new Error(`天气获取失败：${errors.join('；')}`);
 }

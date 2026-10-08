@@ -243,6 +243,105 @@ html[data-effects='off'] {
   100% { transform: rotateX(360deg) rotateY(0deg) rotateZ(260deg); }
 }
 
+/* 天气特效（components/WeatherLayer.tsx）：在背景之上、内容之下，不拦截点击；只动 transform / opacity */
+.weather-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -6;
+}
+.weather-veil {
+  position: absolute;
+  inset: 0;
+}
+.weather-veil-rain   { background: linear-gradient(to bottom, rgb(51 65 85 / 0.16), rgb(30 41 59 / 0.08)); }
+.weather-veil-cloudy { background: rgb(100 116 139 / 0.1); }
+.weather-veil-haze   { background: linear-gradient(to top, rgb(214 196 160 / 0.32), rgb(214 196 160 / 0.12)); }
+.weather-veil-fog    { background: linear-gradient(to top, rgb(241 245 249 / 0.55), rgb(241 245 249 / 0.15) 65%, transparent); }
+.dark .weather-veil-rain { background: linear-gradient(to bottom, rgb(2 6 23 / 0.3), rgb(2 6 23 / 0.12)); }
+.dark .weather-veil-haze { background: linear-gradient(to top, rgb(120 100 70 / 0.25), rgb(120 100 70 / 0.08)); }
+.dark .weather-veil-fog  { background: linear-gradient(to top, rgb(148 163 184 / 0.28), rgb(148 163 184 / 0.08) 65%, transparent); }
+
+/* 雨丝：整层斜一点，每根直直往下落 */
+.weather-rain {
+  position: absolute;
+  inset: -15% -10%;
+  transform: rotate(8deg);
+}
+.weather-rain > span {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, transparent, rgb(255 255 255 / 0.75));
+  animation: rain-fall linear infinite;
+  will-change: transform;
+}
+.dark .weather-rain > span {
+  background: linear-gradient(to bottom, transparent, rgb(186 214 255 / 0.45));
+}
+@keyframes rain-fall {
+  from { transform: translate3d(0, -20vh, 0); }
+  to   { transform: translate3d(0, 135vh, 0); }
+}
+
+/* 闪电：一亮、一暗、再亮一下，然后消失 */
+.weather-flash {
+  position: absolute;
+  inset: 0;
+  background: rgb(255 255 255 / 0.9);
+  opacity: 0;
+  animation: weather-flash 1.1s ease-out forwards;
+}
+.dark .weather-flash { background: rgb(199 210 254 / 0.6); }
+@keyframes weather-flash {
+  0%   { opacity: 0; }
+  4%   { opacity: 0.55; }
+  10%  { opacity: 0.08; }
+  16%  { opacity: 0.4; }
+  100% { opacity: 0; }
+}
+
+/* 雾：两团很大的模糊雾气缓慢左右飘 */
+.weather-fog-drift {
+  position: absolute;
+  left: -20%;
+  bottom: -10%;
+  width: 90%;
+  height: 55%;
+  border-radius: 9999px;
+  background: rgb(241 245 249 / 0.45);
+  filter: blur(60px);
+  animation: fog-drift 38s ease-in-out infinite alternate;
+}
+.weather-fog-drift-2 {
+  left: 40%;
+  bottom: 5%;
+  width: 70%;
+  height: 40%;
+  animation-duration: 52s;
+  animation-direction: alternate-reverse;
+}
+.dark .weather-fog-drift { background: rgb(148 163 184 / 0.18); }
+@keyframes fog-drift {
+  from { transform: translate3d(-8%, 0, 0); }
+  to   { transform: translate3d(12%, -4%, 0); }
+}
+
+/* 晴天白天：右上角一团暖光 */
+.weather-sun {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 88% -5%, rgb(255 214 140 / 0.5), rgb(255 214 140 / 0.12) 30%, transparent 55%);
+}
+.dark .weather-sun { opacity: 0.4; }
+.weather-sun-pulse { animation: sun-pulse 9s ease-in-out infinite alternate; }
+@keyframes sun-pulse {
+  from { opacity: 0.75; }
+  to   { opacity: 1; }
+}
+.dark .weather-sun-pulse { animation: none; }
+
 /* 卡片光效 / 滚动浮现（components/CardFx.tsx）
    放在 components 层：卡片自己写的 transition、hover 位移等工具类照常生效。
    倾斜用 transform，悬停上浮 / 放大用的是独立的 translate / scale 属性，两者叠加互不覆盖 */

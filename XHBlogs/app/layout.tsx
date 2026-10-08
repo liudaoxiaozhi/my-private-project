@@ -16,6 +16,7 @@ import SplashScreen from "../components/SplashScreen";
 import PetSaber from '../components/PetSaber';
 import DanmakuBackground from '../components/DanmakuBackground';
 import Sakura from '../components/Sakura';
+import WeatherLayer, { WeatherNotice } from '../components/WeatherLayer';
 
 import MobileBackButton from '../components/MobileBackButton';
 import HideOnReader from '../components/HideOnReader';
@@ -101,6 +102,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <NavigationProgress />
           <CoverTransition />
           <EasterEggs />
+          <WeatherNotice />
           <CardFx />
 
           <MusicProvider>
@@ -122,6 +124,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 {/* 👇 🌟 优化：手机端去掉了 mix-blend-overlay，但保留了 blur 模糊光晕，确保视觉不打折 */}
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/40 dark:bg-indigo-900/20 blur-[100px] rounded-full z-[-7] md:mix-blend-overlay"></div>
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-400/30 dark:bg-purple-900/30 blur-[100px] rounded-full z-[-7] md:mix-blend-overlay"></div>
+
+                {/* 跟着真实天气下雨、起雾、出太阳（siteConfig.weather）；「阅读」档不显示 */}
+                {siteConfig.weather?.enabled && (
+                  <EffectGate min="lite" className="absolute inset-0">
+                    <WeatherLayer />
+                  </EffectGate>
+                )}
 
                 {/* 隐藏手机端高负载粒子特效；siteConfig.enableParticles 可整体关闭；只在「完整」档显示 */}
                 {siteConfig.enableParticles && (

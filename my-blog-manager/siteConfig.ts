@@ -29,6 +29,8 @@ export const siteConfig = {
 
   // 4. 文章默认封面图 (当 Markdown 没写 cover 时显示)
   defaultPostCover: "/images/bg/bg-ocean.webp",
+  // 首页「杂谈」卡片的默认背景：还没有杂谈、或者杂谈没设封面时显示
+  defaultChatterCover: "/images/bg/bg-wings.webp",
 
   // 5. 首页照片墙预览图
   photoWallImage: "/images/gallery/cover-miku-ukiyoe.webp",

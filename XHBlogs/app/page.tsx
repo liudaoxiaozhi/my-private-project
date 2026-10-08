@@ -16,7 +16,7 @@ import { formatDisplayDate, getAllChatters, getAllPosts } from '../lib/content';
 import type { CardItem } from '../lib/content';
 import AppImage from '../components/AppImage';
 
-const DEFAULT_CHATTER_COVER = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop';
+const DEFAULT_CHATTER_COVER = siteConfig.defaultChatterCover || siteConfig.defaultPostCover;
 
 export default function Home() {
   // 只含摘要，不含正文：旧版把所有文章全文一并传给 SearchBar，整站正文都被塞进首页 HTML

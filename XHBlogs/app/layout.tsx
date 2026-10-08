@@ -28,6 +28,7 @@ import EffectGate from '../components/EffectGate';
 import CoverTransition from '../components/CoverTransition';
 import CommandPalette from '../components/CommandPalette';
 import EasterEggs from '../components/EasterEggs';
+import CardFx from '../components/CardFx';
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -100,6 +101,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <NavigationProgress />
           <CoverTransition />
           <EasterEggs />
+          <CardFx />
 
           <MusicProvider>
             <div id="app-mount-root" className="flex-1 flex flex-col transition-opacity duration-1000">

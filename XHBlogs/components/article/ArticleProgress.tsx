@@ -11,6 +11,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { BookOpen, X } from 'lucide-react';
 import { ARTICLE_CONTENT_ID, clearPosition, loadPosition, savePosition } from '../../lib/articleReader';
 import { useIsClient } from '../../lib/useIsClient';
+import { petalBurst, sendPetCommand } from '../../lib/petBus';
 
 const SAVE_INTERVAL = 1000;
 const MIN_RESUME = 0.08;
@@ -18,6 +19,9 @@ const FINISHED = 0.95;
 const PROMPT_TIMEOUT = 12000;
 /** 读者自己往下滚了这么多，就不再打扰 */
 const DISMISS_SCROLL = 400;
+/** 读完庆祝：要真的往下读过一段（直接跳到结尾、恢复阅读位置不算） */
+const CELEBRATE_SCROLL = 600;
+const FINISH_LINES = ['读完啦！辛苦了，Master。', '一口气读完了呢。要不要休息一下？', '读完了。……写得真好。'];
 
 function readingRatio(el: HTMLElement): number {
   const rect = el.getBoundingClientRect();
@@ -47,6 +51,7 @@ export default function ArticleProgress({ storageKey }: { storageKey: string }) 
     const startY = window.scrollY;
     let frame = 0;
     let lastSave = 0;
+    let celebrated = false;
 
     const update = () => {
       frame = 0;
@@ -58,6 +63,11 @@ export default function ArticleProgress({ storageKey }: { storageKey: string }) 
       const now = Date.now();
       if (ratio >= FINISHED) {
         clearPosition(storageKey);
+        if (!celebrated && Math.abs(window.scrollY - startY) > CELEBRATE_SCROLL) {
+          celebrated = true;
+          sendPetCommand({ type: 'say', text: FINISH_LINES[Math.floor(Math.random() * FINISH_LINES.length)], ms: 4500 });
+          petalBurst();
+        }
       } else if (ratio >= MIN_RESUME && now - lastSave > SAVE_INTERVAL) {
         lastSave = now;
         savePosition(storageKey, ratio);

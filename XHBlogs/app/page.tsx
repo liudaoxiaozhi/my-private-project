@@ -85,7 +85,7 @@ export default function Home() {
               <div className="col-span-1 lg:col-span-8 flex flex-col gap-6">
 
                 {/* 照片墙大海报 */}
-                <Link href="/photowall" className="glass-card w-full overflow-hidden transition-all duration-700 hover:scale-[1.02] relative group min-h-[200px] sm:min-h-[220px] flex-shrink-0">
+                <Link data-glow href="/photowall" className="glass-card w-full overflow-hidden transition-all duration-700 hover:scale-[1.02] relative group min-h-[200px] sm:min-h-[220px] flex-shrink-0">
                   <AppImage src={latestAlbum.cover} alt={latestAlbum.title} fill sizes="(min-width: 1024px) 750px, 100vw" className="w-full h-full absolute inset-0 object-cover transition-transform duration-700 group-hover:scale-105 opacity-90" />
                   <div className="absolute inset-0 bg-black/30 dark:bg-black/50 group-hover:bg-black/10 transition-colors duration-500"></div>
                   <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 right-6">

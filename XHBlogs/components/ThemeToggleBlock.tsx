@@ -7,7 +7,7 @@ export default function ThemeToggleBlock() {
   const { isDark, toggleTheme } = useTheme();
 
   return (
-    <div
+    <div data-glow
       onClick={(e) => toggleTheme({ x: e.clientX, y: e.clientY })}
       // 【核心修复】：移除了定高限制 (h-[180px] md:h-auto)，换成了统一的 h-full w-full
       className="glass-card h-full w-full p-6 flex flex-col justify-center items-center transition-all duration-500 hover:scale-[1.05] cursor-pointer group relative overflow-hidden"

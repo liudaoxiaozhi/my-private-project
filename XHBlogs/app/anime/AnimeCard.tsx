@@ -69,7 +69,7 @@ export default function AnimeCard({ entry, eager, editable, busy, onOpen, onBump
   const year = entry.airDate.slice(0, 4);
 
   return (
-    <li className="group flex h-full flex-col rounded-2xl p-2 transition-all duration-300 ease-out hover:-translate-y-1 hover:bg-white/45 dark:hover:bg-white/5 sm:p-3">
+    <li data-glow data-tilt data-reveal className="group flex h-full flex-col rounded-2xl p-2 transition-all duration-300 ease-out hover:-translate-y-1 hover:bg-white/45 dark:hover:bg-white/5 sm:p-3">
       <button
         type="button"
         onClick={onOpen}

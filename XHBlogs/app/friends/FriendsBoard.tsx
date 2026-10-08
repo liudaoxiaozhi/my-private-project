@@ -68,7 +68,7 @@ export default function FriendsBoard() {
         )}
         {friendsData.map((friend) => (
           <motion.div key={friend.id} variants={itemVariants} className="h-full">
-            <a
+            <a data-glow data-tilt
               href={friend.url}
               target="_blank"
               rel="noopener noreferrer"

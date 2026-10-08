@@ -222,7 +222,7 @@ export default function TimelineClient({ posts: initialPosts, tags }: TimelineCl
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 pt-4 pb-10">
                 {timelinePosts.map((post, idx) => (
                   <motion.div key={post.slug} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: idx * 0.05 }}>
-                    <div className="glass-card overflow-hidden flex flex-col h-full group relative hover:-translate-y-1 transition-transform duration-300">
+                    <div data-glow data-tilt className="glass-card overflow-hidden flex flex-col h-full group relative hover:-translate-y-1 transition-transform duration-300">
 
                       <Link href={`/posts/${post.slug}`} className="block flex-1 flex flex-col cursor-pointer">
                         {/* 🌟 图片高度自适应：手机变矮，电脑变高 */}

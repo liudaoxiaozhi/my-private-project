@@ -23,8 +23,8 @@ const STATUS_DOT: Record<BookSummary['status'], string> = {
 
 function BookCard({ book, eager }: { book: BookSummary; eager: boolean }) {
   return (
-    <li>
-      <Link
+    <li data-reveal>
+      <Link data-glow data-tilt
         href={bookHref(book.slug)}
         className="group flex h-full flex-col rounded-2xl p-2 transition-all duration-300 ease-out hover:-translate-y-1 hover:bg-white/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 dark:hover:bg-white/5 sm:p-3"
       >

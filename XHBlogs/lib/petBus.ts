@@ -11,3 +11,10 @@ export const PET_COMMAND_EVENT = 'pet-command';
 export function sendPetCommand(command: PetCommand): void {
   window.dispatchEvent(new CustomEvent<PetCommand>(PET_COMMAND_EVENT, { detail: command }));
 }
+
+/** 撒一小把花瓣庆祝（读完文章等），由 components/EasterEggs.tsx 负责画；「阅读」档不撒 */
+export const PETAL_BURST_EVENT = 'petal-burst';
+
+export function petalBurst(): void {
+  window.dispatchEvent(new Event(PETAL_BURST_EVENT));
+}

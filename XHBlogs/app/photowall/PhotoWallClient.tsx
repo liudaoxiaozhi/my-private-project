@@ -74,7 +74,7 @@ export default function PhotoWallClient() {
                   </h3>
                   <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
                     {matchedPhotos.map((photo, index) => (
-                      <div
+                      <div data-reveal
                         key={`search-photo-${index}`}
                         onClick={() => setSelectedImage(photo)}
                         className="break-inside-avoid relative group rounded-2xl overflow-hidden cursor-zoom-in shadow-lg bg-white/20 dark:bg-slate-800/20 border border-white/30 dark:border-white/10 transition-transform duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-indigo-500/20"
@@ -102,7 +102,7 @@ export default function PhotoWallClient() {
                   <p className="col-span-full py-16 text-center text-sm font-bold tracking-widest text-slate-500 dark:text-slate-400">还没有相册，在后台「相册」里创建第一个吧</p>
                 )}
                 {matchedAlbums.map((album, index) => (
-                  <div
+                  <div data-reveal
                     key={album.id}
                     onClick={() => { setSearchQuery(''); setCurrentAlbum(album); }}
                     className="group cursor-pointer flex flex-col items-center"

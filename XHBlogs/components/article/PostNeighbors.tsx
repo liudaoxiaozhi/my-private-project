@@ -9,7 +9,7 @@ import { siteConfig } from '../../siteConfig';
 function NeighborCard({ post, direction }: { post: PostMeta; direction: 'prev' | 'next' }) {
   const isNext = direction === 'next';
   return (
-    <Link
+    <Link data-glow data-tilt
       href={`/posts/${post.slug}`}
       className={`group relative flex min-h-[120px] overflow-hidden rounded-2xl border border-white/40 shadow-lg transition-transform duration-500 hover:-translate-y-1 dark:border-white/10 ${isNext ? 'sm:col-start-2' : ''}`}
     >

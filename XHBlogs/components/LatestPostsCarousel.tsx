@@ -24,7 +24,7 @@ export default function LatestPostsCarousel({ posts }: { posts: CardItem[] }) {
   const currentPost = posts[currentIndex];
 
   return (
-    <div data-vt-card className="glass-card md:col-span-4 overflow-hidden relative group min-h-[420px] h-full flex flex-col">
+    <div data-glow data-vt-card className="glass-card md:col-span-4 overflow-hidden relative group min-h-[420px] h-full flex flex-col">
 
       {/* 整个卡片的点击跳转区域 */}
       <Link href={currentPost.slug === 'none' ? '#' : `/posts/${currentPost.slug}`} className="absolute inset-0 z-20" aria-label={`阅读 ${currentPost.title}`} />

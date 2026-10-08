@@ -91,7 +91,7 @@ export default function CloudPlayer() {
       `}</style>
 
       {/* 🌟 终极逻辑：在外层 Div 直接绑定 onClick 进行页面跳转 */}
-      <div
+      <div data-glow
         onClick={() => router.push('/music')}
         className="glass-card h-full w-full p-6 flex flex-col justify-between transition-all duration-700 hover:scale-[1.02] relative group overflow-hidden cursor-pointer"
       >

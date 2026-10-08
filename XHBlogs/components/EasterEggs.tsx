@@ -5,13 +5,14 @@
 // - 标签页标题：切到别的标签页时变成「Master 快回来～」，回来时显示「欢迎回来！」再恢复
 // - 节日：节日当天桌宠送上一句祝福（每个节日每年只说一次，见 lib/seasons.ts）
 // - 科乐美秘籍：键盘按 ↑↑↓↓←→←→BA，触发十秒樱花风暴 + 烟花
+// - 小撒花：读完文章等场合撒一小把花瓣（lib/petBus.ts 的 petalBurst）；「阅读」档不撒
 
 import { useEffect, useState } from 'react';
 import PetalField, { makePieces } from './PetalField';
 import type { Piece } from './PetalField';
 import Fireworks from './Fireworks';
 import { currentSeason } from './Sakura';
-import { sendPetCommand } from '../lib/petBus';
+import { PETAL_BURST_EVENT, sendPetCommand } from '../lib/petBus';
 import { getSeason } from '../lib/seasons';
 import type { Season } from '../lib/seasons';
 import { readJSON, writeJSON } from '../lib/localStore';
@@ -19,6 +20,7 @@ import { siteConfig } from '../siteConfig';
 
 const KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
 const STORM_MS = 10_000;
+const BURST_MS = 7000;
 const AWAY_TITLE = '(｡•́︿•̀｡) Master 快回来～';
 const BACK_TITLE = '✨ 欢迎回来！';
 const BACK_MS = 2000;
@@ -39,7 +41,7 @@ function isTyping(target: EventTarget | null): boolean {
 }
 
 export default function EasterEggs() {
-  const [storm, setStorm] = useState<{ pieces: Piece[]; season: Season; motion: boolean } | null>(null);
+  const [storm, setStorm] = useState<{ pieces: Piece[]; season: Season; motion: boolean; fireworks: boolean; ms: number } | null>(null);
 
   // 控制台彩蛋（整个页面生命周期只打印一次）
   useEffect(() => {
@@ -106,6 +108,8 @@ export default function EasterEggs() {
         pieces: motion ? makePieces(mobile ? 36 : 80, { fall: [3, 6], delayMax: 4, once: true, size: [12, 26] }) : [],
         season: currentSeason(),
         motion,
+        fireworks: true,
+        ms: STORM_MS,
       });
       sendPetCommand({ type: 'say', text: '这是……传说中的秘籍？！樱花风暴，发动！', ms: 5000 });
     };
@@ -113,9 +117,29 @@ export default function EasterEggs() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // 小撒花
+  useEffect(() => {
+    const onBurst = () => {
+      if (document.documentElement.getAttribute('data-effects') === 'off') return;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const mobile = window.matchMedia('(max-width: 767px)').matches;
+      setStorm((current) =>
+        current ?? {
+          pieces: makePieces(mobile ? 12 : 26, { fall: [3.5, 6], delayMax: 2, once: true, size: [12, 22] }),
+          season: currentSeason(),
+          motion: true,
+          fireworks: false,
+          ms: BURST_MS,
+        },
+      );
+    };
+    window.addEventListener(PETAL_BURST_EVENT, onBurst);
+    return () => window.removeEventListener(PETAL_BURST_EVENT, onBurst);
+  }, []);
+
   useEffect(() => {
     if (!storm) return;
-    const timer = window.setTimeout(() => setStorm(null), STORM_MS);
+    const timer = window.setTimeout(() => setStorm(null), storm.ms);
     return () => window.clearTimeout(timer);
   }, [storm]);
 
@@ -123,7 +147,7 @@ export default function EasterEggs() {
   return (
     <>
       <PetalField pieces={storm.pieces} season={storm.season} once className="z-[56]" />
-      <Fireworks duration={STORM_MS - 1000} />
+      {storm.fireworks && <Fireworks duration={storm.ms - 1000} />}
     </>
   );
 }

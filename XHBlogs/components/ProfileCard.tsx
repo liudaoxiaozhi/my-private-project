@@ -12,7 +12,7 @@ export default function ProfileCard({ postCount, chatterCount, photoCount }: { p
 
 
   return (
-    <div
+    <div data-glow
       onClick={() => router.push('/about')}
       className="glass-card md:col-span-7 p-5 sm:p-6 md:p-8 flex flex-col justify-between transition-all duration-700 hover:scale-[1.01] cursor-pointer group relative overflow-hidden h-full min-h-[220px] md:min-h-[280px]"
     >

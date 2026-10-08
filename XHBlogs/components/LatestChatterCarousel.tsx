@@ -30,7 +30,7 @@ export default function LatestChatterCarousel({ chatters }: { chatters: CardItem
 
   return (
     // 🌟 注意这里：去掉了 md:col-span-8，变成一个纯粹填满父容器的组件
-    <div data-vt-card className="glass-card w-full h-full overflow-hidden relative group min-h-[220px] flex flex-col">
+    <div data-glow data-vt-card className="glass-card w-full h-full overflow-hidden relative group min-h-[220px] flex flex-col">
       <Link href={currentChatter.slug === 'none' ? '/chatter' : `/chatter/${currentChatter.slug}`} className="absolute inset-0 z-20" aria-label={`查看杂谈: ${currentChatter.title}`} />
 
       <AnimatePresence mode="wait">

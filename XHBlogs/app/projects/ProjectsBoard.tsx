@@ -67,7 +67,7 @@ export default function ProjectsBoard() {
               key={project.id}
               className="h-full"
             >
-              <a
+              <a data-glow data-tilt
                 href={project.githubUrl}
                 target="_blank"
                 rel="noopener noreferrer"

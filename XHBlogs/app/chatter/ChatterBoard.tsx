@@ -94,7 +94,7 @@ export default function ChatterBoard({ chatters }: { chatters: Chatter[] }) {
               className="break-inside-avoid"
             >
               {/* 🌟 核心修改 2：卡片圆角缩小 rounded-2xl */}
-              <Link
+              <Link data-glow data-tilt
                 href={`/chatter/${chatter.slug}`}
                 className="glass-card block hover:shadow-2xl transition-all duration-500 group relative overflow-hidden"
               >

@@ -30,7 +30,7 @@ export default function LatestChatterCarousel({ chatters }: { chatters: CardItem
 
   return (
     // 🌟 注意这里：去掉了 md:col-span-8，变成一个纯粹填满父容器的组件
-    <div className="w-full h-full rounded-3xl bg-white/40 dark:bg-slate-800/50 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl overflow-hidden relative group min-h-[220px] flex flex-col">
+    <div data-vt-card className="w-full h-full rounded-3xl bg-white/40 dark:bg-slate-800/50 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl overflow-hidden relative group min-h-[220px] flex flex-col">
       <Link href={currentChatter.slug === 'none' ? '/chatter' : `/chatter/${currentChatter.slug}`} className="absolute inset-0 z-20" aria-label={`查看杂谈: ${currentChatter.title}`} />
 
       <AnimatePresence mode="wait">
@@ -43,7 +43,7 @@ export default function LatestChatterCarousel({ chatters }: { chatters: CardItem
           transition={{ duration: 0.8, ease: "easeInOut" }}
           className="absolute inset-0 z-0"
         >
-          <AppImage src={currentChatter.cover} fill sizes="(min-width: 1024px) 520px, 100vw" className="w-full h-full object-cover opacity-80 dark:opacity-60 transition-transform duration-1000 group-hover:scale-105" alt="Chatter Cover" />
+          <AppImage data-vt-cover src={currentChatter.cover} fill sizes="(min-width: 1024px) 520px, 100vw" className="w-full h-full object-cover opacity-80 dark:opacity-60 transition-transform duration-1000 group-hover:scale-105" alt="Chatter Cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-black/10"></div>
         </motion.div>
       </AnimatePresence>

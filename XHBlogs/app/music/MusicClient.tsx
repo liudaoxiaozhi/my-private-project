@@ -10,7 +10,6 @@ import {
   FastForward, ListMusic, MessageSquare, MessageSquareQuote, Pause, Play,
   Repeat, Repeat1, Rewind, Shuffle, Volume1, Volume2, VolumeX,
 } from 'lucide-react';
-import Navbar from '../../components/Navbar';
 import Comments from '../../components/Comments';
 import AppImage from '../../components/AppImage';
 import { useMusic } from '../../components/MusicProvider';
@@ -58,7 +57,6 @@ export default function MusicClient() {
     return (
       <div className="dark am-root relative min-h-[100dvh] text-white">
         <ArtworkBackground />
-        <Navbar />
         <div className="relative z-10 flex min-h-[100dvh] flex-col items-center justify-center gap-5 px-6 text-center">
           {isLoading ? (
             <>
@@ -80,11 +78,9 @@ export default function MusicClient() {
   }
 
   return (
-    // 外层加 .dark：导航栏、评论区等子组件在本页一律使用深色样式
+    // 外层加 .dark：评论区等子组件在本页一律使用深色样式（导航栏在根布局里，由 Navbar 自己切换深色）
     <div className="dark am-root relative min-h-[100dvh] text-white">
       <ArtworkBackground cover={currentSong.cover} />
-      <Navbar />
-
       <main className="relative z-10">
         {/* ================= 播放器（占满一屏） ================= */}
         <section

@@ -8,9 +8,10 @@
  */
 
 .article-prose {
-  --ap-accent: #6366f1;
-  --ap-accent-strong: #4f46e5;
-  --ap-accent-soft: rgba(99, 102, 241, 0.1);
+  /* 跟随全站强调色（globals.css 里 indigo 色阶随背景变色） */
+  --ap-accent: var(--color-indigo-500);
+  --ap-accent-strong: var(--color-indigo-600);
+  --ap-accent-soft: color-mix(in oklab, var(--color-indigo-500) 10%, transparent);
   --ap-muted: #64748b;
   --ap-border: rgba(148, 163, 184, 0.35);
   --ap-code-bg: rgba(255, 255, 255, 0.82);
@@ -28,9 +29,9 @@
 }
 
 .dark .article-prose {
-  --ap-accent: #818cf8;
-  --ap-accent-strong: #a5b4fc;
-  --ap-accent-soft: rgba(129, 140, 248, 0.15);
+  --ap-accent: var(--color-indigo-400);
+  --ap-accent-strong: var(--color-indigo-300);
+  --ap-accent-soft: color-mix(in oklab, var(--color-indigo-400) 15%, transparent);
   --ap-muted: #94a3b8;
   --ap-border: rgba(71, 85, 105, 0.55);
   --ap-code-bg: rgba(24, 26, 33, 0.92);
@@ -85,7 +86,7 @@
   margin-right: 0.45em;
   border-radius: 999px;
   vertical-align: -0.08em;
-  background: linear-gradient(to bottom, #818cf8, #ec4899);
+  background: linear-gradient(to bottom, var(--color-indigo-400), #ec4899);
 }
 
 /* 标题锚点：悬停时出现，点击复制本节链接 */
@@ -319,7 +320,7 @@
 
 /* 行高亮 / 单词高亮 */
 .article-prose .shiki .line.highlighted {
-  background: rgba(99, 102, 241, 0.13);
+  background: color-mix(in oklab, var(--ap-accent) 13%, transparent);
   box-shadow: inset 3px 0 0 var(--ap-accent);
 }
 .article-prose .shiki .line.highlighted.error { background: rgba(244, 63, 94, 0.14); box-shadow: inset 3px 0 0 #f43f5e; }
@@ -327,8 +328,8 @@
 .article-prose .shiki .highlighted-word {
   padding: 0.05em 0.15em;
   border-radius: 0.25em;
-  background: rgba(99, 102, 241, 0.18);
-  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.35);
+  background: color-mix(in oklab, var(--ap-accent) 18%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ap-accent) 35%, transparent);
 }
 
 /* diff：新增 / 删除 */

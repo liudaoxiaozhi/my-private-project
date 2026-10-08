@@ -68,6 +68,39 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 /* ========================================================
+   全站强调色：Tailwind 的 indigo 色阶改为跟随 --accent-hue（明度、彩度保持原样，只换色相）。
+   背景轮播时 BackgroundSlider 会更新 --accent-hue，按钮、链接、高亮等所有 indigo 一起变色。
+   默认 277 即原版 indigo；首屏初始值由 app/layout.tsx 按第一张背景图写入。
+   写在 @layer 之外，优先级高于 Tailwind 的 theme 层。
+   ======================================================== */
+@property --accent-hue {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 277;
+}
+
+:root {
+  --color-indigo-50: oklch(96.2% 0.018 calc(var(--accent-hue) - 4.7));
+  --color-indigo-100: oklch(93% 0.034 calc(var(--accent-hue) - 4.3));
+  --color-indigo-200: oklch(87% 0.065 calc(var(--accent-hue) - 3.1));
+  --color-indigo-300: oklch(78.5% 0.115 calc(var(--accent-hue) - 2.4));
+  --color-indigo-400: oklch(67.3% 0.182 calc(var(--accent-hue) - 0.2));
+  --color-indigo-500: oklch(58.5% 0.233 var(--accent-hue));
+  --color-indigo-600: oklch(51.1% 0.262 calc(var(--accent-hue) - 0.2));
+  --color-indigo-700: oklch(45.7% 0.24 calc(var(--accent-hue) - 0.1));
+  --color-indigo-800: oklch(39.8% 0.195 calc(var(--accent-hue) + 0.3));
+  --color-indigo-900: oklch(35.9% 0.144 calc(var(--accent-hue) + 1.6));
+  --color-indigo-950: oklch(25.7% 0.09 calc(var(--accent-hue) + 4.2));
+}
+
+/* 电脑端随背景淡入淡出一起慢慢变色；手机端直接切换，省去整页逐帧重算样式 */
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  :root {
+    transition: --accent-hue 2s ease-in-out;
+  }
+}
+
+/* ========================================================
    5. 全局滚动条美化 (Chrome, Edge, Safari)
    ======================================================== */
 ::-webkit-scrollbar {
@@ -78,11 +111,11 @@ input[type=range]::-webkit-slider-thumb {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.3);
+  background: color-mix(in oklab, var(--color-indigo-500) 30%, transparent);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.8);
+  background: color-mix(in oklab, var(--color-indigo-500) 80%, transparent);
 }
 
 /* ========================================================
@@ -90,7 +123,7 @@ input[type=range]::-webkit-slider-thumb {
    ======================================================== */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+  scrollbar-color: color-mix(in oklab, var(--color-indigo-500) 30%, transparent) transparent;
 }
 
 /* ========================================================
@@ -105,6 +138,47 @@ input[type=range]::-webkit-slider-thumb {
     --blur-2xl: 14px;
     --blur-3xl: 16px;
   }
+}
+
+/* 主题切换：新主题从点击位置圆形扩散（components/ThemeProvider.tsx）。
+   切换期间关闭所有颜色过渡，否则新画面会截到过渡到一半的颜色 */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+}
+html.theme-switching::view-transition-old(root),
+html.theme-switching::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* 共享元素过渡（components/CoverTransition.tsx）：卡片封面放大成目标页头图。
+   头图只在过渡进行中才挂名字，平时页面上不会和其他元素重名 */
+html[data-vt-phase='new'] [data-vt-hero] {
+  view-transition-name: vt-hero;
+}
+::view-transition-group(vt-hero) {
+  animation-duration: 0.55s;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  border-radius: 1.5rem;
+  overflow: clip;
+}
+::view-transition-old(vt-hero),
+::view-transition-new(vt-hero) {
+  height: 100%;
+  object-fit: cover;
+  animation-duration: 0.55s;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.35s;
+}
+
+/* 站内跳转加载条（components/NavigationProgress.tsx）：先快后慢，停在 85% 等页面就绪 */
+@keyframes nav-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(0.85); }
 }
 
 /* 用户开启「减少动态效果」时，停用背景轮播的淡入淡出与卡片缩放过渡 */

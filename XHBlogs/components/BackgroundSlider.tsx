@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { siteConfig } from '../siteConfig';
+import { DEFAULT_ACCENT_HUE, getImageMeta, toAccentHue } from '../lib/imageMeta';
 
 /** 每张背景停留时长（毫秒） */
 const SLIDE_INTERVAL_MS = 10_000;
@@ -16,6 +17,25 @@ interface BackgroundSlide {
 
 /** 把图片地址安全地包进 CSS url()，防止地址里的空格、引号破坏样式 */
 const cssUrl = (src: string): string => `url(${JSON.stringify(src)})`;
+
+/** 原图叠在模糊缩略图上面：原图还没下载完时先看到模糊版，而不是空白 */
+const cssLayers = (src: string): string => {
+  const blur = getImageMeta(src)?.blur;
+  return blur ? `${cssUrl(src)}, ${cssUrl(blur)}` : cssUrl(src);
+};
+
+/**
+ * 全站强调色（Tailwind 的 indigo 色阶，见 globals.css）跟着当前背景的主色调走。
+ * 沿色环上较近的方向过渡（350° → 10° 走 20°，而不是绕一大圈经过绿色）。
+ */
+function applyAccentFor(slide: BackgroundSlide): void {
+  const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+  const target = toAccentHue(getImageMeta(isDesktop ? slide.desktop : slide.mobile)?.hue);
+  const root = document.documentElement;
+  const current = parseFloat(getComputedStyle(root).getPropertyValue('--accent-hue')) || DEFAULT_ACCENT_HUE;
+  const delta = ((((target - current) % 360) + 540) % 360) - 180;
+  if (Math.abs(delta) > 0.5) root.style.setProperty('--accent-hue', String(Math.round((current + delta) * 10) / 10));
+}
 
 /** 读取配置：桌面用 bgImages；移动端优先用 bgImagesMobile，未配置时回退到 bgImages */
 function getImageSets(): { desktop: readonly string[]; mobile: readonly string[] } {
@@ -60,6 +80,10 @@ export default function BackgroundSlider() {
     return () => window.clearInterval(timer);
   }, [total]);
 
+  useEffect(() => {
+    if (total > 0) applyAccentFor(slides[index]);
+  }, [index, total]);
+
   if (total === 0) return null;
 
   const prev = (index - 1 + total) % total;
@@ -83,8 +107,8 @@ export default function BackgroundSlider() {
               className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[2000ms] ease-in-out transform-gpu bg-[image:var(--bg-mobile)] md:bg-[image:var(--bg-desktop)]"
               style={
                 {
-                  '--bg-mobile': cssUrl(slide.mobile),
-                  '--bg-desktop': cssUrl(slide.desktop),
+                  '--bg-mobile': cssLayers(slide.mobile),
+                  '--bg-desktop': cssLayers(slide.desktop),
                   opacity: isActive ? 1 : 0,
                   visibility: isMounted ? 'visible' : 'hidden',
                 } as CSSProperties

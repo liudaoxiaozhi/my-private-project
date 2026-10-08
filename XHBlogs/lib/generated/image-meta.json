@@ -1,0 +1,125 @@
+{
+ "/images/avatar.webp": {
+  "w": 512,
+  "h": 512,
+  "hue": 266.2,
+  "blur": "data:image/webp;base64,UklGRloAAABXRUJQVlA4IE4AAADwAQCdASoIAAgAA4BaJYgCdADdLCdbw9AA/upNwDJxApJOtJLaX2m6U1xxp4M03MvYMqIINekizhJ6N5eW63rd79uyAXxLuBRTSMuoAAA="
+ },
+ "/images/bg/bg-madoka.webp": {
+  "w": 1200,
+  "h": 676,
+  "hue": 345.4,
+  "blur": "data:image/webp;base64,UklGRj4AAABXRUJQVlA4IDIAAACQAQCdASoIAAUAA4BaJZQAAp0LL3gA8mT1HsQiAe9OT8bNBnCaQ0GYxXuq0t3HcDgAAA=="
+ },
+ "/images/bg/bg-mobile-blue.webp": {
+  "w": 473,
+  "h": 540,
+  "hue": 256,
+  "blur": "data:image/webp;base64,UklGRlYAAABXRUJQVlA4IEoAAADQAQCdASoIAAkAA4BaJQBOgB6XOpIZAAD+5vgVxFsfPHKc/tOnopwJfWGGE+kJ0bApTD+wbXh25BbTKWYdZA5sIgC6FnzFLYAAAA=="
+ },
+ "/images/bg/bg-mobile-cat.webp": {
+  "w": 351,
+  "h": 540,
+  "hue": 264.9,
+  "blur": "data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAAAQAgCdASoIAAwAA4BaJaACdADdk93h1oYAAP6XD7b3JUztC+9IkOYu8zm3E3H5z6JBlGMhAAPPO20Wl8nlRmb0AAA="
+ },
+ "/images/bg/bg-mobile-miku.webp": {
+  "w": 865,
+  "h": 1200,
+  "hue": 234.2,
+  "blur": "data:image/webp;base64,UklGRloAAABXRUJQVlA4IE4AAAAwAgCdASoIAAsAA4BaJYgCdAYsPj77tYkQAAD+5/8ThDNov4xLb4FDJ6SOBIuWiRzpTXeZcPkVnFFMA4I5N9o2+zADITzgmxeWK3yAAAA="
+ },
+ "/images/bg/bg-mobile-saber.webp": {
+  "w": 600,
+  "h": 1200,
+  "hue": 275.4,
+  "blur": "data:image/webp;base64,UklGRmIAAABXRUJQVlA4IFYAAABQAgCdASoIABAAA4BaJYwCdAYuHmvyGXeATQAA/upNl4zfPF7G0DbGx2k0108IssdzD2A7Fr/hBIbPXFO8rcnRdXEuOnt/kJ6LppOQIgA6OAJkOfoAAA=="
+ },
+ "/images/bg/bg-ocean.webp": {
+  "w": 540,
+  "h": 364,
+  "hue": 235.1,
+  "blur": "data:image/webp;base64,UklGRkIAAABXRUJQVlA4IDYAAADwAQCdASoIAAUAA4BaJZgCdGuAAoI0XoAA/NlR3YHaX5pQ969nWfZbxlb4Jpw7mvFy+JheAAA="
+ },
+ "/images/bg/bg-wings.webp": {
+  "w": 540,
+  "h": 304,
+  "hue": 345,
+  "blur": "data:image/webp;base64,UklGRj4AAABXRUJQVlA4IDIAAACQAQCdASoIAAUAA4BaJZQAAluWFjAA8mT1HsQiAe8CfpyOJBMZa+PFK4zAUz2U9bAAAA=="
+ },
+ "/images/favicon.png": {
+  "w": 180,
+  "h": 180,
+  "hue": 265.9,
+  "blur": "data:image/webp;base64,UklGRlIAAABXRUJQVlA4IEYAAADwAQCdASoIAAgAA4BaJZgCdAD0X2NW8AAA/tHjicvWt+qaBKYujpF9jGpaAD3EomufDDquo3t4PiTJv8wM/5sgHfqtAAAA"
+ },
+ "/images/gallery/cover-miku-ukiyoe.webp": {
+  "w": 865,
+  "h": 487,
+  "hue": 233.8,
+  "blur": "data:image/webp;base64,UklGRkIAAABXRUJQVlA4IDYAAADQAQCdASoIAAUAA4BaJYwCsAEfaw1GYAD+6467IyRQA6p/q9CAmqwscjPNkRILCEDFudAgAAA="
+ },
+ "/images/gallery/yunayuispink-girl.webp": {
+  "w": 480,
+  "h": 644,
+  "hue": 14.5,
+  "blur": "data:image/webp;base64,UklGRkQAAABXRUJQVlA4IDgAAADwAQCdASoIAAsAA4BaJZwAAp1bD4FPCAAA/vPHoYzmPIcE4NdsjiN+yFoThbYkc273hMPUrCAAAA=="
+ },
+ "/images/novel/androids-dream.webp": {
+  "w": 480,
+  "h": 640,
+  "hue": 28.9,
+  "blur": "data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAAAQAgCdASoIAAsAA4BaJbACdLoAArocXRiwAM3gl2YMig9siIeFqUtk//jdpQ4uL/8ltJ5dHoZb6BdoAAA="
+ },
+ "/images/novel/complete-robot.webp": {
+  "w": 400,
+  "h": 572,
+  "hue": 35.3,
+  "blur": "data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAADwAQCdASoIAAsAA4BaJbACdAD0TpUV6AAA+SQoThceVl6qDSRx1JbV/BOGvKjztchGpPje6/BxZ1Z309tk/CgsAAA="
+ },
+ "/images/novel/constantinople-1453.webp": {
+  "w": 480,
+  "h": 640,
+  "hue": 26.5,
+  "blur": "data:image/webp;base64,UklGRkYAAABXRUJQVlA4IDoAAADQAQCdASoIAAsAA4BaJbACdAD0arb2AAD+74LpqUBd9EP0CzzwJ23BdwRdWb3LIYJf7g/UHi8jWSgA"
+ },
+ "/images/novel/foundation.webp": {
+  "w": 480,
+  "h": 738,
+  "hue": 356,
+  "blur": "data:image/webp;base64,UklGRloAAABXRUJQVlA4IE4AAAAwAgCdASoIAAwAA4BaJagCdAEU+YfIcpLAwAD+whcrU5lf3kgFzlmRY60WWIzjVfiNk7JJRpxCSH7DEEeubH/sFpagocROWJYAcADeoAA="
+ },
+ "/images/novel/ottoman-centuries.webp": {
+  "w": 480,
+  "h": 640,
+  "hue": 67,
+  "blur": "data:image/webp;base64,UklGRj4AAABXRUJQVlA4IDIAAADwAQCdASoIAAsAA4BaJZQCdAEQFVRx7gAA/vK9e+peaz2se3AlyH9JCh8c8mFUBAAAAA=="
+ },
+ "/images/novel/templars.webp": {
+  "w": 480,
+  "h": 710,
+  "hue": 17,
+  "blur": "data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAADQAQCdASoIAAwAA4BaJaACdAEPBFsVMAD+7/dkvpBaB+xV/2ZVnLhx9m4NRyRLtZyRjYmu0mnDdRSQAAA="
+ },
+ "/images/novel/van-gogh-letters.webp": {
+  "w": 480,
+  "h": 768,
+  "hue": 44.8,
+  "blur": "data:image/webp;base64,UklGRlQAAABXRUJQVlA4IEgAAAAQAgCdASoIAA0AA4BaJaACdAEDfGHMujgAAP7hqzwXbQbAVWS+bDHHmoOmh5MNb2BonnIntWW5SBwxfbq/5mvyNc7Jj1i1AAA="
+ },
+ "/images/pet/saber.webp": {
+  "w": 360,
+  "h": 364,
+  "hue": 85.5
+ },
+ "/images/splash/banner-elaina.webp": {
+  "w": 1004,
+  "h": 255,
+  "hue": 342.6
+ },
+ "/images/splash/banner-saber.webp": {
+  "w": 960,
+  "h": 272,
+  "hue": 64.9
+ }
+}

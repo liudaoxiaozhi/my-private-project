@@ -30,6 +30,7 @@ export default function TimelineNode({ post, index }: { post: PostMeta; index: n
           {/* 上半部分：封面图 */}
           <div className="w-full h-40 sm:h-48 overflow-hidden relative bg-slate-200 dark:bg-slate-700">
             <AppImage
+              data-vt-cover
               src={post.cover}
               fill
               sizes="(min-width: 640px) 400px, 100vw"

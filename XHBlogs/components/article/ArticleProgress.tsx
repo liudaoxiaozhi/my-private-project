@@ -3,11 +3,14 @@
 //
 // - 进度按正文容器计算（不含评论区），直接改 transform，滚动时不触发 React 重渲染
 // - 读到一半离开，下次打开同一篇时提示「继续上次阅读」；读完（≥95%）自动清除记录
+// - 渲染到 body：换页入场动画期间外层容器带 transform，fixed 元素放在里面会跟着偏移
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BookOpen, X } from 'lucide-react';
 import { ARTICLE_CONTENT_ID, clearPosition, loadPosition, savePosition } from '../../lib/articleReader';
+import { useIsClient } from '../../lib/useIsClient';
 
 const SAVE_INTERVAL = 1000;
 const MIN_RESUME = 0.08;
@@ -26,10 +29,11 @@ function readingRatio(el: HTMLElement): number {
 export default function ArticleProgress({ storageKey }: { storageKey: string }) {
   const barRef = useRef<HTMLDivElement>(null);
   const [resumeRatio, setResumeRatio] = useState<number | null>(null);
+  const mounted = useIsClient();
 
   useEffect(() => {
     const el = document.getElementById(ARTICLE_CONTENT_ID);
-    if (!el) return;
+    if (!el || !mounted) return;
 
     // 等一帧再判断：刷新页面时浏览器会先恢复滚动位置。
     // 带 #小节 打开、或已经不在页面顶部时不提示
@@ -72,7 +76,7 @@ export default function ArticleProgress({ storageKey }: { storageKey: string }) 
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
     };
-  }, [storageKey]);
+  }, [storageKey, mounted]);
 
   useEffect(() => {
     if (resumeRatio === null) return;
@@ -89,7 +93,9 @@ export default function ArticleProgress({ storageKey }: { storageKey: string }) 
     window.scrollTo({ top, behavior: 'smooth' });
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <>
       <div className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[3px]" aria-hidden="true">
         <div
@@ -130,6 +136,7 @@ export default function ArticleProgress({ storageKey }: { storageKey: string }) 
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </>,
+    document.body,
   );
 }

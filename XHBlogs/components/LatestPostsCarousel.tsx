@@ -24,7 +24,7 @@ export default function LatestPostsCarousel({ posts }: { posts: CardItem[] }) {
   const currentPost = posts[currentIndex];
 
   return (
-    <div className="md:col-span-4 rounded-3xl bg-white/40 dark:bg-slate-800/50 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl overflow-hidden relative group min-h-[420px] h-full flex flex-col">
+    <div data-vt-card className="md:col-span-4 rounded-3xl bg-white/40 dark:bg-slate-800/50 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl overflow-hidden relative group min-h-[420px] h-full flex flex-col">
 
       {/* 整个卡片的点击跳转区域 */}
       <Link href={currentPost.slug === 'none' ? '#' : `/posts/${currentPost.slug}`} className="absolute inset-0 z-20" aria-label={`阅读 ${currentPost.title}`} />
@@ -39,7 +39,7 @@ export default function LatestPostsCarousel({ posts }: { posts: CardItem[] }) {
           transition={{ duration: 0.8 }}
           className="absolute inset-0 z-0"
         >
-          <AppImage src={currentPost.cover} fill sizes="(min-width: 1024px) 400px, 100vw" className="w-full h-full object-cover opacity-90 transition-transform duration-1000 group-hover:scale-105" alt={currentPost.title} />
+          <AppImage data-vt-cover src={currentPost.cover} fill sizes="(min-width: 1024px) 400px, 100vw" className="w-full h-full object-cover opacity-90 transition-transform duration-1000 group-hover:scale-105" alt={currentPost.title} />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
         </motion.div>
       </AnimatePresence>

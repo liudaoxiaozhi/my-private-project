@@ -19,6 +19,11 @@ import Sakura from '../components/Sakura';
 
 import MobileBackButton from '../components/MobileBackButton';
 import HideOnReader from '../components/HideOnReader';
+import Navbar from '../components/Navbar';
+import RouteTransition from '../components/RouteTransition';
+import NavigationProgress from '../components/NavigationProgress';
+import { getImageMeta, toAccentHue } from '../lib/imageMeta';
+import CoverTransition from '../components/CoverTransition';
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -41,6 +46,17 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * 首屏强调色：取第一张背景图的主色调（电脑端 / 手机端各自的第一张），
+ * 之后背景轮播时由 BackgroundSlider 接着切换。使用渐变背景时保持默认的 indigo。
+ */
+function initialAccentCss(): string {
+  if (siteConfig.useGradient || siteConfig.bgImages.length === 0) return '';
+  const desktop = toAccentHue(getImageMeta(siteConfig.bgImages[0])?.hue);
+  const mobile = toAccentHue(getImageMeta(siteConfig.bgImagesMobile[0] ?? siteConfig.bgImages[0])?.hue);
+  return `:root { --accent-hue: ${desktop}; } @media (max-width: 767px) { :root { --accent-hue: ${mobile}; } }`;
+}
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="zh-CN" className={`${geistSans.variable} ${geistMono.variable} ${notoSerif.variable} h-full antialiased`} suppressHydrationWarning>
@@ -53,6 +69,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             __html: `
               #app-mount-root { opacity: 0; visibility: hidden; pointer-events: none; }
               html.splash-seen #app-mount-root { opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; }
+              ${initialAccentCss()}
             `
           }}
         />
@@ -74,6 +91,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <ThemeProvider>
 
           <SplashScreen />
+          <NavigationProgress />
+          <CoverTransition />
 
           <MusicProvider>
             <div id="app-mount-root" className="flex-1 flex flex-col transition-opacity duration-1000">
@@ -111,7 +130,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               )}
 
               <div className="relative z-10 flex-1 flex flex-col">
-                {children}
+                {/* 导航栏常驻：换页时不再卸载重建（小说阅读页不显示） */}
+                <HideOnReader>
+                  <Navbar />
+                </HideOnReader>
+                <RouteTransition>{children}</RouteTransition>
               </div>
 
               {/* 小说阅读页是沉浸式的，这些浮层在那里不显示 */}

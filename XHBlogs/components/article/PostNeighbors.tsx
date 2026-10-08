@@ -14,6 +14,7 @@ function NeighborCard({ post, direction }: { post: PostMeta; direction: 'prev' |
       className={`group relative flex min-h-[120px] overflow-hidden rounded-2xl border border-white/40 shadow-lg transition-transform duration-500 hover:-translate-y-1 dark:border-white/10 ${isNext ? 'sm:col-start-2' : ''}`}
     >
       <AppImage
+        data-vt-cover
         src={post.cover || siteConfig.defaultPostCover}
         alt=""
         fill

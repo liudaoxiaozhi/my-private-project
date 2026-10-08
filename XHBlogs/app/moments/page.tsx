@@ -1,6 +1,4 @@
 import type { Metadata } from 'next';
-import Navbar from '../../components/Navbar';
-import PageTransition from '../../components/PageTransition';
 import MomentList from './MomentList';
 import { siteConfig } from '../../siteConfig';
 import { getAllMoments } from '../../lib/content';
@@ -15,14 +13,13 @@ export default function MomentsPage() {
 
   return (
     <div className="min-h-screen relative pb-10 flex flex-col">
-      <Navbar />
-      <PageTransition className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col">
         <MomentList
           moments={allMoments}
           authorName={siteConfig.authorName}
           avatarUrl={siteConfig.avatarUrl}
         />
-      </PageTransition>
+      </div>
     </div>
   );
 }

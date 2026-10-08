@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node scripts/build-music-manifest.mjs && next dev",
-    "build": "node scripts/build-music-manifest.mjs && next build",
+    "dev": "node scripts/build-music-manifest.mjs && node scripts/build-image-meta.mjs && next dev",
+    "build": "node scripts/build-music-manifest.mjs && node scripts/build-image-meta.mjs && next build",
     "music": "node scripts/build-music-manifest.mjs",
+    "images": "node scripts/build-image-meta.mjs",
     "start": "next start",
     "lint": "eslint"
   },

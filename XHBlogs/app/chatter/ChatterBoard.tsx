@@ -101,7 +101,7 @@ export default function ChatterBoard({ chatters }: { chatters: Chatter[] }) {
                 {chatter.cover && (
                   // 🌟 核心修改 3：图片高度自适应 h-28 -> h-52
                   <div className="w-full h-28 md:h-52 overflow-hidden relative">
-                    <AppImage src={chatter.cover} alt={chatter.title || '杂谈封面'} fill sizes="(min-width: 1024px) 400px, 50vw" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+                    <AppImage data-vt-cover src={chatter.cover} alt={chatter.title || '杂谈封面'} fill sizes="(min-width: 1024px) 400px, 50vw" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent"></div>
 
                     {/* 🌟 核心修改 4：心情徽章微缩 */}

@@ -227,7 +227,7 @@ export default function TimelineClient({ posts: initialPosts, tags }: TimelineCl
                       <Link href={`/posts/${post.slug}`} className="block flex-1 flex flex-col cursor-pointer">
                         {/* 🌟 图片高度自适应：手机变矮，电脑变高 */}
                         <div className="relative h-28 sm:h-36 md:h-40 overflow-hidden">
-                          <AppImage src={post.cover} alt={post.title} fill sizes="(min-width: 768px) 300px, 50vw" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                          <AppImage data-vt-cover src={post.cover} alt={post.title} fill sizes="(min-width: 768px) 300px, 50vw" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                           {/* 🌟 日期标签微缩 */}
                           <span className="absolute bottom-2 left-2 md:bottom-3 md:left-4 text-white/90 text-[9px] md:text-xs font-mono font-bold bg-black/40 backdrop-blur-sm px-1.5 py-0.5 md:px-2 md:py-1 rounded flex items-center gap-1">

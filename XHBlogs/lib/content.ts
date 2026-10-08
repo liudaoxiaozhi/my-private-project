@@ -20,6 +20,8 @@ export interface PostMeta {
   tags: string[];
   /** frontmatter 原始封面；未填写时为空字符串，由调用方决定默认图 */
   cover: string;
+  /** 所属系列（frontmatter 的 series）；不属于任何系列时为空字符串 */
+  series: string;
 }
 
 /** 文章全文 */
@@ -179,6 +181,14 @@ export function toPlainText(markdown: string): string {
     .trim();
 }
 
+/** 中文按字计数，英文 / 数字按词计数，和常见写作软件的口径一致 */
+export function countWords(markdown: string): number {
+  const text = toPlainText(markdown);
+  const cjk = text.match(/[㐀-鿿豈-﫿぀-ヿ가-힯]/g)?.length ?? 0;
+  const latin = text.replace(/[㐀-鿿豈-﫿぀-ヿ가-힯]/g, ' ').match(/[A-Za-z0-9]+(?:['’-][A-Za-z0-9]+)*/g)?.length ?? 0;
+  return cjk + latin;
+}
+
 // ============================== 文章 ==============================
 
 function toPost(slug: string, data: Record<string, unknown>, content: string): Post {
@@ -189,6 +199,7 @@ function toPost(slug: string, data: Record<string, unknown>, content: string): P
     description: asString(data.description),
     tags: asStringArray(data.tags),
     cover: asString(data.cover),
+    series: asString(data.series),
     content,
   };
 }
@@ -216,11 +227,45 @@ const getAllPostsWithContent = cache((): Post[] =>
 /** 全部文章摘要，按日期倒序 */
 export const getAllPosts = cache((): PostMeta[] => getAllPostsWithContent().map(stripContent));
 
-/** 最新文章（推荐位），排除当前篇 */
-export function getRecentPosts(excludeSlug: string, limit = 3): PostMeta[] {
+/** 按时间相邻的两篇：prev 是更早的一篇，next 是更新的一篇 */
+export function getAdjacentPosts(slug: string): { prev: PostMeta | null; next: PostMeta | null } {
+  const posts = getAllPosts();
+  const index = posts.findIndex((post) => post.slug === slug);
+  if (index === -1) return { prev: null, next: null };
+  return { prev: posts[index + 1] ?? null, next: posts[index - 1] ?? null };
+}
+
+/** 同一系列的文章，按发布时间从早到晚排列 */
+export function getSeriesPosts(series: string): PostMeta[] {
+  if (!series) return [];
   return getAllPosts()
-    .filter((post) => post.slug !== excludeSlug)
-    .slice(0, limit);
+    .filter((post) => post.series === series)
+    .reverse();
+}
+
+/**
+ * 相关推荐：共同标签越多越靠前，同一系列额外加分；分数相同取较新的。
+ * 相关文章不够时用最新文章补齐。
+ */
+export function getRelatedPosts(slug: string, limit = 3): PostMeta[] {
+  const posts = getAllPosts();
+  const current = posts.find((post) => post.slug === slug);
+  const others = posts.filter((post) => post.slug !== slug);
+  if (!current) return others.slice(0, limit);
+
+  const tags = new Set(current.tags);
+  const scored = others
+    .map((post, order) => ({
+      post,
+      order,
+      score: post.tags.filter((tag) => tags.has(tag)).length * 2 + (current.series && post.series === current.series ? 1 : 0),
+    }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || a.order - b.order)
+    .map((item) => item.post);
+
+  const picked = new Set(scored.map((post) => post.slug));
+  return [...scored, ...others.filter((post) => !picked.has(post.slug))].slice(0, limit);
 }
 
 /** 标签统计；没有标签的文章计入 fallbackTag */

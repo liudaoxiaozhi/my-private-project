@@ -1,0 +1,135 @@
+"use client";
+// components/article/ArticleProgress.tsx —— 顶部阅读进度条 + 记住阅读位置
+//
+// - 进度按正文容器计算（不含评论区），直接改 transform，滚动时不触发 React 重渲染
+// - 读到一半离开，下次打开同一篇时提示「继续上次阅读」；读完（≥95%）自动清除记录
+
+import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { BookOpen, X } from 'lucide-react';
+import { ARTICLE_CONTENT_ID, clearPosition, loadPosition, savePosition } from '../../lib/articleReader';
+
+const SAVE_INTERVAL = 1000;
+const MIN_RESUME = 0.08;
+const FINISHED = 0.95;
+const PROMPT_TIMEOUT = 12000;
+/** 读者自己往下滚了这么多，就不再打扰 */
+const DISMISS_SCROLL = 400;
+
+function readingRatio(el: HTMLElement): number {
+  const rect = el.getBoundingClientRect();
+  const scrollable = rect.height - window.innerHeight;
+  if (scrollable <= 0) return rect.top <= 0 ? 1 : 0;
+  return Math.min(1, Math.max(0, -rect.top / scrollable));
+}
+
+export default function ArticleProgress({ storageKey }: { storageKey: string }) {
+  const barRef = useRef<HTMLDivElement>(null);
+  const [resumeRatio, setResumeRatio] = useState<number | null>(null);
+
+  useEffect(() => {
+    const el = document.getElementById(ARTICLE_CONTENT_ID);
+    if (!el) return;
+
+    // 等一帧再判断：刷新页面时浏览器会先恢复滚动位置。
+    // 带 #小节 打开、或已经不在页面顶部时不提示
+    const saved = loadPosition(storageKey);
+    const promptFrame = requestAnimationFrame(() => {
+      if (saved && saved.ratio >= MIN_RESUME && saved.ratio < FINISHED && !window.location.hash && window.scrollY < 200) {
+        setResumeRatio(saved.ratio);
+      }
+    });
+
+    const startY = window.scrollY;
+    let frame = 0;
+    let lastSave = 0;
+
+    const update = () => {
+      frame = 0;
+      const ratio = readingRatio(el);
+      if (barRef.current) barRef.current.style.transform = `scaleX(${ratio})`;
+
+      if (Math.abs(window.scrollY - startY) > DISMISS_SCROLL) setResumeRatio(null);
+
+      const now = Date.now();
+      if (ratio >= FINISHED) {
+        clearPosition(storageKey);
+      } else if (ratio >= MIN_RESUME && now - lastSave > SAVE_INTERVAL) {
+        lastSave = now;
+        savePosition(storageKey, ratio);
+      }
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(promptFrame);
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (resumeRatio === null) return;
+    const timer = window.setTimeout(() => setResumeRatio(null), PROMPT_TIMEOUT);
+    return () => window.clearTimeout(timer);
+  }, [resumeRatio]);
+
+  const resume = () => {
+    const el = document.getElementById(ARTICLE_CONTENT_ID);
+    if (!el || resumeRatio === null) return;
+    const rect = el.getBoundingClientRect();
+    const top = window.scrollY + rect.top + resumeRatio * Math.max(0, rect.height - window.innerHeight);
+    setResumeRatio(null);
+    window.scrollTo({ top, behavior: 'smooth' });
+  };
+
+  return (
+    <>
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[3px]" aria-hidden="true">
+        <div
+          ref={barRef}
+          className="h-full origin-left bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-[0_0_8px_rgba(168,85,247,0.6)]"
+          style={{ transform: 'scaleX(0)' }}
+        />
+      </div>
+
+      <AnimatePresence>
+        {resumeRatio !== null && (
+          <motion.div
+            role="status"
+            className="fixed bottom-6 left-1/2 z-[95] flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/50 bg-white/85 p-1.5 pl-4 text-sm shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-800/85"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 24 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+          >
+            <span className="whitespace-nowrap text-slate-600 dark:text-slate-300">
+              上次读到 <b className="tabular-nums text-indigo-600 dark:text-indigo-400">{Math.round(resumeRatio * 100)}%</b>
+            </span>
+            <button
+              type="button"
+              onClick={resume}
+              className="ml-2 flex items-center gap-1.5 whitespace-nowrap rounded-full bg-indigo-500 px-3.5 py-1.5 font-bold text-white shadow-md transition-colors hover:bg-indigo-600"
+            >
+              <BookOpen size={15} /> 继续阅读
+            </button>
+            <button
+              type="button"
+              aria-label="不用了"
+              onClick={() => setResumeRatio(null)}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-500/10 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              <X size={16} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}

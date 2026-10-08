@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useSyncExternalStore } from 'react';
 import TimelineNode from './TimelineNode';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Sparkles, LayoutGrid, ListTree, Calendar, Hash, ArrowUp } from 'lucide-react';
@@ -14,9 +14,13 @@ interface TimelineClientProps {
   tags: TagStat[];
 }
 
+const subscribeNone = () => () => {};
+const readUrlTag = () => new URLSearchParams(window.location.search).get('tag');
+
 export default function TimelineClient({ posts: initialPosts, tags }: TimelineClientProps) {
   const [posts, setPosts] = useState(initialPosts);
-  const [selectedTag, setSelectedTag] = useState<string>('All');
+  // null = 读者还没点过标签，沿用地址栏里的 ?tag=
+  const [chosenTag, setChosenTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -41,6 +45,18 @@ export default function TimelineClient({ posts: initialPosts, tags }: TimelineCl
     window.addEventListener('resize', enforceMobileView);
     return () => window.removeEventListener('resize', enforceMobileView);
   }, []);
+
+  // 支持 /timeline?tag=xxx（文章页的标签链接到这里），切换标签时同步到地址栏，方便分享
+  const urlTag = useSyncExternalStore(subscribeNone, readUrlTag, () => null);
+  const selectedTag = chosenTag ?? (urlTag && tags.some((t) => t.name === urlTag) ? urlTag : 'All');
+
+  const setSelectedTag = (tag: string) => {
+    setChosenTag(tag);
+    const url = new URL(window.location.href);
+    if (tag === 'All') url.searchParams.delete('tag');
+    else url.searchParams.set('tag', tag);
+    window.history.replaceState(window.history.state, '', url);
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

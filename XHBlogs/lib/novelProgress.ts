@@ -2,6 +2,8 @@
 //
 // 隐私模式或禁用存储时读写会失败，这里全部吞掉错误，阅读功能不受影响。
 
+import { readJSON as read, writeJSON as write } from './localStore';
+
 export interface NovelProgress {
   /** 章节网址，例如 /novel/chuanyue-mijing/01/003 */
   href: string;
@@ -28,23 +30,6 @@ const SETTINGS_KEY = 'novel-reader-settings';
 
 export const FONT_SIZES = [16, 18, 20, 22, 24, 26] as const;
 export const LINE_HEIGHTS = [1.7, 1.9, 2.1] as const;
-
-function read<T>(key: string): T | null {
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : null;
-  } catch {
-    return null;
-  }
-}
-
-function write(key: string, value: unknown): void {
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* 存储不可用时忽略 */
-  }
-}
 
 export function loadProgress(bookSlug: string): NovelProgress | null {
   const p = read<NovelProgress>(progressKey(bookSlug));

@@ -19,7 +19,7 @@ import path from 'path';
 import matter from 'gray-matter';
 import { cache } from 'react';
 import { siteConfig } from '../siteConfig';
-import { normalizeDate, toPlainText, toTimestamp } from './content';
+import { countWords, normalizeDate, toTimestamp } from './content';
 
 // ============================== 类型 ==============================
 
@@ -112,13 +112,6 @@ const asString = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
 const asStringArray = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.trim() !== '').map((x) => x.trim()) : [];
 
-/** 中文按字计数，英文 / 数字按词计数，和常见写作软件的口径一致 */
-export function countWords(markdown: string): number {
-  const text = toPlainText(markdown);
-  const cjk = text.match(/[㐀-鿿豈-﫿぀-ヿ가-힯]/g)?.length ?? 0;
-  const latin = text.replace(/[㐀-鿿豈-﫿぀-ヿ가-힯]/g, ' ').match(/[A-Za-z0-9]+(?:['’-][A-Za-z0-9]+)*/g)?.length ?? 0;
-  return cjk + latin;
-}
 
 function readMd(file: string): { data: Record<string, unknown>; content: string } | null {
   try {

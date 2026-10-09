@@ -15,7 +15,7 @@ export const siteConfig = {
   navAfter: "宝藏之地",
 
   // 2. 头像设置 (支持网络链接，或将图片放入 public 文件夹后使用 "/me.jpg")
-  avatarUrl: "/images/avatar.webp",
+  avatarUrl: "/images/avatar-konata.webp",
 
   // 3. 网站背景设置 (二选一)
   // 如果想用纯图片背景，请在下面 bgImage 写路径，并将 useGradient 设为 false
@@ -48,7 +48,7 @@ export const siteConfig = {
   bgImagesMobile: ["/images/bg/bg-mobile-saber.webp", "/images/bg/bg-mobile-miku.webp"],
 
   // 4. 文章默认封面图 (当 Markdown 没写 cover 时显示)
-  defaultPostCover: "/images/bg/bg-ocean.webp",
+  defaultPostCover: "/images/bg/bg-sky.webp",
   // 首页「杂谈」卡片的默认背景：还没有杂谈、或者杂谈没设封面时显示
   defaultChatterCover: "/images/bg/bg-wings.webp",
 

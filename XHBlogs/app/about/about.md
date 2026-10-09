@@ -3,7 +3,7 @@ title: 关于我
 date: '2026-10-07'
 tags: []
 mood: ''
-cover: /images/bg/bg-ocean.webp
+cover: /images/bg/bg-sky.webp
 description: 'ftcovo 的自我介绍'
 ---
 
@@ -24,6 +24,8 @@ description: 'ftcovo 的自我介绍'
 本站基于开源博客 [XinghuisamaBlogs](https://github.com/heiehiehi/XinghuisamaBlogs) 改造而来，感谢原作者的开源。
 
 站内的背景与「插画收藏」相册里的插画都来自网络画师（作品上保留了原签名），版权归原作者所有；如果你是作者且不希望在这里展示，请发邮件告诉我，我会第一时间删除。
+
+头像是画师 **CORE** 画的泉此方（作品右下角有签名），同样版权归画师所有。
 
 **✉️ 联系我**
 

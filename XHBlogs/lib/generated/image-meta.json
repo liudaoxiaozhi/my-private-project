@@ -1,9 +1,9 @@
 {
- "/images/avatar.webp": {
+ "/images/avatar-konata.webp": {
   "w": 512,
   "h": 512,
-  "hue": 266.2,
-  "blur": "data:image/webp;base64,UklGRloAAABXRUJQVlA4IE4AAADwAQCdASoIAAgAA4BaJYgCdADdLCdbw9AA/upNwDJxApJOtJLaX2m6U1xxp4M03MvYMqIINekizhJ6N5eW63rd79uyAXxLuBRTSMuoAAA="
+  "hue": 275.1,
+  "blur": "data:image/webp;base64,UklGRkwAAABXRUJQVlA4IEAAAADQAQCdASoIAAgAA4BaJZgCsAEO+MWJoAD+9VkwN7aTRVzaBCSRXbDRDOXoZwTtWf48Ti9vy95oCW72R2o8TqAA"
  },
  "/images/bg/bg-madoka.webp": {
   "w": 1200,
@@ -35,11 +35,11 @@
   "hue": 275.4,
   "blur": "data:image/webp;base64,UklGRmIAAABXRUJQVlA4IFYAAABQAgCdASoIABAAA4BaJYwCdAYuHmvyGXeATQAA/upNl4zfPF7G0DbGx2k0108IssdzD2A7Fr/hBIbPXFO8rcnRdXEuOnt/kJ6LppOQIgA6OAJkOfoAAA=="
  },
- "/images/bg/bg-ocean.webp": {
-  "w": 540,
-  "h": 364,
-  "hue": 235.1,
-  "blur": "data:image/webp;base64,UklGRkIAAABXRUJQVlA4IDYAAADwAQCdASoIAAUAA4BaJZgCdGuAAoI0XoAA/NlR3YHaX5pQ969nWfZbxlb4Jpw7mvFy+JheAAA="
+ "/images/bg/bg-sky.webp": {
+  "w": 1200,
+  "h": 812,
+  "hue": 235.8,
+  "blur": "data:image/webp;base64,UklGRkIAAABXRUJQVlA4IDYAAADQAQCdASoIAAUAA4BaJYgCdAEOZ/JwAAD+8mzUFn1+dwKifdB15OQ54xqwSYtWtkjp1hAKQAA="
  },
  "/images/bg/bg-wings.webp": {
   "w": 540,

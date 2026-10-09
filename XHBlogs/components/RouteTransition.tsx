@@ -12,7 +12,7 @@ import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { animate } from 'framer-motion';
-import { isReaderPath } from '../lib/routes';
+import { isAdminPath, isReaderPath } from '../lib/routes';
 import { isViewTransitionNav } from '../lib/navTransition';
 import { consumeTraverse, installNavHistory } from '../lib/navHistory';
 import type { NavDirection } from '../lib/navHistory';
@@ -27,7 +27,7 @@ function keyframes(direction: NavDirection) {
 }
 
 function shouldAnimate(pathname: string): boolean {
-  return !isReaderPath(pathname) && pathname !== '/music';
+  return !isReaderPath(pathname) && !isAdminPath(pathname) && pathname !== '/music';
 }
 
 export default function RouteTransition({ children }: { children: ReactNode }) {

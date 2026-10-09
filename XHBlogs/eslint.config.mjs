@@ -14,6 +14,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // 端到端测试的构建目录和报告（npm run test:e2e）
     ".next-e2e/**",
+    ".e2e-admin-root/**",
     "playwright-report/**",
     "test-results/**",
   ]),

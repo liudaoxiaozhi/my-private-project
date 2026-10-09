@@ -74,7 +74,8 @@ export default function SplashScreen() {
     } catch {
       seen = false;
     }
-    if (seen) {
+    // 网页后台不播开屏动画
+    if (seen || /^\/admin(\/|$)/.test(window.location.pathname)) {
       document.documentElement.classList.add('splash-seen');
       return;
     }

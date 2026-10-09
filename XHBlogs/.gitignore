@@ -51,3 +51,4 @@ next-env.d.ts
 /public/music/playlist.json
 /public/music/_covers/
 /public/music/_lyrics/
+/.e2e-admin-root

@@ -92,7 +92,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                if (sessionStorage.getItem('hasSeenSplash') === 'true') {
+                // 网页后台不播开屏动画（这段在模板字符串里，不用正则，免得反斜杠被吃掉）
+                var path = location.pathname;
+                if (sessionStorage.getItem('hasSeenSplash') === 'true' || path === '/admin' || path.indexOf('/admin/') === 0) {
                   document.documentElement.classList.add('splash-seen');
                 }
               } catch (e) {}

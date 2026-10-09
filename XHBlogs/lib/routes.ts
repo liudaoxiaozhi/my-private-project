@@ -4,6 +4,11 @@
  * 沉浸阅读页：小说章节 /novel/<书>/<卷>/<章> 与本地 EPUB 阅读器 /novel/epub。
  * 这些页面不显示悬浮播放器、桌宠、樱花、工具箱等全站浮层。
  */
+/** 网页后台 /admin：有自己的界面，同样不显示全站浮层（保留背景） */
+export function isAdminPath(pathname: string | null | undefined): boolean {
+  return Boolean(pathname && /^\/admin(\/|$)/.test(pathname));
+}
+
 export function isReaderPath(pathname: string | null | undefined): boolean {
   return Boolean(pathname && (/^\/novel\/[^/]+\/[^/]+\/[^/]+\/?$/.test(pathname) || /^\/novel\/epub\/?$/.test(pathname)));
 }

@@ -1,6 +1,10 @@
 // siteConfig.ts - 你的全站“控制中心”
+//
+// 这里是默认值（带说明）。在网页后台（/admin）改过的项保存在 siteConfig.overrides.json，
+// 会覆盖这里的同名项；想恢复默认，在后台点「恢复默认」或删掉 JSON 里对应的那一项即可。
+import overrides from './siteConfig.overrides.json';
 
-export const siteConfig = {
+const defaults = {
   // 1. 网站标题与博主信息
   title: "ftcovo の 宝藏之地",
   faviconUrl: "/images/favicon.png",
@@ -133,3 +137,19 @@ export const siteConfig = {
     { src: "/images/splash/banner-elaina.webp", width: 1004, height: 255, edge: 0.8922 },
   ],
 };
+
+type Plain = Record<string, unknown>;
+const isPlain = (v: unknown): v is Plain => typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/** 后台的修改合并到默认值上：对象逐项合并，数组和普通值整个替换 */
+function merge<T>(base: T, patch: unknown): T {
+  if (!isPlain(base) || !isPlain(patch)) return (patch === undefined ? base : patch) as T;
+  const out: Plain = { ...base };
+  for (const [key, value] of Object.entries(patch)) out[key] = key in base ? merge(base[key], value) : value;
+  return out as T;
+}
+
+export type SiteConfig = typeof defaults;
+/** 默认值（后台的「恢复默认」用） */
+export const siteConfigDefaults: SiteConfig = defaults;
+export const siteConfig: SiteConfig = merge(defaults, overrides);

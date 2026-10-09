@@ -1,5 +1,6 @@
 // playwright.config.ts —— 端到端测试配置。平时用 npm run test:e2e 运行（会先放入测试内容并构建，见 scripts/e2e.mjs）
 import { defineConfig, devices } from '@playwright/test';
+import { ADMIN_PASSWORD, ADMIN_ROOT } from './e2e/adminEnv';
 
 const PORT = Number(process.env.E2E_PORT || 3123);
 const BASE_URL = `http://localhost:${PORT}`;
@@ -24,7 +25,7 @@ export default defineConfig({
   webServer: {
     command: `npx next start -p ${PORT}`,
     url: BASE_URL,
-    env: { NEXT_DIST_DIR: '.next-e2e' },
+    env: { NEXT_DIST_DIR: '.next-e2e', ADMIN_PASSWORD, ADMIN_STORAGE: 'local', ADMIN_LOCAL_ROOT: ADMIN_ROOT },
     // 端口上已经有别的服务（比如没关的 dev server）时直接报错，免得测到没有测试内容的旧版本
     reuseExistingServer: false,
     timeout: 60_000,

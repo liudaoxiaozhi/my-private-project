@@ -591,7 +591,7 @@ html[data-effects="full"] .scroll-nudge {
   to { transform: translateX(-100%); }
 }
 
-，siteConfig.vinylPlayer）：
+/* 黑胶唱片（components/CloudPlayer.tsx、PetSaber.tsx，siteConfig.vinylPlayer）：
    唱片转（只有一个 transform 动画），反光不跟着转，唱臂播放时落到唱片上 */
 .vinyl-disc {
   background:
@@ -628,7 +628,38 @@ html.dark[data-bg="manga"] .bg-tint {
   background-color: rgb(12 10 24 / 0.5);
 }
 
-/* 选中文字的底色跟随全站强调色 */
+/* 网页后台（components/admin/）：固定深色毛玻璃，背景沿用网站的背景插画；「简洁」模式去掉背景和模糊 */
+.admin-panel {
+  border-radius: 1.75rem;
+  border: 1px solid rgb(255 255 255 / 0.09);
+  background: rgb(51 55 78 / 0.62);
+  box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.55);
+  backdrop-filter: blur(22px);
+}
+.admin-row {
+  border-radius: 1rem;
+  border: 1px solid rgb(255 255 255 / 0.05);
+  background: rgb(30 33 52 / 0.55);
+}
+.admin-input {
+  border: 1px solid rgb(255 255 255 / 0.06);
+  background: rgb(22 25 42 / 0.7);
+}
+.admin-hint {
+  color: rgb(165 172 196);
+}
+.admin-compact .admin-panel {
+  backdrop-filter: none;
+  background: rgb(36 39 58);
+}
+.admin-compact .admin-backdrop {
+  background: rgb(24 26 40);
+}
+.admin-prose {
+  color: rgb(226 232 240);
+}
+
+
 ::selection {
   background: color-mix(in oklab, var(--color-indigo-400) 35%, transparent);
 }

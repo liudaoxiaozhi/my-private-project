@@ -12,12 +12,13 @@ import { siteConfig } from '../../siteConfig';
 import ContentSection from './ContentSection';
 import type { ContentKind } from './ContentSection';
 import MusicSection from './MusicSection';
+import SecretsSection from './SecretsSection';
 import { AppearanceSection, DanmakuSection, SettingsSection } from './ConfigSections';
 import { AlbumsSection, FriendsSection, ProjectsSection } from './DataSections';
 import { AdminContext, Button, Loading, Panel, Row, inputClass } from './ui';
 import type { AdminContextValue } from './ui';
 
-type SectionId = 'overview' | ContentKind | 'music' | 'danmaku' | 'appearance' | 'albums' | 'friends' | 'projects' | 'settings';
+type SectionId = 'overview' | ContentKind | 'music' | 'danmaku' | 'appearance' | 'albums' | 'friends' | 'projects' | 'anime' | 'settings';
 
 const SECTIONS: { id: SectionId; label: string }[] = [
   { id: 'overview', label: '概览' },
@@ -31,6 +32,7 @@ const SECTIONS: { id: SectionId; label: string }[] = [
   { id: 'friends', label: '友链' },
   { id: 'projects', label: '项目' },
   { id: 'about', label: '关于我' },
+  { id: 'anime', label: '追番与密钥' },
   { id: 'settings', label: '站点设置' },
 ];
 
@@ -354,6 +356,8 @@ function SectionView({ section, storage, go }: { section: SectionId; storage: St
       return <FriendsSection />;
     case 'projects':
       return <ProjectsSection />;
+    case 'anime':
+      return <SecretsSection />;
     case 'settings':
       return <SettingsSection />;
     default:

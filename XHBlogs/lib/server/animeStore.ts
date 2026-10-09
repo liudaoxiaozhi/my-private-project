@@ -1,7 +1,8 @@
 // lib/server/animeStore.ts —— 追番数据的读写（仅服务端）
 //
 // 数据就是 data/anime.json 里的一个数组，可以直接手改；读的时候会补齐缺省字段。
-// 写入只在本地开发模式（npm run dev / 本地预览.bat）开放：线上与 next start 下页面只读。
+// 写入：本地开发模式（npm run dev / 本地预览.bat），或者登录了网页后台（见 app/api/anime/guard.ts）。
+// 写入都经过后台的存储层（lib/server/admin/storage.ts）：本地直接写磁盘，线上提交到 GitHub，一次修改一个提交。
 // Bangumi / TMDB 封面会下载到 public/anime/covers/，这样不依赖外链，部署后也能显示。
 // TMDB 的搜索与详情见 lib/server/tmdb.ts。
 import fs from 'fs';
@@ -20,15 +21,19 @@ import {
 import { AnimeError, cover, date, int, str } from './animeClean';
 import { outboundFetch } from './outboundFetch';
 import { TMDB_IMAGE_HOST } from './tmdb';
+import { getSecret } from './admin/secrets';
+import { getStorage } from './admin/storage';
+import type { Change } from './admin/storage';
 
 export { AnimeError };
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'anime.json');
-const PUBLIC_DIR = path.join(process.cwd(), 'public');
-const COVER_DIR = path.join(PUBLIC_DIR, 'anime', 'covers');
+/** 存储层里的路径（相对博客根目录） */
+const DATA_PATH = 'data/anime.json';
+const COVER_PATH = 'public/anime/covers';
 const COVER_URL_PREFIX = '/anime/covers/';
 
-/** 只有本地开发服务器允许修改；生产构建出来的页面是静态的，改了也不会刷新 */
+/** 本地开发服务器上谁都能改；线上要登录网页后台（见 app/api/anime/guard.ts） */
 export const ANIME_EDITABLE = process.env.NODE_ENV === 'development';
 
 // ============================== 清洗 ==============================
@@ -111,12 +116,29 @@ function sanitizeEntry(raw: unknown, index: number): AnimeEntry | null {
 
 // ============================== 读写 ==============================
 
+/** 页面构建时读（磁盘上的文件） */
 export function readAnimeList(): AnimeEntry[] {
-  let parsed: unknown;
+  let text: string;
   try {
-    parsed = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+    text = fs.readFileSync(DATA_FILE, 'utf8');
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') console.error('读取 data/anime.json 失败:', error);
+    return [];
+  }
+  return parseAnimeList(text);
+}
+
+/** 修改前读最新的（线上从 GitHub 读，别人刚改过的也能读到） */
+async function readLatest(): Promise<AnimeEntry[]> {
+  return parseAnimeList((await getStorage().readText(DATA_PATH)) ?? '[]');
+}
+
+function parseAnimeList(text: string): AnimeEntry[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch (error) {
+    console.error('解析 data/anime.json 失败:', error);
     return [];
   }
   if (!Array.isArray(parsed)) return [];
@@ -132,12 +154,9 @@ export function readAnimeList(): AnimeEntry[] {
   return list;
 }
 
-function writeAnimeList(list: AnimeEntry[]): void {
-  fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
-  // 先写临时文件再替换，写到一半中断也不会把原文件弄坏
-  const tmp = `${DATA_FILE}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, `${JSON.stringify(list, null, 2)}\n`, 'utf8');
-  fs.renameSync(tmp, DATA_FILE);
+/** 列表连同封面的增删一起保存（线上是一个提交） */
+async function writeAnimeList(list: AnimeEntry[], extra: Change[], message: string): Promise<void> {
+  await getStorage().commit([...extra, { path: DATA_PATH, content: `${JSON.stringify(list, null, 2)}\n` }], message);
 }
 
 // 同一进程内的写操作排队执行，避免连点「+1」时互相覆盖
@@ -153,7 +172,7 @@ export function createAnime(raw: unknown): Promise<AnimeEntry> {
   return serialized(async () => {
     const input = sanitizeInput(raw);
     if (!input.title) throw new AnimeError('标题不能为空', 400);
-    const list = readAnimeList();
+    const list = await readLatest();
     if (list.some((e) => isSameWork(e, input))) throw new AnimeError('这部已经在列表里了', 409);
     const id = input.bangumiId
       ? `bgm-${input.bangumiId}`
@@ -161,8 +180,9 @@ export function createAnime(raw: unknown): Promise<AnimeEntry> {
         ? `tmdb-${input.tmdbType}-${input.tmdbId}`
         : `m-${Date.now().toString(36)}`;
     const now = new Date().toISOString();
-    const entry: AnimeEntry = { id, ...input, cover: await localizeCover(input.cover, id), createdAt: now, updatedAt: now };
-    writeAnimeList([entry, ...list]);
+    const cover = await localizeCover(input.cover, id);
+    const entry: AnimeEntry = { id, ...input, cover: cover.url, createdAt: now, updatedAt: now };
+    await writeAnimeList([entry, ...list], cover.changes, `追番：添加「${entry.title}」`);
     return entry;
   });
 }
@@ -171,26 +191,25 @@ export function updateAnime(id: string, raw: unknown): Promise<AnimeEntry> {
   return serialized(async () => {
     const input = sanitizeInput(raw);
     if (!input.title) throw new AnimeError('标题不能为空', 400);
-    const list = readAnimeList();
+    const list = await readLatest();
     const index = list.findIndex((e) => e.id === id);
     if (index < 0) throw new AnimeError('条目不存在，可能已被删除', 404);
     const prev = list[index];
-    const coverPath = input.cover === prev.cover ? prev.cover : await localizeCover(input.cover, id);
-    const entry: AnimeEntry = { ...prev, ...input, cover: coverPath, id, updatedAt: new Date().toISOString() };
+    const cover = input.cover === prev.cover ? { url: prev.cover, changes: [] } : await localizeCover(input.cover, id);
+    const entry: AnimeEntry = { ...prev, ...input, cover: cover.url, id, updatedAt: new Date().toISOString() };
     list[index] = entry;
-    writeAnimeList(list);
-    if (prev.cover !== entry.cover) removeOwnCover(prev.cover, id);
+    const removed = prev.cover !== entry.cover ? removeOwnCover(prev.cover, id) : [];
+    await writeAnimeList(list, [...cover.changes, ...removed], `追番：更新「${entry.title}」`);
     return entry;
   });
 }
 
 export function deleteAnime(id: string): Promise<void> {
   return serialized(async () => {
-    const list = readAnimeList();
+    const list = await readLatest();
     const target = list.find((e) => e.id === id);
     if (!target) throw new AnimeError('条目不存在，可能已被删除', 404);
-    writeAnimeList(list.filter((e) => e.id !== id));
-    removeOwnCover(target.cover, id);
+    await writeAnimeList(list.filter((e) => e.id !== id), removeOwnCover(target.cover, id), `追番：删除「${target.title}」`);
   });
 }
 
@@ -207,41 +226,38 @@ const COVER_EXT: Record<string, string> = {
 };
 const MAX_COVER_BYTES = 5 * 1024 * 1024;
 
-async function localizeCover(src: string, id: string): Promise<string> {
+/** 下载封面并暂存，随这次保存一起提交；下载失败就先用外链 */
+async function localizeCover(src: string, id: string): Promise<{ url: string; changes: Change[] }> {
+  const external = { url: src, changes: [] };
   let url: URL;
   try {
     url = new URL(src);
   } catch {
-    return src;
+    return external;
   }
-  if (!canDownloadCover(url.hostname)) return src;
+  if (!canDownloadCover(url.hostname)) return external;
   try {
     const res = await outboundFetch(url, { headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(15_000) });
     const ext = COVER_EXT[(res.headers.get('content-type') ?? '').split(';')[0].trim()];
     if (!res.ok || !ext) throw new Error(`HTTP ${res.status} ${res.headers.get('content-type')}`);
     const buf = Buffer.from(await res.arrayBuffer());
     if (buf.length === 0 || buf.length > MAX_COVER_BYTES) throw new Error(`大小异常：${buf.length} 字节`);
-    fs.mkdirSync(COVER_DIR, { recursive: true });
     // 文件名带上时间，换封面后浏览器 / 图片优化缓存不会拿到旧图
     const name = `${id}-${Date.now().toString(36)}.${ext}`;
-    fs.writeFileSync(path.join(COVER_DIR, name), buf);
-    return COVER_URL_PREFIX + name;
+    const staged = await getStorage().stage(buf);
+    return { url: COVER_URL_PREFIX + name, changes: [{ path: `${COVER_PATH}/${name}`, staged }] };
   } catch (error) {
     console.warn(`下载封面失败，先使用外链 ${src}:`, error);
-    return src;
+    return external;
   }
 }
 
 /** 删掉本条目自己下载的旧封面（文件名以 id 开头），不碰手动放进去的图片 */
-function removeOwnCover(coverPath: string, id: string): void {
-  if (!coverPath.startsWith(COVER_URL_PREFIX)) return;
+function removeOwnCover(coverPath: string, id: string): Change[] {
+  if (!coverPath.startsWith(COVER_URL_PREFIX)) return [];
   const name = coverPath.slice(COVER_URL_PREFIX.length);
-  if (!name.startsWith(`${id}-`) || name.includes('/') || name.includes('\\')) return;
-  try {
-    fs.rmSync(path.join(COVER_DIR, name), { force: true });
-  } catch (error) {
-    console.warn(`删除旧封面 ${name} 失败:`, error);
-  }
+  if (!name.startsWith(`${id}-`) || name.includes('/') || name.includes('\\')) return [];
+  return [{ path: `${COVER_PATH}/${name}`, delete: true }];
 }
 
 // ============================== Bangumi 搜索 ==============================
@@ -253,8 +269,11 @@ const BANGUMI_API = 'https://api.bgm.tv';
 
 // 可选的 Bangumi Access Token（next.bgm.tv/demo/access-token 生成，存在 .env.local 的 BANGUMI_ACCESS_TOKEN）。
 // 不登录时 Bangumi 会隐藏部分条目，登录后搜索结果与网站上一致。
-const bangumiToken = (): string => (process.env.BANGUMI_ACCESS_TOKEN ?? '').trim();
-export const isBangumiLoggedIn = (): boolean => bangumiToken() !== '';
+const bangumiToken = (): Promise<string> => getSecret('BANGUMI_ACCESS_TOKEN');
+/** 构建时用（只看环境变量） */
+export const isBangumiLoggedIn = (): boolean => (process.env.BANGUMI_ACCESS_TOKEN ?? '').trim() !== '';
+/** 运行时用：环境变量或后台保存的都算 */
+export const bangumiConfigured = async (): Promise<boolean> => (await bangumiToken()) !== '';
 
 const BANGUMI_TOKEN_INVALID = 'Bangumi 令牌已失效或不正确，点搜索框下面的「更换」重新填一下';
 
@@ -310,7 +329,7 @@ function toSubject(raw: RawSubject): SearchResult | null {
 }
 
 async function bangumiFetch(url: string, init?: { method?: string; body?: string }, tokenOverride?: string): Promise<unknown> {
-  const token = tokenOverride ?? bangumiToken();
+  const token = tokenOverride ?? (await bangumiToken());
   const res = await outboundFetch(url, {
     ...init,
     headers: {

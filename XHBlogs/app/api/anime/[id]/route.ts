@@ -1,11 +1,11 @@
-// app/api/anime/[id]/route.ts —— 修改 / 删除追番条目（仅本地开发模式）
+// app/api/anime/[id]/route.ts —— 修改 / 删除追番条目（本地开发模式，或登录了网页后台）
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { deleteAnime, updateAnime } from '../../../../lib/server/animeStore';
-import { errorResponse, readJson, rejectUnlessLocalEdit } from '../guard';
+import { errorResponse, readJson, rejectUnlessEditor } from '../guard';
 
 export async function PUT(req: NextRequest, ctx: RouteContext<'/api/anime/[id]'>) {
-  const rejected = rejectUnlessLocalEdit(req);
+  const rejected = await rejectUnlessEditor(req);
   if (rejected) return rejected;
   try {
     const { id } = await ctx.params;
@@ -17,7 +17,7 @@ export async function PUT(req: NextRequest, ctx: RouteContext<'/api/anime/[id]'>
 }
 
 export async function DELETE(req: NextRequest, ctx: RouteContext<'/api/anime/[id]'>) {
-  const rejected = rejectUnlessLocalEdit(req);
+  const rejected = await rejectUnlessEditor(req);
   if (rejected) return rejected;
   try {
     const { id } = await ctx.params;

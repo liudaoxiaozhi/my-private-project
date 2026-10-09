@@ -4,6 +4,7 @@ import { ADMIN_PASSWORD, ADMIN_ROOT } from './e2e/adminEnv';
 
 const PORT = Number(process.env.E2E_PORT || 3123);
 const BASE_URL = `http://localhost:${PORT}`;
+const FAKE_NETEASE_PORT = 3199;
 
 export default defineConfig({
   testDir: './e2e',
@@ -22,12 +23,28 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } }],
-  webServer: {
-    command: `npx next start -p ${PORT}`,
-    url: BASE_URL,
-    env: { NEXT_DIST_DIR: '.next-e2e', ADMIN_PASSWORD, ADMIN_STORAGE: 'local', ADMIN_LOCAL_ROOT: ADMIN_ROOT },
-    // 端口上已经有别的服务（比如没关的 dev server）时直接报错，免得测到没有测试内容的旧版本
-    reuseExistingServer: false,
-    timeout: 60_000,
-  },
+  webServer: [
+    {
+      command: `npx next start -p ${PORT}`,
+      url: BASE_URL,
+      env: {
+        NEXT_DIST_DIR: '.next-e2e',
+        ADMIN_PASSWORD,
+        ADMIN_STORAGE: 'local',
+        ADMIN_LOCAL_ROOT: ADMIN_ROOT,
+        // 网易云接口指向假的（见 e2e/fake-netease.mjs）
+        NETEASE_API_BASE: `http://localhost:${FAKE_NETEASE_PORT}`,
+      },
+      // 端口上已经有别的服务（比如没关的 dev server）时直接报错，免得测到没有测试内容的旧版本
+      reuseExistingServer: false,
+      timeout: 60_000,
+    },
+    {
+      command: `node e2e/fake-netease.mjs`,
+      port: FAKE_NETEASE_PORT,
+      env: { FAKE_NETEASE_PORT: String(FAKE_NETEASE_PORT) },
+      reuseExistingServer: false,
+      timeout: 15_000,
+    },
+  ],
 });

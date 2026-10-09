@@ -136,13 +136,15 @@ test.describe('歌曲', () => {
   test('添加（自动认出歌手、歌名）→ 置顶（重新编号）→ 改歌名带歌词 → 删除', async ({ page }) => {
     await login(page);
     await section(page, '歌曲');
-    const rows = page.locator('.admin-row').filter({ has: page.getByRole('button', { name: '删除' }) });
+    // 只看「本地上传的歌曲」这一块（上面还有网易云）
+    const local = page.locator('section').filter({ has: page.getByRole('heading', { name: '本地上传的歌曲' }) });
+    const rows = local.locator('.admin-row').filter({ has: page.getByRole('button', { name: '删除' }) });
     await expect(rows).toHaveCount(3);
 
     await page.locator('input[type="file"][accept*=".mp3"]').setInputFiles({ name: '新歌手 - 新歌.mp3', mimeType: 'audio/mpeg', buffer: Buffer.alloc(2048, 2) });
     await expect(page.getByLabel('歌名')).toHaveValue('新歌');
     await expect(page.getByLabel('歌手')).toHaveValue('新歌手');
-    await page.getByRole('button', { name: '添加' }).click();
+    await local.getByRole('button', { name: '添加', exact: true }).click();
     await toast(page, /已添加/);
     await expect(rows).toHaveCount(4);
     expect(music()).toContain('04. 新歌手 - 新歌.mp3');
@@ -150,7 +152,7 @@ test.describe('歌曲', () => {
     // 置顶：新歌变 01，其余往后挪，歌词跟着改名
     await rows.filter({ hasText: '新歌' }).getByRole('button', { name: '置顶' }).click();
     await toast(page, /顺序已调整/);
-    await expect(rows.first()).toContainText('首播');
+    await expect(rows.first()).toContainText('新歌');
     expect(music()).toEqual(['01. 新歌手 - 新歌.mp3', '02. 歌手甲 - 第一首.mp3', '03. 歌手乙 - 第二首.mp3', '04. 歌手丙 - 第三首.mp3']);
     expect(read('public/music', '03. 歌手乙 - 第二首.lrc')).toContain('第二首的歌词');
 
@@ -158,7 +160,7 @@ test.describe('歌曲', () => {
     await rows.first().getByRole('button', { name: '编辑' }).click();
     await page.getByLabel('歌名').last().fill('改过的歌名');
     await page.getByLabel('歌词（LRC）').fill('[00:02.00]新写的歌词');
-    await page.getByRole('button', { name: '保存', exact: true }).click();
+    await local.getByRole('button', { name: '保存', exact: true }).click();
     await toast(page, /已保存/);
     expect(music()[0]).toBe('01. 新歌手 - 改过的歌名.mp3');
     expect(read('public/music', '01. 新歌手 - 改过的歌名.lrc')).toContain('新写的歌词');

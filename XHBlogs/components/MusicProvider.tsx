@@ -1,7 +1,20 @@
 "use client";
 
 import { createContext, useContext, useState, useRef, useEffect, ReactNode } from 'react';
-import type { LocalPlaylistManifest, LyricLine, Song } from '../lib/music';
+import type { LocalPlaylistManifest, LyricLine, NeteaseTrack, Song } from '../lib/music';
+import { siteConfig } from '../siteConfig';
+import neteaseData from '../data/netease.json';
+
+/** 访客这次浏览里亲手按过暂停：不再自动播放（sessionStorage） */
+const USER_PAUSED_KEY = 'music-user-paused';
+
+function userPaused(): boolean {
+  try {
+    return sessionStorage.getItem(USER_PAUSED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
 
 /** 歌曲既没有同名封面也没有内嵌封面时使用 */
 const DEFAULT_COVER = '/images/music-default-cover.svg';
@@ -25,6 +38,23 @@ async function fetchLocalSongs(): Promise<Song[]> {
       lyrics: [],
       lrcUrl: t.lrcUrl,
     }));
+}
+
+/**
+ * 网易云歌曲（后台导入，data/netease.json）：用官方外链播放，歌词由 /api/music/lyric 代取。
+ * VIP / 付费歌曲外链放不了，会像加载失败一样自动跳到下一首
+ */
+function neteaseSongs(): Song[] {
+  return (neteaseData as NeteaseTrack[]).map((t) => ({
+    id: `netease:${t.id}`,
+    source: 'netease' as const,
+    title: t.title || '未知歌曲',
+    artist: t.artist || '未知歌手',
+    cover: t.cover || DEFAULT_COVER,
+    src: `https://music.163.com/song/media/outer/url?id=${t.id}.mp3`,
+    lyrics: [],
+    lrcUrl: `/api/music/lyric?id=${t.id}`,
+  }));
 }
 
 // 【增强版 LRC 歌词解析】
@@ -119,9 +149,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true;
     const loadPlaylist = async () => {
-      let merged: Song[] = [];
+      // 网易云的在前，本地上传的接在后面
+      let merged: Song[] = neteaseSongs();
       try {
-        merged = await fetchLocalSongs();
+        merged = [...merged, ...(await fetchLocalSongs())];
       } catch (error) {
         console.warn('[music] 本地歌单加载失败：', error);
       }
@@ -173,6 +204,29 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     return () => { isMounted = false; };
   }, [currentIndex, playlist.length]); // 移除 playlist 依赖防止无限循环，只依赖长度
 
+  // 自动播放（siteConfig.autoPlayMusic）：歌单加载好就试着播；浏览器拦下（没和页面互动过不许出声）时，
+  // 等访客第一次点击 / 触摸 / 按键再开始。后台页面、访客这次浏览里按过暂停时不自动播
+  const autoplayTried = useRef(false);
+  useEffect(() => {
+    if (!siteConfig.autoPlayMusic || playlist.length === 0 || autoplayTried.current) return;
+    autoplayTried.current = true;
+    if (userPaused() || /^\/admin(\/|$)/.test(window.location.pathname)) return;
+    const events = ['pointerdown', 'keydown', 'touchstart'] as const;
+    const start = () => {
+      events.forEach((e) => window.removeEventListener(e, start, true));
+      const audio = audioRef.current;
+      if (!audio || !audio.paused || userPaused()) return;
+      audio.play().then(() => setIsPlaying(true)).catch(() => {});
+    };
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio
+      .play()
+      .then(() => setIsPlaying(true))
+      .catch(() => events.forEach((e) => window.addEventListener(e, start, { capture: true, once: true, passive: true })));
+    return () => events.forEach((e) => window.removeEventListener(e, start, true));
+  }, [playlist.length]);
+
   // 🌟 4. 同步音量到 audio 元素
   useEffect(() => {
     if (audioRef.current) {
@@ -182,8 +236,14 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
   const togglePlay = () => {
     if (audioRef.current) {
-      if (isPlaying) audioRef.current.pause();
-      else audioRef.current.play().catch(() => setIsPlaying(false));
+      if (isPlaying) {
+        audioRef.current.pause();
+        try {
+          sessionStorage.setItem(USER_PAUSED_KEY, '1');
+        } catch {
+          /* 忽略 */
+        }
+      } else audioRef.current.play().catch(() => setIsPlaying(false));
       setIsPlaying(!isPlaying);
     }
   };

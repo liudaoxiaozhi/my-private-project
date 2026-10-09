@@ -15,13 +15,16 @@ export interface PrepareOptions {
   effects?: EffectsLevel | null;
   /** false 时桌宠会在打开网站时打招呼 */
   greeted?: boolean;
+  /** true 时保留「进入网站自动放歌」（默认关掉，免得任意一次点击都开始播放、干扰别的断言） */
+  music?: boolean;
 }
 
-export async function prepare(context: BrowserContext, { theme = 'light', effects = null, greeted = true }: PrepareOptions = {}) {
+export async function prepare(context: BrowserContext, { theme = 'light', effects = null, greeted = true, music = false }: PrepareOptions = {}) {
   await context.addInitScript(
-    ({ theme, effects, greeted }) => {
+    ({ theme, effects, greeted, music }) => {
       try {
         sessionStorage.setItem('hasSeenSplash', 'true');
+        if (!music) sessionStorage.setItem('music-user-paused', '1');
         if (greeted) sessionStorage.setItem('pet-greeted', '1');
         if (!localStorage.getItem('blog-theme')) localStorage.setItem('blog-theme', theme);
         if (effects && !localStorage.getItem('effects-level')) localStorage.setItem('effects-level', effects);
@@ -29,7 +32,7 @@ export async function prepare(context: BrowserContext, { theme = 'light', effect
         /* 存储不可用时按默认 */
       }
     },
-    { theme, effects, greeted },
+    { theme, effects, greeted, music },
   );
 }
 
@@ -49,6 +52,7 @@ interface Options {
   theme: 'light' | 'dark';
   effects: EffectsLevel | null;
   greeted: boolean;
+  music: boolean;
 }
 
 /** 用法和 @playwright/test 的 test 一样；可以用 test.use({ effects: 'full' }) 之类改初始设置 */
@@ -56,8 +60,9 @@ export const test = base.extend<Options & { errors: string[] }>({
   theme: ['light', { option: true }],
   effects: [null, { option: true }],
   greeted: [true, { option: true }],
-  context: async ({ context, theme, effects, greeted }, provide) => {
-    await prepare(context, { theme, effects, greeted });
+  music: [false, { option: true }],
+  context: async ({ context, theme, effects, greeted, music }, provide) => {
+    await prepare(context, { theme, effects, greeted, music });
     await provide(context);
   },
   errors: [
@@ -74,6 +79,14 @@ export { expect };
 
 /** 换页内容的外层（入场动画就加在它身上） */
 export const CONTENT_WRAPPER = '[data-route-content]';
+
+/** 登录网页后台（密码见 e2e/adminEnv.ts） */
+export async function adminLogin(page: Page, password: string) {
+  await page.goto('/admin');
+  await page.getByLabel('管理员密码').fill(password);
+  await page.getByRole('button', { name: '登录' }).click();
+  await expect(page.getByRole('navigation', { name: '后台板块' })).toBeVisible();
+}
 
 /** 打开左下角工具箱（已经打开就不动） */
 export async function openToolbox(page: Page) {

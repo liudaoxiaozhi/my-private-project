@@ -188,7 +188,7 @@ export function DanmakuSection() {
 export function AppearanceSection() {
   return (
     <ConfigForm
-      keys={['bgImages', 'bgImagesMobile', 'bgBlur', 'bgMode', 'useGradient', 'themeColors', 'labStyle', 'vinylPlayer', 'homeHero', 'defaultPostCover', 'defaultChatterCover', 'photoWallImage', 'enableSakura', 'enableParticles', 'enableClickEffect', 'enablePet', 'enableSeasonal']}
+      keys={['bgImages', 'bgImagesMobile', 'bgBlur', 'bgMode', 'useGradient', 'themeColors', 'labStyle', 'vinylPlayer', 'autoPlayMusic', 'homeHero', 'defaultPostCover', 'defaultChatterCover', 'photoWallImage', 'enableSakura', 'enableParticles', 'enableClickEffect', 'enablePet', 'enableSeasonal']}
       title="外观"
       subtitle="背景、风格、首页开场和各种特效"
     >
@@ -213,6 +213,7 @@ export function AppearanceSection() {
           <Group title="风格">
             <Toggle checked={f.bool('labStyle')} onChange={(v) => f.set('labStyle', v)} label="「实验室」风格" hint="卡片更白更轻、细粉边，小标签换成等宽大写字" />
             <Toggle checked={f.bool('vinylPlayer')} onChange={(v) => f.set('vinylPlayer', v)} label="黑胶唱片播放器" hint="首页播放器显示成旋转的黑胶唱片" />
+            <Toggle checked={f.bool('autoPlayMusic')} onChange={(v) => f.set('autoPlayMusic', v)} label="进入网站自动放歌" hint="浏览器不允许没点过页面就出声，被拦下时在访客第一次点击 / 按键时开始；访客按过暂停就不再自动放" />
             <Toggle checked={f.bool('useGradient')} onChange={(v) => f.set('useGradient', v)} label="用渐变色代替背景插画" />
             {f.bool('useGradient') && (
               <Field label="渐变色（逗号分隔）" hint={f.reset('themeColors')}>

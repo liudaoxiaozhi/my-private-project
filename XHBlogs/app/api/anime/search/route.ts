@@ -1,14 +1,14 @@
-// app/api/anime/search/route.ts —— 代理 Bangumi（动画）/ TMDB（电影、电视剧）搜索，给「添加追番」自动填写信息用（仅本地开发模式）
+// app/api/anime/search/route.ts —— 代理 Bangumi（动画）/ TMDB（电影、电视剧）搜索，给「添加追番」自动填写信息用（本地开发模式，或登录了网页后台）
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { parseBangumiId } from '../../../../lib/anime';
-import { ANIME_EDITABLE, AnimeError, searchBangumi } from '../../../../lib/server/animeStore';
+import { AnimeError, searchBangumi } from '../../../../lib/server/animeStore';
+import { rejectUnlessEditor } from '../guard';
 import { searchTmdb } from '../../../../lib/server/tmdb';
 
 export async function GET(req: NextRequest) {
-  if (!ANIME_EDITABLE) {
-    return NextResponse.json({ error: '只在本地开发模式下可用' }, { status: 403 });
-  }
+  const rejected = await rejectUnlessEditor(req, false);
+  if (rejected) return rejected;
   const params = req.nextUrl.searchParams;
   const q = (params.get('q') ?? '').trim().slice(0, 100);
   const source = params.get('source') === 'tmdb' ? 'tmdb' : 'bangumi';

@@ -1,10 +1,10 @@
-// app/api/anime/route.ts —— 新增追番条目（仅本地开发模式）
+// app/api/anime/route.ts —— 新增追番条目（本地开发模式，或登录了网页后台）
 import { NextResponse } from 'next/server';
 import { createAnime } from '../../../lib/server/animeStore';
-import { errorResponse, readJson, rejectUnlessLocalEdit } from './guard';
+import { errorResponse, readJson, rejectUnlessEditor } from './guard';
 
 export async function POST(req: Request) {
-  const rejected = rejectUnlessLocalEdit(req);
+  const rejected = await rejectUnlessEditor(req);
   if (rejected) return rejected;
   try {
     const entry = await createAnime(await readJson(req));

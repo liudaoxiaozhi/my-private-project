@@ -57,7 +57,7 @@ export async function writeData(name: DataName, items: unknown, attachments?: At
 /** 后台可以改的设置项（其余的如评论密钥、开屏横幅仍然只在 siteConfig.ts 里改） */
 export const EDITABLE = [
   'title', 'faviconUrl', 'authorName', 'bio', 'navTitle', 'navSuffix', 'navAfter', 'avatarUrl',
-  'useGradient', 'themeColors', 'bgImages', 'bgImagesMobile', 'bgBlur', 'bgMode', 'labStyle', 'vinylPlayer', 'homeHero',
+  'useGradient', 'themeColors', 'bgImages', 'bgImagesMobile', 'bgBlur', 'bgMode', 'labStyle', 'vinylPlayer', 'autoPlayMusic', 'homeHero',
   'defaultPostCover', 'defaultChatterCover', 'photoWallImage', 'social', 'chatterTitle', 'chatterDescription',
   'danmakuList', 'buildDate', 'timeZone', 'timeZoneLabel', 'weather', 'icpConfig', 'friendLinkApplyFormat', 'birthday',
   'enableParticles', 'enableSakura', 'enableDanmaku', 'enableClickEffect', 'enablePet', 'enableSeasonal',

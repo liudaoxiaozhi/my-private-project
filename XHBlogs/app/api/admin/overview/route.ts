@@ -11,7 +11,14 @@ export const GET = adminRoute(async () => {
     countMd('posts'),
     countMd('chatters'),
     countMd('moments'),
-    listSongs().then((s) => s.length),
+    Promise.all([listSongs(), storage.readText('data/netease.json')]).then(([local, netease]) => {
+      try {
+        const list = JSON.parse(netease ?? '[]') as unknown;
+        return local.length + (Array.isArray(list) ? list.length : 0);
+      } catch {
+        return local.length;
+      }
+    }),
     readData('albums'),
     readData('friends').then((d) => d.length),
     readData('projects').then((d) => d.length),

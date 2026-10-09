@@ -1,12 +1,14 @@
 // lib/server/tmdb.ts —— TMDB（电影 / 电视剧）搜索与详情（仅服务端）
 //
-// Key 存在 .env.local 的 TMDB_API_KEY（也可以在追番页的「电影 / 电视剧」搜索里直接填，会自动写进去）：
+// Key：环境变量 TMDB_API_KEY，或在追番页「电影 / 电视剧」搜索里 / 网页后台「追番与密钥」里填（本地写进 .env.local，
+// 线上加密存进仓库，见 lib/server/admin/secrets.ts）：
 // v3 的 API Key 或 v4 的 Read Access Token（eyJ 开头）都可以。
 // 访问不了 api.themoviedb.org 时：在 .env.local 里配 HTTPS_PROXY 走本机代理（见 outboundFetch），
 // 或用 TMDB_API_BASE / TMDB_IMAGE_BASE 换成自己的反代地址。
 import { emptyInput, type AnimeKind, type AnimePart, type SearchResult, type TmdbDetail, type TmdbType } from '../anime';
 import { AnimeError, date, int, str } from './animeClean';
 import { isProxyConfigured, outboundFetch } from './outboundFetch';
+import { getSecret } from './admin/secrets';
 
 const trimSlash = (s: string) => s.replace(/\/+$/, '');
 const API_BASE = trimSlash(process.env.TMDB_API_BASE?.trim() || 'https://api.themoviedb.org');
@@ -21,8 +23,11 @@ export const TMDB_IMAGE_HOST = (() => {
   }
 })();
 
-const apiKey = (): string => (process.env.TMDB_API_KEY ?? '').trim();
-export const isTmdbConfigured = (): boolean => apiKey() !== '';
+const apiKey = (): Promise<string> => getSecret('TMDB_API_KEY');
+/** 构建时用（只看环境变量）：本地开发模式的页面初始状态 */
+export const isTmdbConfigured = (): boolean => (process.env.TMDB_API_KEY ?? '').trim() !== '';
+/** 运行时用：环境变量或后台保存的都算 */
+export const tmdbConfigured = async (): Promise<boolean> => (await apiKey()) !== '';
 
 const LANGUAGE = 'zh-CN';
 /** TMDB 的「动画」类型 */
@@ -40,7 +45,7 @@ function unreachableMessage(error: unknown): string {
 }
 
 async function tmdbFetch<T>(pathname: string, params: Record<string, string> = {}, keyOverride?: string): Promise<T> {
-  const key = keyOverride ?? apiKey();
+  const key = keyOverride ?? (await apiKey());
   if (!key) throw new AnimeError('还没有配置 TMDB Key：在追番页「电影 / 电视剧」搜索里填一下', 400);
 
   const url = new URL(`${API_BASE}/3${pathname}`);

@@ -1,5 +1,5 @@
 // lib/music.ts —— 音乐相关的共享类型（客户端 / 服务端通用，无运行时依赖）
-// 歌曲全部来自 public/music/，由 scripts/build-music-manifest.mjs 生成歌单
+// 歌曲来自两处：网易云（data/netease.json，后台导入）和本地上传（public/music/，由 scripts/build-music-manifest.mjs 生成歌单）
 
 /** 一行已解析的歌词；time 单位为秒，-1 表示没有时间轴的纯文本歌词（只显示、不滚动高亮） */
 export interface LyricLine {
@@ -23,8 +23,17 @@ export interface LocalPlaylistManifest {
   tracks: LocalTrack[];
 }
 
-/** 目前只有本地音乐；保留字段方便以后接入其他来源 */
-export type SongSource = 'local';
+export type SongSource = 'local' | 'netease';
+
+/** data/netease.json 里的一首网易云歌曲（后台导入时查好的信息） */
+export interface NeteaseTrack {
+  id: number;
+  title: string;
+  artist: string;
+  cover: string;
+  /** 0 / 8：免费；1：VIP；4：需要购买专辑（这两种外链通常放不了） */
+  fee: number;
+}
 
 /** 播放器内部使用的歌曲 */
 export interface Song {

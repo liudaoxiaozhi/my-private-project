@@ -1,6 +1,6 @@
 'use client';
 // app/anime/AnimeClient.tsx —— 追番页主体：统计、分栏、筛选、卡片墙；本地开发模式下可添加 / 编辑
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Clapperboard, Plus, Search } from 'lucide-react';
 import { GLASS } from '../../components/novel/novelStyles';
 import { useToast } from '../../components/ToastProvider';
@@ -73,7 +73,7 @@ interface AnimeClientProps {
   initialCredentials: Credentials;
 }
 
-export default function AnimeClient({ initialEntries, editable, initialCredentials }: AnimeClientProps) {
+export default function AnimeClient({ initialEntries, editable: buildEditable, initialCredentials }: AnimeClientProps) {
   const { showToast } = useToast();
   const [entries, setEntries] = useState(initialEntries);
   const [tab, setTab] = useState<Tab>(() => (initialEntries.some((e) => e.status === 'watching') ? 'watching' : 'all'));
@@ -83,6 +83,23 @@ export default function AnimeClient({ initialEntries, editable, initialCredentia
   const [dialog, setDialog] = useState<Dialog>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [credentials, setCredentials] = useState(initialCredentials);
+  // 页面是静态生成的：线上打开后再问服务器，登录了网页后台就打开编辑
+  const [editable, setEditable] = useState(buildEditable);
+  useEffect(() => {
+    if (buildEditable) return;
+    let alive = true;
+    fetch('/api/anime/editor', { cache: 'no-store' })
+      .then((res) => (res.ok ? (res.json() as Promise<{ editable: boolean; credentials?: Credentials }>) : null))
+      .then((data) => {
+        if (!alive || !data?.editable) return;
+        setEditable(true);
+        if (data.credentials) setCredentials(data.credentials);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [buildEditable]);
 
   const counts = useMemo(() => {
     const c: Record<Tab, number> = { all: entries.length, watching: 0, planned: 0, completed: 0, paused: 0 };

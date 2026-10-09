@@ -36,6 +36,9 @@ const defaults = {
   labStyle: true,
   // 首页播放器显示成旋转的黑胶唱片（带唱臂）；false 回到原来的圆形封面
   vinylPlayer: true,
+  // 打开网站就开始放歌。浏览器不允许没点过页面就出声，被拦下时会在访客第一次点击 / 按键时开始；
+  // 访客自己按过暂停，这次浏览就不再自动放
+  autoPlayMusic: true,
   // 首页开场：一屏高的渐变大标题 + 终端打字效果，往下滚才是卡片区；enabled 设为 false 关闭
   homeHero: {
     enabled: true,

@@ -1,8 +1,7 @@
 // app/api/chat/route.ts —— 右下角桌宠的 Gemini 对话代理（人设见 siteConfig.geminiConfig.systemPrompt）
 import { siteConfig } from '../../../siteConfig';
 import { getClientIp, isSameOrigin, jsonResponse, rateLimit } from '../../../lib/server/requestGuard';
-
-export const runtime = 'edge';
+import { getSecret } from '../../../lib/server/admin/secrets';
 
 /** 单条消息最大字符数（桌宠只回一两句话，输入也没必要太长） */
 const MAX_MESSAGE_LENGTH = 300;
@@ -47,8 +46,8 @@ export async function POST(req: Request): Promise<Response> {
     return jsonResponse({ error: `Message must be 1-${MAX_MESSAGE_LENGTH} characters` }, 400);
   }
 
-  // 4. 读取密钥（只从环境变量读取，绝不写进 siteConfig）
-  const apiKey = (process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || '').trim();
+  // 4. 读取密钥：环境变量，或网页后台「追番与密钥」里加密保存的（绝不写进 siteConfig）
+  const apiKey = (process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || '').trim() || (await getSecret('GEMINI_API_KEY'));
   if (!apiKey) {
     console.error('[api/chat] 未配置 GEMINI_API_KEY');
     return jsonResponse({ error: 'Service unavailable' }, 503);

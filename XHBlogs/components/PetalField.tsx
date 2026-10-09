@@ -1,8 +1,8 @@
 "use client";
 // components/PetalField.tsx —— 飘落层：樱花 / 雪花 / 红梅 / 彩纸共用（Sakura 常驻飘落、科乐美彩蛋的樱花风暴都用它）
 //
-// 每片都是「下落 + 左右摇摆 + 翻转」三层 CSS 动画叠加，只动 transform / opacity（关键帧在 globals.css）；
-// 不给花瓣加 filter：旋转中的元素带 filter 每帧都要重新栅格化。
+// 每片花瓣只有一个元素在动：下落、左右摇摆、翻转写在同一段关键帧里（globals.css 的 petal-drift-0/1/2），
+// 只动 transform / opacity。不给花瓣加 filter：旋转中的元素带 filter 每帧都要重新栅格化。
 
 import { useId } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
@@ -16,8 +16,6 @@ export interface Piece {
   delay: number;     // 常驻模式为负数（一开始就分布在半空）；一次性模式为正数（陆续落下）
   drift: number;     // 整体横向漂移（vw）
   sway: number;      // 摇摆幅度（px）
-  swayDur: number;
-  flipDur: number;
   alpha: number;     // 深浅微调
   shape: number;     // 用第几种形状（对 shapes 数量取余）
 }
@@ -40,8 +38,6 @@ export function makePieces(count: number, { fall = [11, 20], delayMax = 20, once
     delay: (once ? 1 : -1) * Math.random() * delayMax,
     drift: 8 + Math.random() * 16,
     sway: 20 + Math.random() * 40,
-    swayDur: 2.6 + Math.random() * 2.4,
-    flipDur: 2.2 + Math.random() * 2.8,
     alpha: 0.7 + Math.random() * 0.3,
     shape: Math.floor(Math.random() * 12),
   }));
@@ -170,28 +166,16 @@ export default function PetalField({ pieces, season, opacity = 1, once = false, 
           className="absolute top-0"
           style={{
             left: `${p.left}vw`,
-            animation: `petal-fall ${p.fall}s linear ${p.delay}s ${iterations}`,
+            // 三种摇摆 / 翻转节奏轮流用；翻转方向一半正一半反
+            animation: `petal-drift-${p.shape % 3} ${p.fall}s linear ${p.delay}s ${iterations}`,
             '--drift': `${p.drift}vw`,
+            '--sway': `${p.sway}px`,
+            '--spin': p.id % 2 === 0 ? '1' : '-1',
           } as CSSVars}
         >
-          <div
-            style={{
-              animation: `petal-sway ${p.swayDur}s ease-in-out ${p.delay}s infinite alternate`,
-              '--sway': `${p.sway}px`,
-            } as CSSVars}
-          >
-            <svg
-              width={p.size}
-              height={p.size}
-              viewBox="0 0 24 24"
-              style={{
-                animation: `petal-flip ${p.flipDur}s linear ${p.delay}s infinite`,
-                opacity: p.alpha,
-              }}
-            >
-              <use href={`#${shapes[p.shape % shapes.length]}`} />
-            </svg>
-          </div>
+          <svg width={p.size} height={p.size} viewBox="0 0 24 24" style={{ display: 'block', opacity: p.alpha }}>
+            <use href={`#${shapes[p.shape % shapes.length]}`} />
+          </svg>
         </div>
       ))}
     </div>

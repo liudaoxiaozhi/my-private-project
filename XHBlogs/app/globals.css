@@ -226,16 +226,90 @@ html[data-effects='off'] {
   transition: none !important;
 }
 
-/* 飘落层（components/PetalField.tsx）：樱花、雪花、红梅、彩纸共用的三层动画，只动 transform / opacity */
-@keyframes petal-fall {
-  0%   { transform: translate3d(0, -8vh, 0); opacity: 0; }
-  8%   { opacity: 1; }
-  85%  { opacity: 1; }
-  100% { transform: translate3d(var(--drift), 108vh, 0); opacity: 0; }
+/* 飘落层（components/PetalField.tsx）：樱花、雪花、红梅、彩纸共用。
+   下落、左右摇摆、翻转写在同一段关键帧里，每片花瓣只有一个元素在动：浏览器主线程每出一帧，
+   都要把所有正在动的元素样式过一遍，元素越少越省（原来每片花瓣是三个元素各动各的，实测主线程多花一倍多）。
+   三种变体的摇摆来回数、翻转圈数不同；幅度和方向由每片花瓣的 --drift / --sway / --spin 决定。只动 transform / opacity */
+@keyframes petal-drift-0 {
+  0% { transform: translate3d(calc(var(--drift) * 0.000 + var(--sway) * 0.000), -8.00vh, 0) rotateX(calc(var(--spin) * 0deg)) rotateY(0.0deg) rotateZ(calc(var(--spin) * 0deg)); opacity: 0; }
+  4.17% { transform: translate3d(calc(var(--drift) * 0.042 + var(--sway) * 0.500), -3.17vh, 0) rotateX(calc(var(--spin) * 45deg)) rotateY(28.3deg) rotateZ(calc(var(--spin) * 32deg)); }
+  8.33% { transform: translate3d(calc(var(--drift) * 0.083 + var(--sway) * 0.866), 1.67vh, 0) rotateX(calc(var(--spin) * 90deg)) rotateY(40.0deg) rotateZ(calc(var(--spin) * 65deg)); opacity: 1; }
+  12.5% { transform: translate3d(calc(var(--drift) * 0.125 + var(--sway) * 1.000), 6.50vh, 0) rotateX(calc(var(--spin) * 135deg)) rotateY(28.3deg) rotateZ(calc(var(--spin) * 98deg)); }
+  16.67% { transform: translate3d(calc(var(--drift) * 0.167 + var(--sway) * 0.866), 11.33vh, 0) rotateX(calc(var(--spin) * 180deg)) rotateY(0.0deg) rotateZ(calc(var(--spin) * 130deg)); }
+  20.83% { transform: translate3d(calc(var(--drift) * 0.208 + var(--sway) * 0.500), 16.17vh, 0) rotateX(calc(var(--spin) * 225deg)) rotateY(-28.3deg) rotateZ(calc(var(--spin) * 162deg)); }
+  25% { transform: translate3d(calc(var(--drift) * 0.250 + var(--sway) * 0.000), 21.00vh, 0) rotateX(calc(var(--spin) * 270deg)) rotateY(-40.0deg) rotateZ(calc(var(--spin) * 195deg)); }
+  29.17% { transform: translate3d(calc(var(--drift) * 0.292 + var(--sway) * -0.500), 25.83vh, 0) rotateX(calc(var(--spin) * 315deg)) rotateY(-28.3deg) rotateZ(calc(var(--spin) * 228deg)); }
+  33.33% { transform: translate3d(calc(var(--drift) * 0.333 + var(--sway) * -0.866), 30.67vh, 0) rotateX(calc(var(--spin) * 360deg)) rotateY(-0.0deg) rotateZ(calc(var(--spin) * 260deg)); }
+  37.5% { transform: translate3d(calc(var(--drift) * 0.375 + var(--sway) * -1.000), 35.50vh, 0) rotateX(calc(var(--spin) * 405deg)) rotateY(28.3deg) rotateZ(calc(var(--spin) * 292deg)); }
+  41.67% { transform: translate3d(calc(var(--drift) * 0.417 + var(--sway) * -0.866), 40.33vh, 0) rotateX(calc(var(--spin) * 450deg)) rotateY(40.0deg) rotateZ(calc(var(--spin) * 325deg)); }
+  45.83% { transform: translate3d(calc(var(--drift) * 0.458 + var(--sway) * -0.500), 45.17vh, 0) rotateX(calc(var(--spin) * 495deg)) rotateY(28.3deg) rotateZ(calc(var(--spin) * 358deg)); }
+  50% { transform: translate3d(calc(var(--drift) * 0.500 + var(--sway) * -0.000), 50.00vh, 0) rotateX(calc(var(--spin) * 540deg)) rotateY(0.0deg) rotateZ(calc(var(--spin) * 390deg)); }
+  54.17% { transform: translate3d(calc(var(--drift) * 0.542 + var(--sway) * 0.500), 54.83vh, 0) rotateX(calc(var(--spin) * 585deg)) rotateY(-28.3deg) rotateZ(calc(var(--spin) * 422deg)); }
+  58.33% { transform: translate3d(calc(var(--drift) * 0.583 + var(--sway) * 0.866), 59.67vh, 0) rotateX(calc(var(--spin) * 630deg)) rotateY(-40.0deg) rotateZ(calc(var(--spin) * 455deg)); }
+  62.5% { transform: translate3d(calc(var(--drift) * 0.625 + var(--sway) * 1.000), 64.50vh, 0) rotateX(calc(var(--spin) * 675deg)) rotateY(-28.3deg) rotateZ(calc(var(--spin) * 488deg)); }
+  66.67% { transform: translate3d(calc(var(--drift) * 0.667 + var(--sway) * 0.866), 69.33vh, 0) rotateX(calc(var(--spin) * 720deg)) rotateY(-0.0deg) rotateZ(calc(var(--spin) * 520deg)); }
+  70.83% { transform: translate3d(calc(var(--drift) * 0.708 + var(--sway) * 0.500), 74.17vh, 0) rotateX(calc(var(--spin) * 765deg)) rotateY(28.3deg) rotateZ(calc(var(--spin) * 552deg)); }
+  75% { transform: translate3d(calc(var(--drift) * 0.750 + var(--sway) * 0.000), 79.00vh, 0) rotateX(calc(var(--spin) * 810deg)) rotateY(40.0deg) rotateZ(calc(var(--spin) * 585deg)); }
+  79.17% { transform: translate3d(calc(var(--drift) * 0.792 + var(--sway) * -0.500), 83.83vh, 0) rotateX(calc(var(--spin) * 855deg)) rotateY(28.3deg) rotateZ(calc(var(--spin) * 618deg)); }
+  83.33% { transform: translate3d(calc(var(--drift) * 0.833 + var(--sway) * -0.866), 88.67vh, 0) rotateX(calc(var(--spin) * 900deg)) rotateY(0.0deg) rotateZ(calc(var(--spin) * 650deg)); }
+  87.5% { transform: translate3d(calc(var(--drift) * 0.875 + var(--sway) * -1.000), 93.50vh, 0) rotateX(calc(var(--spin) * 945deg)) rotateY(-28.3deg) rotateZ(calc(var(--spin) * 682deg)); opacity: 1; }
+  91.67% { transform: translate3d(calc(var(--drift) * 0.917 + var(--sway) * -0.866), 98.33vh, 0) rotateX(calc(var(--spin) * 990deg)) rotateY(-40.0deg) rotateZ(calc(var(--spin) * 715deg)); }
+  95.83% { transform: translate3d(calc(var(--drift) * 0.958 + var(--sway) * -0.500), 103.17vh, 0) rotateX(calc(var(--spin) * 1035deg)) rotateY(-28.3deg) rotateZ(calc(var(--spin) * 748deg)); }
+  100% { transform: translate3d(calc(var(--drift) * 1.000 + var(--sway) * -0.000), 108.00vh, 0) rotateX(calc(var(--spin) * 1080deg)) rotateY(-0.0deg) rotateZ(calc(var(--spin) * 780deg)); opacity: 0; }
 }
-@keyframes petal-sway {
-  from { transform: translateX(calc(var(--sway) * -1)); }
-  to   { transform: translateX(var(--sway)); }
+@keyframes petal-drift-1 {
+  0% { transform: translate3d(calc(var(--drift) * 0.000 + var(--sway) * 1.000), -8.00vh, 0) rotateX(calc(var(--spin) * 0deg)) rotateY(0.0deg) rotateZ(calc(var(--spin) * 0deg)); opacity: 0; }
+  4.17% { transform: translate3d(calc(var(--drift) * 0.042 + var(--sway) * 0.707), -3.17vh, 0) rotateX(calc(var(--spin) * 60deg)) rotateY(34.6deg) rotateZ(calc(var(--spin) * 43deg)); }
+  8.33% { transform: translate3d(calc(var(--drift) * 0.083 + var(--sway) * 0.000), 1.67vh, 0) rotateX(calc(var(--spin) * 120deg)) rotateY(34.6deg) rotateZ(calc(var(--spin) * 87deg)); opacity: 1; }
+  12.5% { transform: translate3d(calc(var(--drift) * 0.125 + var(--sway) * -0.707), 6.50vh, 0) rotateX(calc(var(--spin) * 180deg)) rotateY(0.0deg) rotateZ(calc(var(--spin) * 130deg)); }
+  16.67% { transform: translate3d(calc(var(--drift) * 0.167 + var(--sway) * -1.000), 11.33vh, 0) rotateX(calc(var(--spin) * 240deg)) rotateY(-34.6deg) rotateZ(calc(var(--spin) * 173deg)); }
+  20.83% { transform: translate3d(calc(var(--drift) * 0.208 + var(--sway) * -0.707), 16.17vh, 0) rotateX(calc(var(--spin) * 300deg)) rotateY(-34.6deg) rotateZ(calc(var(--spin) * 217deg)); }
+  25% { transform: translate3d(calc(var(--drift) * 0.250 + var(--sway) * -0.000), 21.00vh, 0) rotateX(calc(var(--spin) * 360deg)) rotateY(-0.0deg) rotateZ(calc(var(--spin) * 260deg)); }
+  29.17% { transform: translate3d(calc(var(--drift) * 0.292 + var(--sway) * 0.707), 25.83vh, 0) rotateX(calc(var(--spin) * 420deg)) rotateY(34.6deg) rotateZ(calc(var(--spin) * 303deg)); }
+  33.33% { transform: translate3d(calc(var(--drift) * 0.333 + var(--sway) * 1.000), 30.67vh, 0) rotateX(calc(var(--spin) * 480deg)) rotateY(34.6deg) rotateZ(calc(var(--spin) * 347deg)); }
+  37.5% { transform: translate3d(calc(var(--drift) * 0.375 + var(--sway) * 0.707), 35.50vh, 0) rotateX(calc(var(--spin) * 540deg)) rotateY(0.0deg) rotateZ(calc(var(--spin) * 390deg)); }
+  41.67% { transform: translate3d(calc(var(--drift) * 0.417 + var(--sway) * 0.000), 40.33vh, 0) rotateX(calc(var(--spin) * 600deg)) rotateY(-34.6deg) rotateZ(calc(var(--spin) * 433deg)); }
+  45.83% { transform: translate3d(calc(var(--drift) * 0.458 + var(--sway) * -0.707), 45.17vh, 0) rotateX(calc(var(--spin) * 660deg)) rotateY(-34.6deg) rotateZ(calc(var(--spin) * 477deg)); }
+  50% { transform: translate3d(calc(var(--drift) * 0.500 + var(--sway) * -1.000), 50.00vh, 0) rotateX(calc(var(--spin) * 720deg)) rotateY(-0.0deg) rotateZ(calc(var(--spin) * 520deg)); }
+  54.17% { transform: translate3d(calc(var(--drift) * 0.542 + var(--sway) * -0.707), 54.83vh, 0) rotateX(calc(var(--spin) * 780deg)) rotateY(34.6deg) rotateZ(calc(var(--spin) * 563deg)); }
+  58.33% { transform: translate3d(calc(var(--drift) * 0.583 + var(--sway) * -0.000), 59.67vh, 0) rotateX(calc(var(--spin) * 840deg)) rotateY(34.6deg) rotateZ(calc(var(--spin) * 607deg)); }
+  62.5% { transform: translate3d(calc(var(--drift) * 0.625 + var(--sway) * 0.707), 64.50vh, 0) rotateX(calc(var(--spin) * 900deg)) rotateY(0.0deg) rotateZ(calc(var(--spin) * 650deg)); }
+  66.67% { transform: translate3d(calc(var(--drift) * 0.667 + var(--sway) * 1.000), 69.33vh, 0) rotateX(calc(var(--spin) * 960deg)) rotateY(-34.6deg) rotateZ(calc(var(--spin) * 693deg)); }
+  70.83% { transform: translate3d(calc(var(--drift) * 0.708 + var(--sway) * 0.707), 74.17vh, 0) rotateX(calc(var(--spin) * 1020deg)) rotateY(-34.6deg) rotateZ(calc(var(--spin) * 737deg)); }
+  75% { transform: translate3d(calc(var(--drift) * 0.750 + var(--sway) * 0.000), 79.00vh, 0) rotateX(calc(var(--spin) * 1080deg)) rotateY(-0.0deg) rotateZ(calc(var(--spin) * 780deg)); }
+  79.17% { transform: translate3d(calc(var(--drift) * 0.792 + var(--sway) * -0.707), 83.83vh, 0) rotateX(calc(var(--spin) * 1140deg)) rotateY(34.6deg) rotateZ(calc(var(--spin) * 823deg)); }
+  83.33% { transform: translate3d(calc(var(--drift) * 0.833 + var(--sway) * -1.000), 88.67vh, 0) rotateX(calc(var(--spin) * 1200deg)) rotateY(34.6deg) rotateZ(calc(var(--spin) * 867deg)); }
+  87.5% { transform: translate3d(calc(var(--drift) * 0.875 + var(--sway) * -0.707), 93.50vh, 0) rotateX(calc(var(--spin) * 1260deg)) rotateY(0.0deg) rotateZ(calc(var(--spin) * 910deg)); opacity: 1; }
+  91.67% { transform: translate3d(calc(var(--drift) * 0.917 + var(--sway) * -0.000), 98.33vh, 0) rotateX(calc(var(--spin) * 1320deg)) rotateY(-34.6deg) rotateZ(calc(var(--spin) * 953deg)); }
+  95.83% { transform: translate3d(calc(var(--drift) * 0.958 + var(--sway) * 0.707), 103.17vh, 0) rotateX(calc(var(--spin) * 1380deg)) rotateY(-34.6deg) rotateZ(calc(var(--spin) * 997deg)); }
+  100% { transform: translate3d(calc(var(--drift) * 1.000 + var(--sway) * 1.000), 108.00vh, 0) rotateX(calc(var(--spin) * 1440deg)) rotateY(-0.0deg) rotateZ(calc(var(--spin) * 1040deg)); opacity: 0; }
+}
+@keyframes petal-drift-2 {
+  0% { transform: translate3d(calc(var(--drift) * 0.000 + var(--sway) * -0.588), -8.00vh, 0) rotateX(calc(var(--spin) * 0deg)) rotateY(0.0deg) rotateZ(calc(var(--spin) * 0deg)); opacity: 0; }
+  4.17% { transform: translate3d(calc(var(--drift) * 0.042 + var(--sway) * -0.995), -3.17vh, 0) rotateX(calc(var(--spin) * 75deg)) rotateY(38.6deg) rotateZ(calc(var(--spin) * 54deg)); }
+  8.33% { transform: translate3d(calc(var(--drift) * 0.083 + var(--sway) * -0.407), 1.67vh, 0) rotateX(calc(var(--spin) * 150deg)) rotateY(20.0deg) rotateZ(calc(var(--spin) * 108deg)); opacity: 1; }
+  12.5% { transform: translate3d(calc(var(--drift) * 0.125 + var(--sway) * 0.588), 6.50vh, 0) rotateX(calc(var(--spin) * 225deg)) rotateY(-28.3deg) rotateZ(calc(var(--spin) * 162deg)); }
+  16.67% { transform: translate3d(calc(var(--drift) * 0.167 + var(--sway) * 0.995), 11.33vh, 0) rotateX(calc(var(--spin) * 300deg)) rotateY(-34.6deg) rotateZ(calc(var(--spin) * 217deg)); }
+  20.83% { transform: translate3d(calc(var(--drift) * 0.208 + var(--sway) * 0.407), 16.17vh, 0) rotateX(calc(var(--spin) * 375deg)) rotateY(10.4deg) rotateZ(calc(var(--spin) * 271deg)); }
+  25% { transform: translate3d(calc(var(--drift) * 0.250 + var(--sway) * -0.588), 21.00vh, 0) rotateX(calc(var(--spin) * 450deg)) rotateY(40.0deg) rotateZ(calc(var(--spin) * 325deg)); }
+  29.17% { transform: translate3d(calc(var(--drift) * 0.292 + var(--sway) * -0.995), 25.83vh, 0) rotateX(calc(var(--spin) * 525deg)) rotateY(10.4deg) rotateZ(calc(var(--spin) * 379deg)); }
+  33.33% { transform: translate3d(calc(var(--drift) * 0.333 + var(--sway) * -0.407), 30.67vh, 0) rotateX(calc(var(--spin) * 600deg)) rotateY(-34.6deg) rotateZ(calc(var(--spin) * 433deg)); }
+  37.5% { transform: translate3d(calc(var(--drift) * 0.375 + var(--sway) * 0.588), 35.50vh, 0) rotateX(calc(var(--spin) * 675deg)) rotateY(-28.3deg) rotateZ(calc(var(--spin) * 488deg)); }
+  41.67% { transform: translate3d(calc(var(--drift) * 0.417 + var(--sway) * 0.995), 40.33vh, 0) rotateX(calc(var(--spin) * 750deg)) rotateY(20.0deg) rotateZ(calc(var(--spin) * 542deg)); }
+  45.83% { transform: translate3d(calc(var(--drift) * 0.458 + var(--sway) * 0.407), 45.17vh, 0) rotateX(calc(var(--spin) * 825deg)) rotateY(38.6deg) rotateZ(calc(var(--spin) * 596deg)); }
+  50% { transform: translate3d(calc(var(--drift) * 0.500 + var(--sway) * -0.588), 50.00vh, 0) rotateX(calc(var(--spin) * 900deg)) rotateY(0.0deg) rotateZ(calc(var(--spin) * 650deg)); }
+  54.17% { transform: translate3d(calc(var(--drift) * 0.542 + var(--sway) * -0.995), 54.83vh, 0) rotateX(calc(var(--spin) * 975deg)) rotateY(-38.6deg) rotateZ(calc(var(--spin) * 704deg)); }
+  58.33% { transform: translate3d(calc(var(--drift) * 0.583 + var(--sway) * -0.407), 59.67vh, 0) rotateX(calc(var(--spin) * 1050deg)) rotateY(-20.0deg) rotateZ(calc(var(--spin) * 758deg)); }
+  62.5% { transform: translate3d(calc(var(--drift) * 0.625 + var(--sway) * 0.588), 64.50vh, 0) rotateX(calc(var(--spin) * 1125deg)) rotateY(28.3deg) rotateZ(calc(var(--spin) * 812deg)); }
+  66.67% { transform: translate3d(calc(var(--drift) * 0.667 + var(--sway) * 0.995), 69.33vh, 0) rotateX(calc(var(--spin) * 1200deg)) rotateY(34.6deg) rotateZ(calc(var(--spin) * 867deg)); }
+  70.83% { transform: translate3d(calc(var(--drift) * 0.708 + var(--sway) * 0.407), 74.17vh, 0) rotateX(calc(var(--spin) * 1275deg)) rotateY(-10.4deg) rotateZ(calc(var(--spin) * 921deg)); }
+  75% { transform: translate3d(calc(var(--drift) * 0.750 + var(--sway) * -0.588), 79.00vh, 0) rotateX(calc(var(--spin) * 1350deg)) rotateY(-40.0deg) rotateZ(calc(var(--spin) * 975deg)); }
+  79.17% { transform: translate3d(calc(var(--drift) * 0.792 + var(--sway) * -0.995), 83.83vh, 0) rotateX(calc(var(--spin) * 1425deg)) rotateY(-10.4deg) rotateZ(calc(var(--spin) * 1029deg)); }
+  83.33% { transform: translate3d(calc(var(--drift) * 0.833 + var(--sway) * -0.407), 88.67vh, 0) rotateX(calc(var(--spin) * 1500deg)) rotateY(34.6deg) rotateZ(calc(var(--spin) * 1083deg)); }
+  87.5% { transform: translate3d(calc(var(--drift) * 0.875 + var(--sway) * 0.588), 93.50vh, 0) rotateX(calc(var(--spin) * 1575deg)) rotateY(28.3deg) rotateZ(calc(var(--spin) * 1138deg)); opacity: 1; }
+  91.67% { transform: translate3d(calc(var(--drift) * 0.917 + var(--sway) * 0.995), 98.33vh, 0) rotateX(calc(var(--spin) * 1650deg)) rotateY(-20.0deg) rotateZ(calc(var(--spin) * 1192deg)); }
+  95.83% { transform: translate3d(calc(var(--drift) * 0.958 + var(--sway) * 0.407), 103.17vh, 0) rotateX(calc(var(--spin) * 1725deg)) rotateY(-38.6deg) rotateZ(calc(var(--spin) * 1246deg)); }
+  100% { transform: translate3d(calc(var(--drift) * 1.000 + var(--sway) * -0.588), 108.00vh, 0) rotateX(calc(var(--spin) * 1800deg)) rotateY(-0.0deg) rotateZ(calc(var(--spin) * 1300deg)); opacity: 0; }
 }
 /* 阵风：整层花瓣平时几乎不动，隔一阵被吹向左边再慢慢回来 */
 @keyframes petal-gust {
@@ -244,10 +318,30 @@ html[data-effects='off'] {
   72%      { transform: translate3d(-3vw, 0, 0); }
   100%     { transform: translate3d(0, 0, 0); }
 }
-@keyframes petal-flip {
-  0%   { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
-  50%  { transform: rotateX(160deg) rotateY(40deg) rotateZ(120deg); }
-  100% { transform: rotateX(360deg) rotateY(0deg) rotateZ(260deg); }
+
+/* 草叶摆动（components/WindyGrass.tsx）：草叶分成几组，每组一起摆（同样是为了少几个在动的元素）；
+   一圈里写 8 个来回，每转完一圈浏览器都要回主线程派发一次事件，合起来写事件就少到八分之一 */
+@keyframes swayWildGrass {
+  0%     { transform: skewX(-4deg); }
+  12.5%  { transform: skewX(6deg); }
+  25%    { transform: skewX(-4deg); }
+  37.5%  { transform: skewX(6deg); }
+  50%    { transform: skewX(-4deg); }
+  62.5%  { transform: skewX(6deg); }
+  75%    { transform: skewX(-4deg); }
+  87.5%  { transform: skewX(6deg); }
+  100%   { transform: skewX(-4deg); }
+}
+
+/* 桌宠轻轻「呼吸」（components/PetSaber.tsx）：原来用 framer-motion 的无限动画，JS 每一帧都在跑，
+   会拖着全站所有动画一起每帧重算样式；改成纯 CSS，交给合成器 */
+.pet-breathe {
+  transform-origin: 50% 100%;
+  animation: pet-breathe 16s ease-in-out infinite;
+}
+@keyframes pet-breathe {
+  0%, 25%, 50%, 75%, 100% { transform: scaleY(1); }
+  12.5%, 37.5%, 62.5%, 87.5% { transform: scaleY(1.015); }
 }
 
 /* 樱花枝（components/SakuraBranches.tsx）：背景里、静止，只在电脑端 */

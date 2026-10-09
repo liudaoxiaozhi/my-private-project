@@ -535,14 +535,10 @@ export default function PetSaber() {
             animate={anger > 0 && !reduceMotion ? { scaleY: 1, scaleX: 1, x: [0, -7, 7, -5, 5, 0] } : { scaleY: 1, scaleX: 1 }}
             transition={{ type: 'spring', stiffness: 500, damping: 12, x: { type: 'tween', duration: 0.45 } }}
           >
-            <motion.div
-              className="h-full w-full"
-              style={{ transformOrigin: '50% 100%' }}
-              animate={reduceMotion || hidden ? undefined : { scaleY: [1, 1.015, 1] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            >
+            {/* 轻轻「呼吸」：纯 CSS 动画（见 globals.css .pet-breathe），不占 JS 帧循环 */}
+            <div className={`h-full w-full ${reduceMotion || hidden ? '' : 'pet-breathe'}`}>
               <AppImage src={IMG.src} alt="Q 版骑士少女桌宠" width={PET_WIDTH * 2} height={PET_HEIGHT * 2} className="h-full w-full object-contain drop-shadow-[0_6px_10px_rgba(15,23,42,0.25)]" draggable={false} />
-            </motion.div>
+            </div>
           </motion.div>
         </motion.button>
 

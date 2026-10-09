@@ -4,9 +4,11 @@
 // - 标题是静止的全息渐变，进场时扫一遍光（globals.css 的 .holo-text）
 // - 终端行等开屏动画结束后才开始打字；「阅读」档、系统开了「减少动态效果」时直接显示全文
 // - 最下面的「往下滚」提示点了滚到卡片区（#home-main）
+// - 背景飘弹幕（components/HeroDanmaku.tsx，siteConfig.enableDanmaku）
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { siteConfig } from '../siteConfig';
 import { useEffectsLevel } from './EffectGate';
+import HeroDanmaku from './HeroDanmaku';
 
 const hero = siteConfig.homeHero;
 
@@ -60,7 +62,8 @@ function subscribeReduced(onChange: () => void): () => void {
   return () => mq.removeEventListener('change', onChange);
 }
 
-export default function HomeHero() {
+/** danmaku：弹幕文字（siteConfig.danmakuList + 最新文章标题，由首页传进来） */
+export default function HomeHero({ danmaku = [] }: { danmaku?: string[] }) {
   const level = useEffectsLevel();
   const reduced = useSyncExternalStore(subscribeReduced, () => window.matchMedia(REDUCED_QUERY).matches, () => false);
   const { typed, done } = useTyping(hero.command, level === 'off' || reduced);
@@ -71,6 +74,8 @@ export default function HomeHero() {
 
   return (
     <section className="relative flex min-h-[100svh] flex-col items-center justify-center px-4 text-center" aria-label="开场">
+      {siteConfig.enableDanmaku && level !== 'off' && !reduced && <HeroDanmaku texts={danmaku} lite={level === 'lite'} />}
+
       <p className="glass-chip font-lab mb-5 px-4 py-1 text-[11px] uppercase tracking-[0.3em] text-pink-600 dark:text-pink-300">
         {siteConfig.navTitle} {siteConfig.navSuffix} {siteConfig.navAfter}
       </p>

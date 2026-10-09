@@ -565,7 +565,33 @@ html[data-effects="full"] .scroll-nudge {
   50% { translate: 6px 0; }
 }
 
-/* 黑胶唱片（components/CloudPlayer.tsx，siteConfig.vinylPlayer）：
+/* 首页开场的弹幕（components/HeroDanmaku.tsx）：B 站式白字黑描边，只动 transform */
+.danmaku-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.danmaku {
+  position: absolute;
+  left: 0;
+  white-space: nowrap;
+  font-family: var(--font-geist-sans), "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  font-weight: 700;
+  color: rgb(255 255 255 / 0.92);
+  text-shadow: 1px 0 1px rgb(0 0 0 / 0.55), -1px 0 1px rgb(0 0 0 / 0.55), 0 1px 1px rgb(0 0 0 / 0.55), 0 -1px 1px rgb(0 0 0 / 0.55);
+  opacity: 0.85;
+  will-change: transform;
+}
+.danmaku-layer[data-paused] > .danmaku {
+  animation-play-state: paused !important;
+}
+@keyframes danmaku-fly {
+  from { transform: translateX(100vw); }
+  to { transform: translateX(-100%); }
+}
+
+，siteConfig.vinylPlayer）：
    唱片转（只有一个 transform 动画），反光不跟着转，唱臂播放时落到唱片上 */
 .vinyl-disc {
   background:

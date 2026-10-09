@@ -76,8 +76,8 @@ export const siteConfig = {
   picBedUrl: "", // 默认的 Lsky Pro API 地址
   picBedToken: "", // 留空，等你能在后台填入并覆写
 
-  // 👇 【新增】：全局背景弹幕配置
-  danmakuList: ["在干嘛呢？", "有笨蛋嘛？", "前方高能反应！", "BUG 修复进度 99%", "Tailwind CSS 拯救前端", "写算法中", "睡大觉中", "到底在干嘛？"],
+  // 首页开场飘过的弹幕（再加上最近几篇文章的标题）；enableDanmaku 设为 false 关闭
+  danmakuList: ["欢迎来到研究所～", "前排围观", "樱花好好看", "有笨蛋嘛？", "前方高能反应！", "BUG 修复进度 99%", "来点音乐 ♪", "Saber 好可爱", "今天也要开心呀", "在干嘛呢？", "签到", "wwwww", "写算法中", "睡大觉中", "下雨天适合看书", "新加坡今天也很热"],
   gitalkConfig: {
     clientID: "",
     clientSecret: "",
@@ -120,7 +120,7 @@ export const siteConfig = {
   // 👇 【新增】视觉特效开关（电脑端）。觉得卡时可以逐个关掉
   enableParticles: true,   // 背景萤火虫 / 草地（仅电脑端）
   enableSakura: true,      // 全站樱花飘落（日夜都有，夜间更淡；手机端花瓣更少）
-  enableDanmaku: false,    // 背景弹幕（文字从右往左飘）；默认关闭，背景改为樱花枝 + 前景樱花飘落
+  enableDanmaku: true,     // 首页开场一屏飘弹幕（文字见 danmakuList）；只在开场里，不在卡片后面，不影响性能
   enableClickEffect: true, // 点击涟漪
   enablePet: true,         // 右下角的桌宠（Q 版骑士少女，可聊天 / 喂食 / 收起）
   enableSeasonal: true,    // 节日彩蛋：圣诞与元旦下雪、春节飘红梅、生日撒彩纸（当天替换樱花）

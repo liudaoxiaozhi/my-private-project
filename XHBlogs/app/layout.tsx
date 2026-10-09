@@ -14,7 +14,6 @@ import BackgroundSlider from "../components/BackgroundSlider";
 import GlobalToolbox from "../components/GlobalToolbox";
 import SplashScreen from "../components/SplashScreen";
 import PetSaber from '../components/PetSaber';
-import DanmakuBackground from '../components/DanmakuBackground';
 import Sakura from '../components/Sakura';
 import WeatherLayer, { WeatherFront, WeatherNotice } from '../components/WeatherLayer';
 import SakuraBranches from '../components/SakuraBranches';
@@ -157,12 +156,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 )}
               </div>
 
-              {/* 隐藏手机端弹幕；siteConfig.enableDanmaku 可关闭；只在「完整」档显示 */}
-              {siteConfig.enableDanmaku && (
-                <EffectGate min="full" className="hidden md:block">
-                  <DanmakuBackground />
-                </EffectGate>
-              )}
 
               <div className="relative z-10 flex-1 flex flex-col">
                 {/* 导航栏常驻：换页时不再卸载重建（小说阅读页不显示） */}

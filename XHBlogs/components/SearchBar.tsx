@@ -70,7 +70,8 @@ export default function SearchBar({ posts = [] }: { posts: Post[] }) {
         {/* 先渲染 Input */}
         <input
           type="text"
-          className="glass-panel rounded-2xl w-full pl-14 pr-6 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-slate-800 dark:text-slate-200 transition-all placeholder-slate-500 dark:placeholder-slate-400 font-medium text-lg relative z-0"
+          // 比普通面板更「实」一点：白天更白、夜间半透明深色，背景再花也压得住
+          className="rounded-2xl w-full pl-14 pr-6 py-4 border border-white/60 bg-white/75 shadow-lg backdrop-blur-lg dark:border-white/10 dark:bg-black/35 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-slate-800 dark:text-slate-100 transition-all placeholder-slate-500 dark:placeholder-slate-300/70 font-medium text-lg relative z-0"
           placeholder="搜寻标题、描述或标签..."
           value={searchQuery}
           onChange={(e) => {

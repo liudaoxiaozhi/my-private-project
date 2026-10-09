@@ -74,35 +74,40 @@ export default function HomeHero({ danmaku = [] }: { danmaku?: string[] }) {
 
   return (
     <section className="relative flex min-h-[100svh] flex-col items-center justify-center px-4 text-center" aria-label="开场">
+      {/* 暗色径向遮罩在弹幕和标题下面：只压中间，让标题和终端从插画里浮出来 */}
+      <div className="hero-veil" aria-hidden="true" />
       {siteConfig.enableDanmaku && level !== 'off' && !reduced && <HeroDanmaku texts={danmaku} lite={level === 'lite'} />}
 
-      <p className="glass-chip font-lab mb-5 px-4 py-1 text-[11px] uppercase tracking-[0.3em] text-pink-600 dark:text-pink-300">
+      <p className="glass-chip font-lab relative mb-5 px-4 py-1 text-[11px] uppercase tracking-[0.3em] text-pink-600 dark:text-pink-300">
         {siteConfig.navTitle} {siteConfig.navSuffix} {siteConfig.navAfter}
       </p>
 
-      <h1 className="holo-text font-lab text-[clamp(3rem,11vw,8.5rem)] font-black leading-[1.05] tracking-tight">{hero.title}</h1>
+      <h1 className="holo-text font-lab relative text-[clamp(3rem,11vw,8.5rem)] font-black leading-[1.05] tracking-tight">{hero.title}</h1>
 
-      <div className="glass-panel font-lab mt-10 inline-flex max-w-full flex-col items-start gap-1 rounded-2xl px-5 py-3 text-left text-sm sm:text-base">
-        <p className="whitespace-pre-wrap break-all text-slate-700 dark:text-slate-200">
-          <span className="text-pink-500 dark:text-pink-300">{hero.prompt}</span>{' '}
+      {/* 终端窗口：配色只用标题里的粉、紫、天蓝 */}
+      <div className="hero-terminal font-lab relative mt-10 inline-flex max-w-full flex-col items-start gap-1 rounded-2xl px-5 pb-3 pt-2.5 text-left text-sm sm:text-base">
+        <span className="mb-1 flex gap-1.5" aria-hidden="true">
+          <span className="h-2 w-2 rounded-full bg-[#ff8fc4]/80" />
+          <span className="h-2 w-2 rounded-full bg-[#c6a2ff]/80" />
+          <span className="h-2 w-2 rounded-full bg-[#8fd0ff]/80" />
+        </span>
+        <p className="whitespace-pre-wrap break-all text-slate-100">
+          <span className="text-[#ff8fc4]">{hero.prompt}</span>{' '}
           <span id="hero-command">{typed}</span>
-          {!done && <span className="term-caret text-pink-400" aria-hidden="true" />}
+          {!done && <span className="term-caret text-[#ff8fc4]" aria-hidden="true" />}
         </p>
-        <p
-          className={`text-xs text-slate-500 transition-opacity duration-700 sm:text-sm dark:text-slate-400 ${done ? 'opacity-100' : 'opacity-0'}`}
-          aria-hidden={!done}
-        >
-          <span className="text-emerald-500 dark:text-emerald-300">✓</span> {hero.output}
-          {done && <span className="term-caret ml-1 text-pink-400" aria-hidden="true" />}
+        <p className={`text-xs text-slate-300 transition-opacity duration-700 sm:text-sm ${done ? 'opacity-100' : 'opacity-0'}`} aria-hidden={!done}>
+          <span className="text-[#8fd0ff]">✓</span> {hero.output}
+          {done && <span className="term-caret ml-1 text-[#ff8fc4]" aria-hidden="true" />}
         </p>
       </div>
 
       <button
         type="button"
         onClick={scrollDown}
-        className="font-lab absolute bottom-8 left-1/2 -translate-x-1/2 rounded-full px-4 py-2 text-xs tracking-widest text-slate-600 transition-colors hover:text-pink-500 sm:text-sm dark:text-slate-300 dark:hover:text-pink-300"
+        className="font-lab absolute bottom-8 left-1/2 -translate-x-1/2 rounded-full bg-slate-950/30 px-4 py-2 text-xs tracking-widest text-slate-100 backdrop-blur-sm transition-colors hover:text-[#ff8fc4] sm:text-sm"
       >
-        {hero.scrollPrompt} <span className="scroll-nudge inline-block text-pink-500 dark:text-pink-300">&gt;&gt;&gt;</span>
+        {hero.scrollPrompt} <span className="scroll-nudge inline-block text-[#ff8fc4]">&gt;&gt;&gt;</span>
       </button>
     </section>
   );

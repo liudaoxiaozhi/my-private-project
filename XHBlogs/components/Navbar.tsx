@@ -169,14 +169,14 @@ export default function Navbar() {
     // 导航栏常驻在根布局里；音乐页是固定深色的沉浸页面，导航栏跟着用深色样式
     <div className={pathname === '/music' ? 'dark contents' : 'contents'}>
       {/* PC端导航栏 */}
-      <header className={`hidden md:block w-full fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b ${showNav ? 'translate-y-0' : '-translate-y-full'} bg-white/40 dark:bg-slate-900/50 backdrop-blur-xl border-white/20 dark:border-white/5 shadow-sm`}>
+      <header className={`hidden md:block w-full fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b ${showNav ? 'translate-y-0' : '-translate-y-full'} bg-white/40 dark:bg-slate-900/50 dark:bg-gradient-to-b dark:from-black/50 dark:to-transparent backdrop-blur-xl border-white/20 dark:border-white/5 shadow-sm`}>
         <div className="w-[90%] max-w-6xl mx-auto h-16 flex items-center justify-between px-4 sm:px-[30px] box-border">
           <Link href="/" className="text-xl font-black text-slate-800 dark:text-white tracking-tighter hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-300">
             {siteConfig.navTitle || siteConfig.authorName}
             <span className="text-indigo-500 mx-1">{siteConfig.navSuffix || 'の'}</span>
             {siteConfig.navAfter || '宝藏之地'}
           </Link>
-          <nav className="flex items-center gap-7 text-sm font-bold">
+          <nav className="flex items-center gap-7 text-sm font-bold dark:[text-shadow:0_1px_6px_rgba(0,0,0,0.55)]">
             {NAV_ITEMS.map((item) => {
               if (isGroup(item)) return <NavDropdown key={item.name} group={item} pathname={pathname} />;
               const isActive = matchPath(pathname, item.href);
@@ -195,7 +195,7 @@ export default function Navbar() {
               className="flex items-center gap-1.5 rounded-full border border-slate-300/60 bg-white/40 py-1 pl-2.5 pr-1.5 text-xs font-bold text-slate-500 transition-colors hover:border-indigo-400 hover:text-indigo-600 dark:border-white/10 dark:bg-slate-800/40 dark:text-slate-300 dark:hover:text-indigo-400"
             >
               <Search size={14} />
-              <kbd className="rounded-md bg-slate-200/70 px-1.5 py-0.5 font-sans text-[10px] font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-300">{modKey} K</kbd>
+              <kbd className="rounded-md border border-slate-400/40 bg-white/60 px-1.5 py-0.5 font-sans text-[10px] font-bold text-slate-600 shadow-[inset_0_-1px_0_rgba(15,23,42,0.08)] dark:border-white/25 dark:bg-white/10 dark:text-slate-100">{modKey} K</kbd>
             </button>
           </nav>
         </div>

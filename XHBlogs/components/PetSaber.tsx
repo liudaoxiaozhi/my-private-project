@@ -30,7 +30,8 @@ import { PET_COMMAND_EVENT } from '../lib/petBus';
 import type { PetCommand } from '../lib/petBus';
 
 const IMG = { src: '/images/pet/saber.webp', width: 360, height: 364, edge: 0.9262 } as const;
-const PET_WIDTH = 150;
+// 比原来小 13%，右下角不那么挤
+const PET_WIDTH = 130;
 const PET_HEIGHT = Math.round((PET_WIDTH * IMG.height) / IMG.width);
 const LEDGE_HEIGHT = 10;
 /** 台子下半截的迷你播放器 */
@@ -44,7 +45,7 @@ const HIDDEN_KEY = 'pet-hidden';
 const HEADROOM = 16;
 
 /** 整个桌宠（含台面）的尺寸，拖动时用来限制在窗口内 */
-const BOX_WIDTH = PET_WIDTH + 80;
+const BOX_WIDTH = PET_WIDTH + 90;
 const BOX_HEIGHT = PET_HEIGHT + PET_BOTTOM + HEADROOM + PLAYER_HEIGHT;
 /** 左侧留给操作按钮的空间，拖到最左边时按钮也不会出屏 */
 const BUTTON_ROOM = 48;
@@ -66,7 +67,8 @@ interface Viewport {
   height: number;
 }
 
-const DEFAULT_POS: Pos = { right: 264, bottom: 0 };
+/** 默认离右下角 24 / 16 像素，和左下角工具箱的留白一致 */
+const DEFAULT_POS: Pos = { right: 24, bottom: 16 };
 
 const clampPos = (p: Pos, vp: Viewport): Pos => ({
   right: Math.round(Math.min(Math.max(p.right, 0), Math.max(0, vp.width - BOX_WIDTH - BUTTON_ROOM))),
@@ -353,6 +355,8 @@ export default function PetSaber() {
     suppressClick.current = false;
     if (e.button !== 0) return;
     drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, from: posRef.current, moved: false };
+    // 一按下就捕获指针：拖得快时，第一下移动就可能已经出了她的范围，等过了阈值再捕获就丢了
+    e.currentTarget.setPointerCapture(e.pointerId);
   };
 
   const onPointerMove = (e: PointerEvent<HTMLElement>) => {
@@ -365,7 +369,6 @@ export default function PetSaber() {
       d.moved = true;
       setDragging(true);
       setShowInput(false);
-      e.currentTarget.setPointerCapture(e.pointerId);
     }
     moveTo(clampPos({ right: d.from.right - dx, bottom: d.from.bottom - dy }, readViewport()));
   };
@@ -608,7 +611,8 @@ export default function PetSaber() {
       {/* 台面：一小块毛玻璃，下半截是迷你播放器；按住台面也能拖动（按钮、歌名除外） */}
       <div
         {...dragHandlers}
-        className={`relative z-0 mx-auto touch-none overflow-hidden rounded-t-xl border border-b-0 border-white/50 bg-white/60 shadow-[0_-4px_14px_rgba(15,23,42,0.08)] backdrop-blur-md dark:border-white/10 dark:bg-slate-800/70 ${dragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        // 深色磨砂（日夜一样），贴着屏幕底边时只圆上面两个角
+        className={`relative z-0 mx-auto touch-none overflow-hidden border border-white/10 bg-slate-950/45 shadow-[0_8px_28px_-8px_rgba(0,0,0,0.45)] backdrop-blur-md ${pos.bottom === 0 ? 'rounded-t-2xl border-b-0' : 'rounded-2xl'} ${dragging ? 'cursor-grabbing' : 'cursor-grab'}`}
         style={{ width: BOX_WIDTH, marginTop: -LEDGE_HEIGHT }}
       >
         <div aria-hidden="true" style={{ height: LEDGE_HEIGHT }} />
@@ -632,8 +636,8 @@ export default function PetSaber() {
                   className="min-w-0 flex-1 leading-tight"
                   title="去音乐页"
                 >
-                  <span className="block truncate text-xs font-bold text-slate-800 dark:text-slate-100">{song.title}</span>
-                  <span className="block truncate text-[10px] text-slate-500 dark:text-slate-400">{music.currentLyric || song.artist}</span>
+                  <span className="block truncate text-xs font-bold text-slate-100">{song.title}</span>
+                  <span className="block truncate text-[10px] text-slate-300/80">{music.currentLyric || song.artist}</span>
                 </Link>
                 <button
                   type="button"
@@ -653,7 +657,7 @@ export default function PetSaber() {
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => { e.stopPropagation(); music.nextSong(); }}
                   aria-label="下一首"
-                  className="shrink-0 text-slate-500 transition-colors hover:text-indigo-500 dark:text-slate-300 dark:hover:text-indigo-400"
+                  className="shrink-0 text-slate-300 transition-colors hover:text-indigo-300"
                 >
                   <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" /></svg>
                 </button>

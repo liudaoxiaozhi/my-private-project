@@ -174,9 +174,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 
               {/* 小说阅读页是沉浸式的，这些浮层在那里不显示 */}
               <HideOnReader>
-                <div className="hidden md:block">
-                  <FloatingPlayer />
-                </div>
+                {/* 悬浮迷你播放器：开着桌宠时合并进她趴的台子（见 PetSaber），这里就不再单独显示 */}
+                {!siteConfig.enablePet && (
+                  <div className="hidden md:block">
+                    <FloatingPlayer />
+                  </div>
+                )}
 
                 <div className="hidden md:block">
                   <GlobalToolbox />
@@ -200,6 +203,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               )}
             </div>
 
+            {/* 右下角桌宠（仅电脑端；阅读页不显示）。她趴的台子兼做迷你播放器，所以放在 MusicProvider 里 */}
+            {siteConfig.enablePet && (
+              <HideOnReader>
+                <div className="hidden md:block">
+                  <PetSaber />
+                </div>
+              </HideOnReader>
+            )}
           </MusicProvider>
 
           {/* 樱花飘落：在内容前面、不拦截点击；阅读页不显示；「简洁」档花瓣减半，「阅读」档关闭 */}
@@ -220,14 +231,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </HideOnReader>
           )}
 
-          {/* 右下角桌宠（仅电脑端；阅读页不显示） */}
-          {siteConfig.enablePet && (
-            <HideOnReader>
-              <div className="hidden md:block">
-                <PetSaber />
-              </div>
-            </HideOnReader>
-          )}
 
         </ThemeProvider>
       </body>

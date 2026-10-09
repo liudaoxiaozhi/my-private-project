@@ -7,6 +7,9 @@
 // - 🍔 喂食：本地随机台词，不消耗接口额度
 // - 收起：缩到台子下面只露出呆毛，点一下再出来；收起状态记在浏览器里（只影响自己）
 // - 拖动：按住她或台子拖到页面任意位置（聚焦时也可以用方向键挪），位置同样记在浏览器里
+// - 台子就是迷你播放器：她趴在播放器上（封面小唱片、歌名 / 歌词、播放、下一首），点歌名去音乐页；
+//   换歌时她报一下歌名。首页和音乐页本身有完整播放器，台子收回成一条细边（siteConfig.enablePet 关掉时
+//   改用 components/FloatingPlayer.tsx 的悬浮播放器）
 // - 听指令（lib/petBus.ts）：工具箱「召回桌宠」让她回到默认位置；御神签等让她说一句话
 // - 有存在感：每次打开网站按时间打招呼；进不同栏目说不同的话（每次浏览每个栏目一次）；
 //   一分半没动静会打瞌睡（冒 Zzz，有动静就醒）；连着摸太多下会生气
@@ -14,11 +17,13 @@
 // Hydration：首帧固定为「展开」、默认位置，挂载后再读取本地的收起状态和位置。
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { FormEvent, KeyboardEvent, MouseEvent, PointerEvent } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { EyeOff, MessageCircle, Send } from 'lucide-react';
 import AppImage from './AppImage';
+import { useMusic } from './MusicProvider';
 import { PET_COMMAND_EVENT } from '../lib/petBus';
 import type { PetCommand } from '../lib/petBus';
 
@@ -26,6 +31,10 @@ const IMG = { src: '/images/pet/saber.webp', width: 360, height: 364, edge: 0.92
 const PET_WIDTH = 150;
 const PET_HEIGHT = Math.round((PET_WIDTH * IMG.height) / IMG.width);
 const LEDGE_HEIGHT = 10;
+/** 台子下半截的迷你播放器 */
+const PLAYER_HEIGHT = 44;
+/** 这些页面本身有完整播放器，台子上不再放迷你播放器 */
+const FULL_PLAYER_PAGES = ['/', '/music'];
 /** 让图里「趴着的那条边」正好对齐台面 */
 const PET_BOTTOM = LEDGE_HEIGHT - Math.round(PET_HEIGHT * (1 - IMG.edge));
 const HIDDEN_KEY = 'pet-hidden';
@@ -33,8 +42,8 @@ const HIDDEN_KEY = 'pet-hidden';
 const HEADROOM = 16;
 
 /** 整个桌宠（含台面）的尺寸，拖动时用来限制在窗口内 */
-const BOX_WIDTH = PET_WIDTH + 30;
-const BOX_HEIGHT = PET_HEIGHT + PET_BOTTOM + HEADROOM;
+const BOX_WIDTH = PET_WIDTH + 80;
+const BOX_HEIGHT = PET_HEIGHT + PET_BOTTOM + HEADROOM + PLAYER_HEIGHT;
 /** 左侧留给操作按钮的空间，拖到最左边时按钮也不会出屏 */
 const BUTTON_ROOM = 48;
 /** 离顶部 / 左边太近时，气泡改到下方、聊天框改到右侧 */
@@ -142,6 +151,9 @@ export default function PetSaber() {
   const [dozing, setDozing] = useState(false);
   const [anger, setAnger] = useState(0);
   const pathname = usePathname();
+  const music = useMusic();
+  const song = music.isLoading ? null : music.currentSong;
+  const showPlayer = !!song && !FULL_PLAYER_PAGES.includes(pathname ?? '');
   const dozingRef = useRef(false);
   const clickTimes = useRef<number[]>([]);
   const [pos, setPos] = useState<Pos>(DEFAULT_POS);
@@ -164,6 +176,19 @@ export default function PetSaber() {
   }, []);
 
   useEffect(() => () => window.clearTimeout(speechTimer.current), []);
+
+  // ---------- 换歌时报一下歌名（只在播放中、台子上有播放器时；第一次加载不说） ----------
+  const lastTitle = useRef<string | null>(null);
+  const songTitle = song?.title ?? null;
+  useEffect(() => {
+    const previous = lastTitle.current;
+    lastTitle.current = songTitle;
+    if (!songTitle || previous === null || previous === songTitle || !music.isPlaying || !showPlayer || hidden) return;
+    const timer = window.setTimeout(() => speak(`♪ 现在放的是《${songTitle}》`, 3000), 300);
+    return () => window.clearTimeout(timer);
+    // 只在换歌时触发
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [songTitle]);
 
   // ---------- 读取收起状态 ----------
   useEffect(() => {
@@ -577,13 +602,63 @@ export default function PetSaber() {
         </AnimatePresence>
       </div>
 
-      {/* 台面：一小块毛玻璃；按住台面也能拖动 */}
+      {/* 台面：一小块毛玻璃，下半截是迷你播放器；按住台面也能拖动（按钮、歌名除外） */}
       <div
-        aria-hidden="true"
         {...dragHandlers}
-        className={`relative z-0 mx-auto touch-none rounded-t-xl border border-b-0 border-white/50 bg-white/60 shadow-[0_-4px_14px_rgba(15,23,42,0.08)] backdrop-blur-md dark:border-white/10 dark:bg-slate-800/70 ${dragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-        style={{ height: LEDGE_HEIGHT, width: BOX_WIDTH, marginTop: -LEDGE_HEIGHT }}
-      />
+        className={`relative z-0 mx-auto touch-none overflow-hidden rounded-t-xl border border-b-0 border-white/50 bg-white/60 shadow-[0_-4px_14px_rgba(15,23,42,0.08)] backdrop-blur-md dark:border-white/10 dark:bg-slate-800/70 ${dragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        style={{ width: BOX_WIDTH, marginTop: -LEDGE_HEIGHT }}
+      >
+        <div aria-hidden="true" style={{ height: LEDGE_HEIGHT }} />
+        {/* 进出首页 / 音乐页时平滑地收起、展开 */}
+        <div className="grid transition-[grid-template-rows] duration-500 ease-out" style={{ gridTemplateRows: showPlayer ? '1fr' : '0fr' }}>
+          <div className="min-h-0" inert={!showPlayer}>
+            {song && (
+              <div className="flex items-center gap-2 px-3 pb-1.5" style={{ height: PLAYER_HEIGHT }} data-pet-player>
+                <div
+                  className="vinyl-disc relative h-8 w-8 shrink-0 rounded-full animate-[spin_5s_linear_infinite]"
+                  style={{ animationPlayState: music.isPlaying ? 'running' : 'paused' }}
+                  aria-hidden="true"
+                >
+                  <div className="absolute inset-[26%] overflow-hidden rounded-full">
+                    <AppImage src={song.cover} alt="" width={32} height={32} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                  </div>
+                </div>
+                <Link
+                  href="/music"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="min-w-0 flex-1 leading-tight"
+                  title="去音乐页"
+                >
+                  <span className="block truncate text-xs font-bold text-slate-800 dark:text-slate-100">{song.title}</span>
+                  <span className="block truncate text-[10px] text-slate-500 dark:text-slate-400">{music.currentLyric || song.artist}</span>
+                </Link>
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); music.togglePlay(); }}
+                  aria-label={music.isPlaying ? '暂停' : '播放'}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-white shadow-md transition-transform hover:scale-110"
+                >
+                  {music.isPlaying ? (
+                    <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+                  ) : (
+                    <svg className="ml-0.5 h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); music.nextSong(); }}
+                  aria-label="下一首"
+                  className="shrink-0 text-slate-500 transition-colors hover:text-indigo-500 dark:text-slate-300 dark:hover:text-indigo-400"
+                >
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" /></svg>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

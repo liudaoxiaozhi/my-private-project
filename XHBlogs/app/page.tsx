@@ -15,6 +15,7 @@ import LatestChatterCarousel from '../components/LatestChatterCarousel';
 import { formatDisplayDate, getAllChatters, getAllPosts } from '../lib/content';
 import type { CardItem } from '../lib/content';
 import AppImage from '../components/AppImage';
+import HomeHero from '../components/HomeHero';
 
 const DEFAULT_CHATTER_COVER = siteConfig.defaultChatterCover || siteConfig.defaultPostCover;
 
@@ -52,8 +53,11 @@ export default function Home() {
   return (
     <ToastProvider>
       <div className="min-h-screen relative pb-10">
-        {/* 🌟 调整整体容器的内边距，适应手机端更小的屏幕 */}
-        <div className="w-full max-w-6xl mx-auto mt-24 sm:mt-28 px-4 sm:px-6 lg:px-10 relative z-10">
+        {/* 开场：一屏高的大标题（siteConfig.homeHero），往下滚才是卡片区 */}
+        {siteConfig.homeHero?.enabled && <HomeHero />}
+
+        {/* 🌟 调整整体容器的内边距，适应手机端更小的屏幕；scroll-mt 让「往下滚」停在导航栏下面 */}
+        <div id="home-main" className={`w-full max-w-6xl mx-auto ${siteConfig.homeHero?.enabled ? 'mt-0 scroll-mt-24' : 'mt-24 sm:mt-28'} px-4 sm:px-6 lg:px-10 relative z-10`}>
           <SearchBar posts={allPosts} />
 
           <main className="flex flex-col gap-6 w-full mt-6">

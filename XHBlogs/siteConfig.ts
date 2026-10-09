@@ -25,6 +25,24 @@ export const siteConfig = {
   bgImages: ["/images/bg/bg-madoka.webp", "/images/bg/bg-wings.webp"],
   // 背景插画的模糊程度："none" 不模糊（插画原样显示）、"light" 轻微模糊（推荐）、"strong" 较重模糊
   bgBlur: "light",
+  // 背景模式："illustration" 插画原样（按上面的 bgBlur 模糊）；"manga" 漫画风：去色、提亮、线稿清晰，再盖一层白纱（夜间反相）
+  // 适合放黑白漫画分镜图。不改配置也能预览：网址后面加 ?bg=manga
+  bgMode: "illustration",
+  // 「实验室」风格：卡片更白更轻、细粉边，小标签换成等宽大写字；false 回到原来的毛玻璃
+  labStyle: true,
+  // 首页播放器显示成旋转的黑胶唱片（带唱臂）；false 回到原来的圆形封面
+  vinylPlayer: true,
+  // 首页开场：一屏高的渐变大标题 + 终端打字效果，往下滚才是卡片区；enabled 设为 false 关闭
+  homeHero: {
+    enabled: true,
+    title: "ftcovo Lab",
+    // 终端行：提示符 + 打出来的命令 + 回车后输出的一行
+    prompt: "ftcovo@lab:~$",
+    command: "npm run 宝藏之地",
+    output: "欢迎光临 · 类生物脑电波研究所",
+    // 最下面的「往下滚」提示
+    scrollPrompt: "scroll@home:~$",
+  },
 
   // 👇 【新增】移动端专用竖版背景（屏幕宽度 < 768px 时生效）；留空数组则沿用上面的 bgImages
   bgImagesMobile: ["/images/bg/bg-mobile-saber.webp", "/images/bg/bg-mobile-miku.webp"],

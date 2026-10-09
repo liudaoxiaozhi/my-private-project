@@ -488,6 +488,120 @@ html[data-effects='off'] {
   }
 }
 
+/* ========================================================
+   「实验室」风格（siteConfig.labStyle，<html data-style="lab">）：
+   卡片更白、更轻，细粉边；小标签换成等宽大写字。关掉开关就回到原来的毛玻璃
+   ======================================================== */
+html[data-style="lab"] .glass-card {
+  background-color: rgb(255 255 255 / 0.68);
+  border-color: rgb(255 205 226 / 0.75);
+  box-shadow: 0 10px 34px -14px rgb(236 72 153 / 0.22), 0 2px 8px rgb(15 23 42 / 0.04);
+  --tw-backdrop-blur: blur(14px);
+}
+html.dark[data-style="lab"] .glass-card {
+  background-color: rgb(28 25 44 / 0.62);
+  border-color: rgb(255 182 214 / 0.14);
+  box-shadow: 0 10px 34px -14px rgb(0 0 0 / 0.5);
+}
+html[data-style="lab"] .glass-panel {
+  background-color: rgb(255 255 255 / 0.55);
+  border-color: rgb(255 205 226 / 0.6);
+}
+html.dark[data-style="lab"] .glass-panel {
+  background-color: rgb(28 25 44 / 0.5);
+  border-color: rgb(255 182 214 / 0.12);
+}
+html[data-style="lab"] .lab-label {
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* 等宽字（首页开场的终端行等，不受 labStyle 开关影响） */
+.font-lab {
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* 首页开场（components/HomeHero.tsx）：全息渐变大字。渐变本身静止，进场时只扫一遍光 */
+.holo-text {
+  background-image: linear-gradient(100deg, #ff8fc4 0%, #c6a2ff 22%, #8fd0ff 42%, #8ff0cf 58%, #ffc2e0 78%, #ff8fc4 100%);
+  background-size: 220% 100%;
+  background-position: 0% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 6px 18px rgb(236 72 153 / 0.18));
+}
+.dark .holo-text {
+  filter: drop-shadow(0 6px 24px rgb(198 162 255 / 0.25));
+}
+html:not([data-effects="off"]) .holo-text {
+  animation: holo-sweep 3.2s cubic-bezier(0.3, 0, 0.2, 1) 0.4s 1 both;
+}
+@keyframes holo-sweep {
+  from { background-position: 100% 50%; }
+  to { background-position: 0% 50%; }
+}
+/* 光标：一秒闪一次（步进动画，一秒只重绘两次） */
+.term-caret {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.1em;
+  margin-left: 2px;
+  vertical-align: -0.2em;
+  background: currentColor;
+  animation: term-blink 1s steps(1) infinite;
+}
+@keyframes term-blink {
+  50% { opacity: 0; }
+}
+/* 往下滚的提示：「完整」档轻轻往右推三下，然后停住 */
+html[data-effects="full"] .scroll-nudge {
+  animation: scroll-nudge 1.6s ease-in-out 2.5s 3;
+}
+@keyframes scroll-nudge {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 6px 0; }
+}
+
+/* 黑胶唱片（components/CloudPlayer.tsx，siteConfig.vinylPlayer）：
+   唱片转（只有一个 transform 动画），反光不跟着转，唱臂播放时落到唱片上 */
+.vinyl-disc {
+  background:
+    repeating-radial-gradient(circle, rgb(255 255 255 / 0.05) 0 1px, transparent 1px 3px),
+    radial-gradient(circle, #2b2b33 0%, #111116 62%, #1c1c22 100%);
+  box-shadow: 0 10px 24px -8px rgb(0 0 0 / 0.55), inset 0 0 0 2px rgb(255 255 255 / 0.04);
+}
+.vinyl-sheen {
+  background: conic-gradient(from 30deg, transparent 0deg, rgb(255 255 255 / 0.16) 30deg, transparent 70deg, transparent 180deg, rgb(255 255 255 / 0.1) 210deg, transparent 250deg);
+}
+.vinyl-arm {
+  transform-origin: 85% 12%;
+  transform: rotate(-26deg);
+  transition: transform 0.7s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+.vinyl-arm[data-playing] {
+  transform: rotate(0deg);
+}
+
+/* 漫画背景（siteConfig.bgMode = "manga"，或网址加 ?bg=manga 预览）：
+   背景图去色、提亮，线稿保持清晰（不模糊），再盖一层白纱；夜间反相成深底浅线 */
+html[data-bg="manga"] .bg-images {
+  --tw-blur: ;
+  scale: none;
+  filter: grayscale(1) contrast(1.25) brightness(1.08);
+}
+html.dark[data-bg="manga"] .bg-images {
+  filter: grayscale(1) invert(1) contrast(1.1) brightness(0.75);
+}
+html[data-bg="manga"] .bg-tint {
+  background-color: rgb(255 255 255 / 0.5);
+}
+html.dark[data-bg="manga"] .bg-tint {
+  background-color: rgb(12 10 24 / 0.5);
+}
+
 /* 选中文字的底色跟随全站强调色 */
 ::selection {
   background: color-mix(in oklab, var(--color-indigo-400) 35%, transparent);

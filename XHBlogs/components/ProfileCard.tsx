@@ -59,7 +59,7 @@ function StatItem({ count, label, color }: { count: number, label: string, color
   return (
     <div className="text-center group/stat px-2">
       <div className={`text-xl md:text-2xl font-black ${color} transition-transform group-hover/stat:scale-110`}>{count}</div>
-      <div className="text-[9px] md:text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-0.5">{label}</div>
+      <div className="lab-label text-[9px] md:text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-0.5">{label}</div>
     </div>
   );
 }

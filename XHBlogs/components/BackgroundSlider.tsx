@@ -105,7 +105,8 @@ export default function BackgroundSlider() {
         模糊直接作用在图片层：静态 filter 只需栅格化一次，滚动时不会逐帧重算，
         比在其上方叠一层全屏 backdrop-filter 省得多。scale-110 用来盖住模糊后的透明边缘。
       */}
-      <div className={`absolute inset-0 transform-gpu ${BLUR_CLASS[siteConfig.bgBlur ?? 'strong'] ?? BLUR_CLASS.strong}`}>
+      {/* bg-images：漫画背景模式（siteConfig.bgMode）在 globals.css 里换成去色、不模糊 */}
+      <div className={`bg-images absolute inset-0 transform-gpu ${BLUR_CLASS[siteConfig.bgBlur ?? 'strong'] ?? BLUR_CLASS.strong}`}>
         {slides.map((slide, i) => {
           const isActive = i === index;
           // 只保留「当前 / 正在淡出的上一张 / 预加载的下一张」，其余不参与渲染合成

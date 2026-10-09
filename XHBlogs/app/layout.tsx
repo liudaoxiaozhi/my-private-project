@@ -66,7 +66,13 @@ function initialAccentCss(): string {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-CN" className={`${geistSans.variable} ${geistMono.variable} ${notoSerif.variable} h-full antialiased`} suppressHydrationWarning>
+    <html
+      lang="zh-CN"
+      className={`${geistSans.variable} ${geistMono.variable} ${notoSerif.variable} h-full antialiased`}
+      data-style={siteConfig.labStyle ? 'lab' : undefined}
+      data-bg={siteConfig.bgMode === 'manga' ? 'manga' : undefined}
+      suppressHydrationWarning
+    >
       <head>
         {/* 🌗 必须放在最前：绘制前确定深浅色，避免闪烁（替代旧版「挂载前隐藏整页」） */}
         <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: themeInitScript }} />
@@ -91,6 +97,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                   document.documentElement.classList.add('splash-seen');
                 }
               } catch (e) {}
+              // 网址加 ?bg=manga / ?bg=illustration 预览背景模式
+              var bgPreview = /[?&]bg=(manga|illustration)\b/.exec(location.search);
+              if (bgPreview) document.documentElement.dataset.bg = bgPreview[1];
             `
           }}
         />
@@ -111,7 +120,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
                 {!siteConfig.useGradient && <BackgroundSlider />}
                 {/* 🚀 性能：模糊已移到 BackgroundSlider 的图片层（静态 filter，只栅格化一次），这里只保留半透明色调，不再用全屏 backdrop-filter */}
-                <div className="absolute inset-0 z-[-9] bg-white/30 dark:bg-slate-900/40 transition-colors duration-1000"></div>
+                <div className="bg-tint absolute inset-0 z-[-9] bg-white/30 dark:bg-slate-900/40 transition-colors duration-1000"></div>
 
                 {/*
                   🚀 性能：主题渐变改为静态。旧版每帧移动全屏渐变（再叠加 mix-blend 混色），

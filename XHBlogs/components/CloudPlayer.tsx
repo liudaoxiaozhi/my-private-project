@@ -4,6 +4,7 @@ import { useMusic } from './MusicProvider';
 // 🌟 核心引入：Next.js 路由钩子
 import { useRouter } from 'next/navigation';
 import AppImage from './AppImage';
+import { siteConfig } from '../siteConfig';
 
 const formatTime = (time: number) => {
   if (!time || isNaN(time)) return "00:00";
@@ -98,21 +99,43 @@ export default function CloudPlayer() {
         <div className={`absolute -top-20 -right-20 w-48 h-48 bg-indigo-500/20 blur-[50px] rounded-full transition-opacity duration-1000 ${isPlaying ? 'opacity-100' : 'opacity-30'}`}></div>
 
         <div className="flex items-center gap-5 relative z-10 mb-6 mt-2">
-          <div
-            className="w-20 h-20 rounded-full border-2 border-white/50 shadow-lg flex-shrink-0 overflow-hidden relative animate-[spin_6s_linear_infinite]"
-            style={{
-              animationPlayState: isPlaying ? 'running' : 'paused',
-              willChange: 'transform'
-            }}
-          >
-            <AppImage src={currentSong.cover} alt="专辑封面" width={256} height={256} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-            <div className="absolute inset-0 bg-black/10"></div>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 bg-white/80 backdrop-blur-sm rounded-full border border-gray-300 shadow-inner"></div>
-          </div>
+          {siteConfig.vinylPlayer ? (
+            /* 黑胶唱片：封面做唱片中间的贴纸，播放时转、暂停时停；唱臂播放时落到唱片上 */
+            <div className="relative w-24 h-24 flex-shrink-0" data-vinyl>
+              <div
+                className="vinyl-disc absolute inset-0 rounded-full animate-[spin_5s_linear_infinite]"
+                style={{ animationPlayState: isPlaying ? 'running' : 'paused' }}
+              >
+                <div className="absolute inset-[27%] rounded-full overflow-hidden ring-2 ring-black/40">
+                  <AppImage src={currentSong.cover} alt="专辑封面" width={128} height={128} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                </div>
+                <div className="absolute top-1/2 left-1/2 w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-100 shadow-inner" />
+              </div>
+              <div className="vinyl-sheen absolute inset-0 rounded-full pointer-events-none" />
+              <svg className="vinyl-arm absolute -right-3 -top-2 w-10 h-16 pointer-events-none drop-shadow" viewBox="0 0 40 64" data-playing={isPlaying ? '' : undefined} aria-hidden="true">
+                <circle cx="34" cy="7" r="5" className="fill-slate-300 dark:fill-slate-500" />
+                <circle cx="34" cy="7" r="2" className="fill-slate-500 dark:fill-slate-300" />
+                <path d="M34 7 L 30 40 L 20 54" fill="none" strokeWidth="2.5" strokeLinecap="round" className="stroke-slate-300 dark:stroke-slate-400" />
+                <rect x="14" y="51" width="9" height="6" rx="1.5" transform="rotate(-35 18 54)" className="fill-pink-400" />
+              </svg>
+            </div>
+          ) : (
+            <div
+              className="w-20 h-20 rounded-full border-2 border-white/50 shadow-lg flex-shrink-0 overflow-hidden relative animate-[spin_6s_linear_infinite]"
+              style={{
+                animationPlayState: isPlaying ? 'running' : 'paused',
+                willChange: 'transform'
+              }}
+            >
+              <AppImage src={currentSong.cover} alt="专辑封面" width={256} height={256} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <div className="absolute inset-0 bg-black/10"></div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 bg-white/80 backdrop-blur-sm rounded-full border border-gray-300 shadow-inner"></div>
+            </div>
+          )}
 
           <div className="flex-col overflow-hidden w-full">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 tracking-widest uppercase bg-white/50 dark:bg-slate-900/50 px-2 py-0.5 rounded-sm shadow-sm transition-colors duration-700">Cloud Music</span>
+              <span className="lab-label text-[10px] font-black text-indigo-500 dark:text-indigo-400 tracking-widest uppercase bg-white/50 dark:bg-slate-900/50 px-2 py-0.5 rounded-sm shadow-sm transition-colors duration-700">{siteConfig.vinylPlayer ? (isPlaying ? 'Now Spinning' : 'Paused') : 'Cloud Music'}</span>
             </div>
             <h3 className="text-xl font-bold text-slate-900 dark:text-white truncate drop-shadow-sm transition-colors duration-700">{currentSong.title}</h3>
             <p className="text-sm text-slate-700 dark:text-slate-300 font-medium truncate drop-shadow-sm transition-colors duration-700">{currentSong.artist}</p>

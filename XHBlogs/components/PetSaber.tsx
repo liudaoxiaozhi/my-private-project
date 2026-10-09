@@ -8,7 +8,8 @@
 // - 收起：缩到台子下面只露出呆毛，点一下再出来；收起状态记在浏览器里（只影响自己）
 // - 拖动：按住她或台子拖到页面任意位置（聚焦时也可以用方向键挪），位置同样记在浏览器里
 // - 台子就是迷你播放器：她趴在播放器上（封面小唱片、歌名 / 歌词、播放、下一首），点歌名去音乐页；
-//   换歌时她报一下歌名。首页和音乐页本身有完整播放器，台子收回成一条细边（siteConfig.enablePet 关掉时
+//   换歌时她报一下歌名。完整播放器（首页播放器卡片、文章侧栏）在屏幕上时、以及在音乐页，台子收回成一条细边
+//   （lib/playerPresence.ts；siteConfig.enablePet 关掉时
 //   改用 components/FloatingPlayer.tsx 的悬浮播放器）
 // - 听指令（lib/petBus.ts）：工具箱「召回桌宠」让她回到默认位置；御神签等让她说一句话
 // - 有存在感：每次打开网站按时间打招呼；进不同栏目说不同的话（每次浏览每个栏目一次）；
@@ -24,6 +25,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { EyeOff, MessageCircle, Send } from 'lucide-react';
 import AppImage from './AppImage';
 import { useMusic } from './MusicProvider';
+import { useFullPlayerOnScreen } from '../lib/playerPresence';
 import { PET_COMMAND_EVENT } from '../lib/petBus';
 import type { PetCommand } from '../lib/petBus';
 
@@ -33,8 +35,8 @@ const PET_HEIGHT = Math.round((PET_WIDTH * IMG.height) / IMG.width);
 const LEDGE_HEIGHT = 10;
 /** 台子下半截的迷你播放器 */
 const PLAYER_HEIGHT = 44;
-/** 这些页面本身有完整播放器，台子上不再放迷你播放器 */
-const FULL_PLAYER_PAGES = ['/', '/music'];
+/** 音乐页整页就是播放器，台子上不再放迷你播放器 */
+const MUSIC_PAGE = '/music';
 /** 让图里「趴着的那条边」正好对齐台面 */
 const PET_BOTTOM = LEDGE_HEIGHT - Math.round(PET_HEIGHT * (1 - IMG.edge));
 const HIDDEN_KEY = 'pet-hidden';
@@ -153,7 +155,8 @@ export default function PetSaber() {
   const pathname = usePathname();
   const music = useMusic();
   const song = music.isLoading ? null : music.currentSong;
-  const showPlayer = !!song && !FULL_PLAYER_PAGES.includes(pathname ?? '');
+  const fullPlayerOnScreen = useFullPlayerOnScreen();
+  const showPlayer = !!song && pathname !== MUSIC_PAGE && !fullPlayerOnScreen;
   const dozingRef = useRef(false);
   const clickTimes = useRef<number[]>([]);
   const [pos, setPos] = useState<Pos>(DEFAULT_POS);
@@ -609,7 +612,7 @@ export default function PetSaber() {
         style={{ width: BOX_WIDTH, marginTop: -LEDGE_HEIGHT }}
       >
         <div aria-hidden="true" style={{ height: LEDGE_HEIGHT }} />
-        {/* 进出首页 / 音乐页时平滑地收起、展开 */}
+        {/* 完整播放器进出屏幕、进出音乐页时平滑地收起、展开 */}
         <div className="grid transition-[grid-template-rows] duration-500 ease-out" style={{ gridTemplateRows: showPlayer ? '1fr' : '0fr' }}>
           <div className="min-h-0" inert={!showPlayer}>
             {song && (

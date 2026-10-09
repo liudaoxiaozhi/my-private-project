@@ -99,7 +99,9 @@ test('御神签：凶签可以系在樱花枝上', async ({ page }) => {
 });
 
 test('召回桌宠：收起、拖走之后一键回到默认位置', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'networkidle' });
+  // 歌单加载好以后台子会展开迷你播放器、把她往上托一截，等这一下再量位置
+  await page.waitForTimeout(800);
   const pet = page.getByRole('button', { name: /摸摸头/ });
   const home = (await pet.boundingBox())!;
   await page.mouse.move(home.x + 70, home.y + 70);

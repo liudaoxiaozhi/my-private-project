@@ -5,6 +5,7 @@ import { useMusic } from './MusicProvider';
 import { useRouter } from 'next/navigation';
 import AppImage from './AppImage';
 import { siteConfig } from '../siteConfig';
+import { useFullPlayerRef } from '../lib/playerPresence';
 
 const formatTime = (time: number) => {
   if (!time || isNaN(time)) return "00:00";
@@ -18,6 +19,8 @@ export default function CloudPlayer() {
   const [displayedLyric, setDisplayedLyric] = useState("");
   // 🌟 初始化路由
   const router = useRouter();
+  // 这张卡在屏幕上时，桌宠台子上的迷你播放器收起来
+  const fullPlayerRef = useFullPlayerRef();
 
   useEffect(() => {
     let i = 0;
@@ -93,6 +96,7 @@ export default function CloudPlayer() {
 
       {/* 🌟 终极逻辑：在外层 Div 直接绑定 onClick 进行页面跳转 */}
       <div data-glow
+        ref={fullPlayerRef}
         onClick={() => router.push('/music')}
         className="glass-card h-full w-full p-6 flex flex-col justify-between transition-all duration-700 hover:scale-[1.02] relative group overflow-hidden cursor-pointer"
       >

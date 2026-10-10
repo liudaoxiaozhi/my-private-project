@@ -4,9 +4,9 @@
     "title": "绝命毒师",
     "originalTitle": "Breaking Bad",
     "kind": "drama",
-    "status": "completed",
+    "status": "watching",
     "cover": "/anime/covers/tmdb-tv-1396-mv1qy24t.jpg",
-    "progress": 62,
+    "progress": 46,
     "totalEpisodes": 62,
     "parts": [
       {
@@ -43,13 +43,13 @@
     ],
     "airDate": "2008-01-20",
     "startedAt": "2026-10-10",
-    "finishedAt": "2026-10-10",
+    "finishedAt": "",
     "bangumiId": null,
     "bangumiScore": 0,
     "tmdbId": 1396,
     "tmdbType": "tv",
     "tmdbScore": 9,
     "createdAt": "2026-10-10T01:59:47.655Z",
-    "updatedAt": "2026-10-10T02:03:55.141Z"
+    "updatedAt": "2026-10-10T02:06:54.259Z"
   }
 ]

@@ -1,0 +1,168 @@
+/* components/hero-montage.css —— 首页开场「镜头蒙太奇」（components/HeroMontage.tsx，siteConfig.homeHero.montage）
+ *
+ * 服务端不知道读者的档位，总是按「完整」档渲染；这里按 <html data-effects>（首屏前就定好）和
+ * 「减少动态效果」先把不该出现的部分藏起来，水合后 HomeHero 再按真实档位卸载，不会先闪一下。
+ * 进度由 JS 写在开场 <section> 上：--hm-progress（0~1）、--hm-fill（最后 15% 的填色进度）。
+ */
+
+/* —— 镜头层：在遮罩、弹幕、标题下面 —— */
+.hm-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.9s ease;
+  /* 底边淡出，接上下面的卡片区 */
+  -webkit-mask-image: linear-gradient(to bottom, #000 84%, transparent);
+  mask-image: linear-gradient(to bottom, #000 84%, transparent);
+}
+.hm-stage[data-ready] {
+  opacity: 1;
+}
+/* 整体压暗一点，标题和终端才看得清 */
+.hm-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgb(8 6 20 / 0.38), rgb(8 6 20 / 0.12) 42%, rgb(8 6 20 / 0.42));
+}
+.hm-shot {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  visibility: hidden;
+  user-select: none;
+}
+/* 简洁档：新图在上面淡入，旧图垫在下面，不平移 */
+.hm-stage[data-mode="lite"] .hm-shot {
+  visibility: visible;
+  transition: opacity 1.6s ease-in-out;
+}
+.hm-stage[data-mode="lite"] .hm-shot[data-active] {
+  opacity: 1;
+  z-index: 2;
+}
+.hm-stage[data-mode="lite"] .hm-shot[data-prev] {
+  opacity: 1;
+  z-index: 1;
+  transition: none;
+}
+
+/* —— 完整档的前景：遮幅黑边、提示、计数器和按钮（在标题上面） —— */
+.hm-overlay {
+  --hm-bar: clamp(10px, 3.2vh, 30px);
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.hm-overlay button {
+  pointer-events: auto;
+}
+/* 遮幅黑边：标题填色时收起 */
+.hm-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--hm-bar);
+  background: rgb(4 3 12 / 0.78);
+  transform: scaleY(calc(1 - var(--hm-fill, 0)));
+}
+.hm-bar-top {
+  top: 0;
+  transform-origin: top;
+}
+.hm-bar-bottom {
+  bottom: 0;
+  transform-origin: bottom;
+}
+.hm-hint,
+.hm-enter {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--hm-bar) + 60px);
+  translate: -50% 0;
+  white-space: nowrap;
+}
+.hm-hint {
+  opacity: clamp(0, calc(1 - var(--hm-progress, 0) * 12), 1);
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.6);
+}
+.hm-enter {
+  opacity: var(--hm-fill, 0);
+  visibility: hidden;
+}
+[data-montage-ending] .hm-enter {
+  visibility: visible;
+}
+.hm-controls {
+  /* 计数和按钮收在中间一组：左下角是工具箱按钮，右下角是桌宠和播放器，贴边放会被挡住 */
+  position: absolute;
+  left: 88px;
+  right: 88px;
+  bottom: calc(var(--hm-bar) + 14px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 16px;
+  transition: opacity 0.4s ease, visibility 0s;
+}
+[data-montage-state="released"] .hm-controls {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.4s ease, visibility 0s 0.4s;
+}
+.hm-pause-label,
+[aria-pressed="true"] > .hm-play-label {
+  display: none;
+}
+[aria-pressed="true"] > .hm-pause-label {
+  display: inline;
+}
+
+/* 蓄力时手指在开场上滑动只推进镜头，不拖动页面（双指缩放照常） */
+[data-montage="full"][data-montage-state="capturing"] {
+  touch-action: pinch-zoom;
+}
+
+/* —— 标题：先是描边空心字，最后 15% 用全息渐变从左往右擦满 ——
+ * 渐变色和 globals.css 的 .holo-text 一致 */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-effects="full"] [data-montage="full"] .holo-text[data-montage-title] {
+    animation: none;
+    background-image: none;
+    color: rgb(255 255 255 / 0.08);
+    -webkit-text-stroke: 1px rgb(255 255 255 / 0.6);
+  }
+  html[data-effects="full"] [data-montage="full"] .holo-text[data-montage-title]::after {
+    content: attr(data-montage-title);
+    content: attr(data-montage-title) / "";
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(100deg, #ff8fc4 0%, #c6a2ff 22%, #8fd0ff 42%, #8ff0cf 58%, #ffc2e0 78%, #ff8fc4 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-stroke: 0;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--hm-fill, 0) * 130% - 30%), transparent calc(var(--hm-fill, 0) * 130%));
+    mask-image: linear-gradient(90deg, #000 calc(var(--hm-fill, 0) * 130% - 30%), transparent calc(var(--hm-fill, 0) * 130%));
+    pointer-events: none;
+  }
+}
+
+/* —— 档位兜底（水合前） —— */
+html[data-effects="off"] .hm-stage,
+html:not([data-effects="full"]) .hm-overlay {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hm-stage,
+  .hm-overlay {
+    display: none;
+  }
+}

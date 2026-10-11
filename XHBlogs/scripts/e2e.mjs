@@ -1,6 +1,7 @@
 // scripts/e2e.mjs —— 端到端测试（npm run test:e2e）
 //
-// 1. 把 e2e/fixtures 里的测试用文章、杂谈临时放进 posts/、chatters/
+// 1. 把 e2e/fixtures 里的测试用文章、杂谈临时放进 posts/、chatters/；
+//    e2e/fixtures/data/ 里的数据文件（追番等）临时替换 data/ 里的同名文件，结束后原样还原
 // 2. 构建到单独的 .next-e2e 目录（不影响正式构建的 .next）
 // 3. 准备网页后台测试用的目录 .e2e-admin-root（内容副本，后台的修改写在这里）
 // 4. 运行 Playwright（自动启动 next start，见 playwright.config.ts）
@@ -13,7 +14,7 @@
 // 第一次运行前需要装一次浏览器：npx playwright install chromium
 
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const FIXTURES = 'e2e/fixtures';
@@ -28,6 +29,8 @@ function seedAdminRoot() {
   }
   // 设置从「全是默认值」开始：仓库里的 overrides 是站长在后台改过的真实设置，测试不能依赖它
   writeFileSync(path.join(ADMIN_ROOT, 'siteConfig.overrides.json'), '{}\n');
+  // 密钥同理：仓库里是站长在后台存的真实密文，测试从空的开始
+  writeFileSync(path.join(ADMIN_ROOT, 'data', 'secrets.json'), '{}\n');
   mkdirSync(path.join(ADMIN_ROOT, 'public/music'), { recursive: true });
   for (const name of ['01. 歌手甲 - 第一首.mp3', '02. 歌手乙 - 第二首.mp3', '03. 歌手丙 - 第三首.mp3']) {
     writeFileSync(path.join(ADMIN_ROOT, 'public/music', name), Buffer.alloc(4096, 1));
@@ -41,8 +44,11 @@ const playwrightArgs = args.filter((a) => a !== '--no-build');
 const env = { ...process.env, NEXT_DIST_DIR: '.next-e2e' };
 
 const copied = [];
+/** 被测试数据临时替换掉的 data/ 文件：[路径, 原内容]，结束时写回 */
+const replaced = [];
 function cleanup() {
   for (const file of copied.splice(0)) rmSync(file, { force: true });
+  for (const [file, original] of replaced.splice(0)) writeFileSync(file, original);
 }
 process.on('SIGINT', () => {
   cleanup();
@@ -64,6 +70,16 @@ try {
       const target = path.join(dir, name);
       copyFileSync(path.join(from, name), target);
       copied.push(target);
+    }
+  }
+
+  const dataFixtures = path.join(FIXTURES, 'data');
+  if (existsSync(dataFixtures)) {
+    for (const name of readdirSync(dataFixtures)) {
+      const target = path.join('data', name);
+      if (existsSync(target)) replaced.push([target, readFileSync(target)]);
+      else copied.push(target);
+      copyFileSync(path.join(dataFixtures, name), target);
     }
   }
 

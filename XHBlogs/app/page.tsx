@@ -14,12 +14,78 @@ import { ToastProvider } from '../components/ToastProvider';
 import LatestPostsCarousel from '../components/LatestPostsCarousel';
 import LatestChatterCarousel from '../components/LatestChatterCarousel';
 import { formatDisplayDate, getAllChatters, getAllPosts } from '../lib/content';
-import type { CardItem } from '../lib/content';
+import type { CardItem, PostMeta } from '../lib/content';
 import AppImage from '../components/AppImage';
 import HomeHero from '../components/HomeHero';
 import PanelSeam from '../components/PanelSeam';
+import EndCredits from '../components/EndCredits';
+import type { CreditPost, CreditWatch, EndCreditsProps } from '../components/EndCredits';
+import { readAnimeList } from '../lib/server/animeStore';
+import { KIND_LABEL } from '../lib/anime';
+import type { AnimeEntry } from '../lib/anime';
+import { isValidTimeZone } from '../lib/time';
 
 const DEFAULT_CHATTER_COVER = siteConfig.defaultChatterCover || siteConfig.defaultPostCover;
+
+// —— 片尾字幕的数据（只传标题和展示用的短字符串，不把整条记录塞进客户端） ——
+const CREDITS_MAX_POSTS = 24;
+const CREDITS_MAX_WATCHED = 20;
+
+function getCreditsData(posts: readonly PostMeta[]): EndCreditsProps {
+  const timeZone = isValidTimeZone(siteConfig.timeZone) ? siteConfig.timeZone : undefined;
+  const yearFormat = new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric' });
+  const year = yearFormat.format(new Date());
+
+  // "YYYY-MM-DD[ HH:mm]" 这类墙上时间直接取年份；带 Z / 偏移的时间戳（updatedAt）换算到站点时区再取
+  const yearOf = (value: string): string => {
+    const v = value.trim();
+    if (!v) return '';
+    if (/^\d{4}-\d{1,2}-\d{1,2}/.test(v) && !/(?:[zZ]|[+-]\d{2}:?\d{2})$/.test(v)) return v.slice(0, 4);
+    const t = Date.parse(v);
+    return Number.isNaN(t) ? '' : yearFormat.format(new Date(t));
+  };
+  const dateLabel = (date: string, withYear: boolean): string => {
+    const m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(date);
+    if (!m) return '—';
+    const md = `${m[2].padStart(2, '0')}.${m[3].padStart(2, '0')}`;
+    return withYear ? `${m[1]}.${md}` : md;
+  };
+
+  // 本年度出品：今年的文章（已按日期倒序）；今年还没写就用最近 6 篇
+  const thisYearPosts = posts.filter((post) => yearOf(post.date) === year);
+  const postsScope = thisYearPosts.length > 0 ? 'year' : 'recent';
+  const creditPosts = postsScope === 'year' ? thisYearPosts.slice(0, CREDITS_MAX_POSTS) : posts.slice(0, 6);
+  const morePosts = postsScope === 'year' ? thisYearPosts.length - creditPosts.length : 0;
+
+  // 观影记录：今年看完的 → 最近看完的 8 部 → 正在看的
+  const anime = readAnimeList();
+  const doneAt = (entry: AnimeEntry) => entry.finishedAt || entry.updatedAt;
+  const newestFirst = (pick: (entry: AnimeEntry) => string) => (a: AnimeEntry, b: AnimeEntry) => pick(b).localeCompare(pick(a));
+  const completed = anime.filter((entry) => entry.status === 'completed').sort(newestFirst(doneAt));
+  const completedThisYear = completed.filter((entry) => yearOf(doneAt(entry)) === year);
+  let watchScope: EndCreditsProps['watchScope'] = 'year';
+  let watchedList = completedThisYear.slice(0, CREDITS_MAX_WATCHED);
+  let moreWatched = completedThisYear.length - watchedList.length;
+  if (watchedList.length === 0) {
+    watchScope = completed.length > 0 ? 'recent' : 'watching';
+    watchedList = completed.length > 0
+      ? completed.slice(0, 8)
+      : anime.filter((entry) => entry.status === 'watching').sort(newestFirst((entry) => entry.updatedAt)).slice(0, 8);
+    moreWatched = 0;
+  }
+
+  return {
+    year,
+    siteTitle: siteConfig.title,
+    author: siteConfig.authorName || siteConfig.navTitle || siteConfig.title,
+    postsScope,
+    posts: creditPosts.map((post): CreditPost => ({ title: post.title, date: dateLabel(post.date, postsScope === 'recent') })),
+    morePosts,
+    watchScope,
+    watched: watchedList.map((entry): CreditWatch => ({ title: entry.title, kind: KIND_LABEL[entry.kind] })),
+    moreWatched,
+  };
+}
 
 export default function Home() {
   // 只含摘要，不含正文：旧版把所有文章全文一并传给 SearchBar，整站正文都被塞进首页 HTML
@@ -53,6 +119,7 @@ export default function Home() {
 
   const chatterCount = allChatters.length;
   const realPhotoCount = albums.reduce((total, album) => total + album.photos.length, 0);
+  const credits = getCreditsData(allPosts);
   const latestAlbum = albums.length > 0 ? albums[0] : { id: '', title: '照片墙', description: '查看摄影', cover: siteConfig.photoWallImage, date: '' };
 
   return (
@@ -130,6 +197,9 @@ export default function Home() {
             {/* 底部数据面板；上面一道反向的分格斜缝，负外边距吃掉一部分 gap，免得间距太空 */}
             <PanelSeam flip className="-my-3" />
             <SiteDashboard/>
+
+            {/* 片尾字幕：今年写过的、看过的，像电影散场一样滚一遍 */}
+            <EndCredits {...credits} />
           </main>
         </div>
       </div>

@@ -11,6 +11,7 @@ import AnimeCard from './AnimeCard';
 import AnimeDetail from './AnimeDetail';
 import AnimeEditor from './AnimeEditor';
 import ComicWall, { AnimeViewSwitch, useAnimeView } from './ComicWall';
+import FilmRail from './FilmRail';
 import type { Credentials } from './AnimeSearch';
 import {
   KIND_LABEL,
@@ -141,6 +142,9 @@ export default function AnimeClient({ initialEntries, editable: buildEditable, i
       .sort(SORTERS[sort]);
   }, [entries, tab, kind, query, sort]);
 
+  // 放映厅：当前筛选结果里的电影与电视剧
+  const films = useMemo(() => visible.filter((e) => e.kind !== 'anime'), [visible]);
+
   const upsert = (entry: AnimeEntry) =>
     setEntries((list) => (list.some((e) => e.id === entry.id) ? list.map((e) => (e.id === entry.id ? entry : e)) : [entry, ...list]));
 
@@ -236,6 +240,8 @@ export default function AnimeClient({ initialEntries, editable: buildEditable, i
           </div>
         )}
       </PageHeader>
+
+      <FilmRail entries={films} onOpen={(entry) => setDialog({ type: editable ? 'edit' : 'view', entry })} />
 
       {visible.length === 0 ? (
         entries.length === 0 ? (

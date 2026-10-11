@@ -17,6 +17,7 @@ import { formatDisplayDate, getAllChatters, getAllPosts } from '../lib/content';
 import type { CardItem } from '../lib/content';
 import AppImage from '../components/AppImage';
 import HomeHero from '../components/HomeHero';
+import PanelSeam from '../components/PanelSeam';
 
 const DEFAULT_CHATTER_COVER = siteConfig.defaultChatterCover || siteConfig.defaultPostCover;
 
@@ -62,6 +63,9 @@ export default function Home() {
 
         {/* 🌟 调整整体容器的内边距，适应手机端更小的屏幕；scroll-mt 让「往下滚」停在导航栏下面 */}
         <div id="home-main" className={`w-full max-w-6xl mx-auto ${siteConfig.homeHero?.enabled ? 'mt-0 scroll-mt-24' : 'mt-24 sm:mt-28'} px-4 sm:px-6 lg:px-10 relative z-10`}>
+          {/* 开场和卡片区之间的分格斜缝（纯装饰） */}
+          {siteConfig.homeHero?.enabled && <PanelSeam className="mb-6 sm:mb-8" />}
+
           <SearchBar posts={allPosts} />
 
           <main className="flex flex-col gap-6 w-full mt-6">
@@ -123,7 +127,8 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 底部数据面板 */}
+            {/* 底部数据面板；上面一道反向的分格斜缝，负外边距吃掉一部分 gap，免得间距太空 */}
+            <PanelSeam flip className="-my-3" />
             <SiteDashboard/>
           </main>
         </div>

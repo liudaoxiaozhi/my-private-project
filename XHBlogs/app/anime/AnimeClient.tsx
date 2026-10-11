@@ -10,6 +10,7 @@ import { useToast } from '../../components/ToastProvider';
 import AnimeCard from './AnimeCard';
 import AnimeDetail from './AnimeDetail';
 import AnimeEditor from './AnimeEditor';
+import ComicWall, { AnimeViewSwitch, useAnimeView } from './ComicWall';
 import type { Credentials } from './AnimeSearch';
 import {
   KIND_LABEL,
@@ -86,6 +87,8 @@ export default function AnimeClient({ initialEntries, editable: buildEditable, i
   const [dialog, setDialog] = useState<Dialog>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [credentials, setCredentials] = useState(initialCredentials);
+  // 卡片 / 分镜视图（记在读者浏览器里）
+  const view = useAnimeView();
   // 页面是静态生成的：线上打开后再问服务器，登录了网页后台就打开编辑
   const [editable, setEditable] = useState(buildEditable);
   useEffect(() => {
@@ -229,6 +232,7 @@ export default function AnimeClient({ initialEntries, editable: buildEditable, i
                 </option>
               ))}
             </select>
+            <AnimeViewSwitch view={view} />
           </div>
         )}
       </PageHeader>
@@ -277,6 +281,8 @@ export default function AnimeClient({ initialEntries, editable: buildEditable, i
         ) : (
           <EmptyState className="mt-6" icon={<Filter size={28} />} title="这里还是空的" description="这个分栏或类型下还没有番剧，换一个看看。" />
         )
+      ) : view === 'comic' ? (
+        <ComicWall entries={visible} editable={editable} onOpen={(entry) => setDialog({ type: editable ? 'edit' : 'view', entry })} />
       ) : (
         <section aria-label="追番列表" className={`${GLASS} mt-6 p-3 sm:p-5`}>
           <ul className="grid grid-cols-2 gap-1 sm:grid-cols-3 sm:gap-2 lg:grid-cols-5">

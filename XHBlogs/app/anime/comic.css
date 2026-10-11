@@ -1,0 +1,291 @@
+/* app/anime/comic.css —— 追番页「分镜」视图（ComicWall.tsx）专用样式，类名统一 comic- 前缀
+ *
+ * 一页漫画：米白纸面（暗色是深石板色）、粗黑框、白色留白当格间距、按 id 固定的小倾角。
+ * 强调色只用 --color-indigo-*（全站运行时色相），不写死别的颜色。
+ * data-comic-armed 由 lib/comicMotion.ts 在 JS 确认要播入场动画时写上，服务端 HTML 里永远没有。
+ */
+
+.comic-wall {
+  --comic-paper: #fbf8f1;
+  --comic-ink: #16161a;
+  --comic-box: #ffffff;
+  --comic-box-ink: #16161a;
+  --comic-accent: var(--color-indigo-500);
+  --comic-gutter: 8px;
+  --comic-ease: cubic-bezier(.23, 1, .32, 1);
+  position: relative;
+  margin-top: 1.5rem;
+  padding: 14px 12px 16px;
+  border-radius: 6px;
+  background: var(--comic-paper);
+  color: var(--comic-ink);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / .06),
+    0 22px 48px -24px rgb(15 23 42 / .55);
+}
+.dark .comic-wall {
+  --comic-paper: #0f172a;
+  --comic-ink: #e2e8f0;
+  --comic-box: #020617;
+  --comic-box-ink: #f1f5f9;
+  --comic-accent: var(--color-indigo-400);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / .08),
+    0 22px 48px -24px rgb(0 0 0 / .8);
+}
+
+/* 入场前（只在 JS 布防后）：整页透明；full 档连格子和旁白框也先藏好，等错峰动画 */
+.comic-wall[data-comic-armed] { opacity: 0; }
+.comic-wall[data-comic-armed="full"] .comic-panel,
+.comic-wall[data-comic-armed="full"] [data-comic-caption] { opacity: 0; }
+
+/* ---------- 页眉：「第 N 话 · 追番」 ---------- */
+.comic-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 3px solid var(--comic-ink);
+}
+.comic-title {
+  margin: 0;
+  padding: 5px 18px 6px 10px;
+  background: var(--comic-ink);
+  color: var(--comic-paper);
+  font-family: "Arial Narrow", "Roboto Condensed", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: clamp(18px, 2.6vw, 26px);
+  font-weight: 900;
+  font-stretch: condensed;
+  line-height: 1;
+  letter-spacing: -.01em;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+}
+.comic-title > span { display: inline-block; transform: skewX(-8deg); }
+.comic-title b { color: var(--color-indigo-300); font-variant-numeric: tabular-nums; }
+.dark .comic-title b { color: var(--color-indigo-600); }
+.comic-note {
+  margin: 0;
+  font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  opacity: .6;
+}
+
+/* ---------- 网格：窄屏 2 栏；≥ 640px 12 栏，按条带拼版（排法见 ComicWall.tsx） ---------- */
+.comic-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 50vw;
+  grid-auto-flow: row dense;
+  gap: var(--comic-gutter);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.comic-panel {
+  --focus-y: 30%;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  rotate: var(--tilt, 0deg);
+}
+.comic-panel[data-big] { grid-column: span 2; grid-row: span 2; --focus-y: 35%; }
+.comic-panel[data-slot="s12"] { grid-column: span 2; --focus-y: 28%; }
+.comic-panel[data-slot^="sT"] { grid-row: span 2; --focus-y: 35%; }
+
+@media (min-width: 640px) {
+  .comic-wall { --comic-gutter: 12px; padding: 18px 18px 20px; }
+  .comic-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-rows: clamp(130px, 17vw, 200px);
+  }
+  .comic-panel[data-slot="s3"] { grid-column: span 3; }
+  .comic-panel[data-slot="s4"] { grid-column: span 4; }
+  .comic-panel[data-slot="s6"] { grid-column: span 6; --focus-y: 28%; }
+  .comic-panel[data-slot="s12"] { grid-column: span 12; }
+  .comic-panel[data-slot="sT4"] { grid-column: span 4; }
+  .comic-panel[data-slot="sT6"] { grid-column: span 6; }
+  .comic-panel[data-slot="B4"] { grid-column: span 4; }
+  .comic-panel[data-slot="B6"] { grid-column: span 6; --focus-y: 32%; }
+}
+
+/* ---------- 格子 ---------- */
+.comic-btn {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 3px solid var(--comic-ink);
+  background: var(--comic-paper);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease-out, box-shadow 160ms ease-out;
+}
+.comic-btn:focus-visible { outline-offset: 3px; }
+.comic-btn:hover,
+.comic-btn:focus-visible {
+  border-color: var(--comic-accent);
+  box-shadow: 6px 6px 0 var(--comic-accent);
+}
+/* 点开时劈开的两半之间露出来的底：强调色 + 集中线 */
+.comic-btn.is-splitting {
+  pointer-events: none;
+  background:
+    repeating-conic-gradient(from 0deg at 50% 50%, rgb(255 255 255 / .3) 0deg 2deg, transparent 2deg 11deg),
+    var(--comic-accent);
+}
+
+.comic-face { position: absolute; inset: 0; display: block; }
+
+/* AnimeCover 自带 3:4 圆角卡片样式，这里改成铺满格子 */
+.comic-art {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  aspect-ratio: auto;
+  border-radius: 0;
+  box-shadow: none;
+}
+.comic-art img {
+  object-position: var(--focus-x, 50%) var(--focus-y, 35%);
+  transform-origin: var(--focus-x, 50%) var(--focus-y, 35%);
+  transition: transform 240ms var(--comic-ease);
+}
+@media (hover: hover) {
+  .comic-btn:hover .comic-art img { transform: scale(1.02); }
+}
+.comic-btn:focus-visible .comic-art img { transform: scale(1.02); }
+
+/* ---------- 旁白框：标题 + 类型 / 状态 ---------- */
+.comic-caption {
+  position: absolute;
+  z-index: 2;
+  left: 8px;
+  bottom: 8px;
+  display: block;
+  max-width: calc(100% - 22px);
+  padding: 5px 9px 6px;
+  border: 2px solid var(--comic-ink);
+  background: var(--comic-box);
+  color: var(--comic-box-ink);
+  box-shadow: 3px 3px 0 var(--comic-ink);
+  transition: box-shadow 160ms ease-out;
+}
+.comic-btn:hover .comic-caption,
+.comic-btn:focus-visible .comic-caption { box-shadow: 3px 3px 0 var(--comic-accent); }
+.comic-cap-title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: -.01em;
+}
+.comic-cap-meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  opacity: .65;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.comic-panel[data-big] .comic-caption { left: 12px; bottom: 12px; padding: 7px 12px 8px; box-shadow: 4px 4px 0 var(--comic-ink); }
+.comic-panel[data-big] .comic-btn:hover .comic-caption,
+.comic-panel[data-big] .comic-btn:focus-visible .comic-caption { box-shadow: 4px 4px 0 var(--comic-accent); }
+.comic-panel[data-big] .comic-cap-title { font-size: clamp(15px, 1.8vw, 20px); }
+.comic-panel[data-big] .comic-cap-meta { font-size: 11.5px; }
+
+/* ---------- 评分：盖章 ---------- */
+.comic-stamp {
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--comic-accent);
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--comic-box) 82%, transparent);
+  color: var(--comic-accent);
+  box-shadow: inset 0 0 0 2px var(--comic-box), inset 0 0 0 3px var(--comic-accent);
+  font-family: "Arial Narrow", Impact, "Helvetica Neue", sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: .9;
+  font-variant-numeric: tabular-nums;
+  rotate: -12deg;
+}
+.comic-stamp small { font-size: 8px; font-weight: 900; line-height: 1; }
+.comic-panel[data-big] .comic-stamp { top: 12px; left: 12px; width: 48px; height: 48px; font-size: 20px; }
+
+/* ---------- 短评：对话气泡（桌面悬停 / 聚焦时出现；窄屏或触屏的大格常驻） ---------- */
+.comic-bubble {
+  position: absolute;
+  z-index: 3;
+  top: 10px;
+  right: 10px;
+  display: block;
+  max-width: min(78%, 280px);
+  padding: 7px 12px;
+  border: 2px solid var(--comic-ink);
+  border-radius: 18px;
+  background: var(--comic-box);
+  color: var(--comic-box-ink);
+  opacity: 0;
+  transform: translate3d(0, 4px, 0) scale(.96);
+  transform-origin: 24px 100%;
+  transition: opacity 160ms ease-out, transform 200ms var(--comic-ease);
+  pointer-events: none;
+}
+/* 尾巴：外层墨色三角 + 内层纸色三角，盖住气泡底边的一小段 */
+.comic-bubble::before,
+.comic-bubble::after {
+  content: "";
+  position: absolute;
+  clip-path: polygon(0 0, 100% 0, 12% 100%);
+}
+.comic-bubble::before { top: 100%; left: 18px; width: 18px; height: 14px; background: var(--comic-ink); }
+.comic-bubble::after { top: calc(100% - 1px); left: 21px; width: 12px; height: 10px; background: var(--comic-box); }
+.comic-bubble-text {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.comic-btn:hover .comic-bubble,
+.comic-btn:focus-visible .comic-bubble { opacity: 1; transform: none; }
+
+@media (max-width: 639px), (hover: none) {
+  .comic-panel[data-big] .comic-bubble { opacity: 1; transform: none; }
+  .comic-panel[data-big] .comic-bubble-text { -webkit-line-clamp: 2; }
+}
+
+/* 窄屏：小格的字和边框收一收 */
+@media (max-width: 639px) {
+  .comic-btn { border-width: 2.5px; }
+  .comic-caption { left: 6px; bottom: 6px; max-width: calc(100% - 16px); padding: 4px 7px 5px; box-shadow: 2px 2px 0 var(--comic-ink); }
+  .comic-cap-title { font-size: 12px; }
+  .comic-stamp { top: 6px; left: 6px; width: 34px; height: 34px; font-size: 14px; }
+  .comic-bubble { max-width: calc(100% - 20px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .comic-wall *,
+  .comic-wall *::before,
+  .comic-wall *::after { transition: none !important; }
+}

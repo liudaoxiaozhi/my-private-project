@@ -1,1 +1,85 @@
-[]
+[
+  {
+    "id": "bgm-10639",
+    "title": "Fate/Zero",
+    "originalTitle": "",
+    "kind": "anime",
+    "status": "completed",
+    "cover": "/anime/covers/bgm-10639-mv1r84e1.jpg",
+    "progress": 25,
+    "totalEpisodes": 25,
+    "parts": [],
+    "rating": 10,
+    "comment": "",
+    "tags": [
+      "Fate",
+      "虚渊玄",
+      "Type-Moon",
+      "ufotable",
+      "第四次圣杯战争"
+    ],
+    "airDate": "2011-10-01",
+    "startedAt": "2026-10-10",
+    "finishedAt": "2026-10-10",
+    "bangumiId": 10639,
+    "bangumiScore": 8.1,
+    "tmdbId": null,
+    "tmdbType": null,
+    "tmdbScore": 0,
+    "createdAt": "2026-10-10T02:07:37.225Z",
+    "updatedAt": "2026-10-10T02:07:51.269Z"
+  },
+  {
+    "id": "tmdb-tv-1396",
+    "title": "绝命毒师",
+    "originalTitle": "Breaking Bad",
+    "kind": "drama",
+    "status": "watching",
+    "cover": "/anime/covers/tmdb-tv-1396-mv1qy24t.jpg",
+    "progress": 46,
+    "totalEpisodes": 62,
+    "parts": [
+      {
+        "title": "第 1 季",
+        "episodes": 7,
+        "airDate": "2008-01-20"
+      },
+      {
+        "title": "第 2 季",
+        "episodes": 13,
+        "airDate": "2009-03-08"
+      },
+      {
+        "title": "第 3 季",
+        "episodes": 13,
+        "airDate": "2010-03-21"
+      },
+      {
+        "title": "第 4 季",
+        "episodes": 13,
+        "airDate": "2011-07-17"
+      },
+      {
+        "title": "第 5 季",
+        "episodes": 16,
+        "airDate": "2012-07-15"
+      }
+    ],
+    "rating": 0,
+    "comment": "",
+    "tags": [
+      "剧情",
+      "犯罪"
+    ],
+    "airDate": "2008-01-20",
+    "startedAt": "2026-10-10",
+    "finishedAt": "",
+    "bangumiId": null,
+    "bangumiScore": 0,
+    "tmdbId": 1396,
+    "tmdbType": "tv",
+    "tmdbScore": 9,
+    "createdAt": "2026-10-10T01:59:47.655Z",
+    "updatedAt": "2026-10-10T02:06:54.259Z"
+  }
+]

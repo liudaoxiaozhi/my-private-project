@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CalendarDays, Newspaper } from 'lucide-react';
 import AppImage from './AppImage';
 import type { CardItem } from '../lib/content';
 
@@ -24,7 +25,7 @@ export default function LatestPostsCarousel({ posts }: { posts: CardItem[] }) {
   const currentPost = posts[currentIndex];
 
   return (
-    <div data-glow data-vt-card className="glass-card md:col-span-4 overflow-hidden relative group min-h-[420px] h-full flex flex-col">
+    <div data-glow data-vt-card className="glass-card group relative flex h-full min-h-[340px] flex-col overflow-hidden lg:min-h-[420px]">
 
       {/* 整个卡片的点击跳转区域 */}
       <Link href={currentPost.slug === 'none' ? '#' : `/posts/${currentPost.slug}`} className="absolute inset-0 z-20" aria-label={`阅读 ${currentPost.title}`} />
@@ -39,28 +40,34 @@ export default function LatestPostsCarousel({ posts }: { posts: CardItem[] }) {
           transition={{ duration: 0.8 }}
           className="absolute inset-0 z-0"
         >
-          <AppImage data-vt-cover src={currentPost.cover} fill sizes="(min-width: 1024px) 400px, 100vw" className="w-full h-full object-cover opacity-90 transition-transform duration-1000 group-hover:scale-105" alt={currentPost.title} />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+          <AppImage data-vt-cover src={currentPost.cover} fill sizes="(min-width: 1024px) 400px, 100vw" className="h-full w-full object-cover opacity-90 transition-transform duration-1000 group-hover:scale-105" alt={currentPost.title} />
+          {/* 上下两道暗角：顶部压住卡片标题，底部压住文章标题和摘要 */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/40"></div>
         </motion.div>
       </AnimatePresence>
 
       {/* 文本内容区 */}
-      <div className="relative z-10 flex flex-col justify-end p-6 w-full mt-auto h-full pointer-events-none">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="px-3 py-1 bg-indigo-500/80 backdrop-blur-lg rounded-full text-[10px] text-white font-black uppercase lab-label tracking-widest shadow-lg">Latest Insight</span>
+      <div className="pointer-events-none relative z-10 flex h-full flex-1 flex-col p-5 sm:p-6">
+        <h2 className="flex items-center gap-2 text-sm font-bold text-white drop-shadow-sm">
+          <Newspaper className="h-4 w-4 text-indigo-300" aria-hidden="true" />
+          最新文章
+        </h2>
+
+        <div className="mt-auto pt-6">
           {currentPost.formattedDate && (
-            <span className="px-2 py-1 bg-black/40 backdrop-blur-md border border-white/20 rounded-full text-[10px] text-white/90 font-mono tracking-wider">
-              <i className="ri-time-line mr-1"></i>{currentPost.formattedDate}
-            </span>
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-white/75 tabular-nums">
+              <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+              {currentPost.formattedDate}
+            </p>
           )}
+          <h3 className="mb-2 line-clamp-2 text-xl font-bold text-white drop-shadow-md transition-transform group-hover:-translate-y-0.5 sm:text-2xl">{currentPost.title}</h3>
+          <p className="line-clamp-3 text-sm text-white/75 drop-shadow-sm">{currentPost.description}</p>
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2 group-hover:-translate-y-1 transition-transform drop-shadow-md">{currentPost.title}</h2>
-        <p className="text-sm text-gray-300 line-clamp-3 drop-shadow-sm mb-6">{currentPost.description}</p>
       </div>
 
-      {/* 底部导航小圆点 (放在可点击的 Link 层之上) */}
+      {/* 导航小圆点：和卡片标题同一行，放在可点击的 Link 层之上 */}
       {posts.length > 1 && (
-        <div className="absolute bottom-4 right-6 z-30 flex gap-2">
+        <div className="absolute right-5 top-5 z-30 flex h-5 items-center gap-1.5 sm:right-6 sm:top-6">
           {posts.map((_, i) => (
             <button
               key={i}
@@ -68,7 +75,7 @@ export default function LatestPostsCarousel({ posts }: { posts: CardItem[] }) {
                 e.stopPropagation(); // 阻止触发父级的外层跳转
                 setCurrentIndex(i);
               }}
-              className={`h-1.5 rounded-full transition-all duration-500 ${i === currentIndex ? 'w-6 bg-indigo-400' : 'w-2 bg-white/40 hover:bg-white/80'}`}
+              className={`h-1.5 rounded-full transition-all duration-500 ${i === currentIndex ? 'w-5 bg-indigo-400' : 'w-1.5 bg-white/50 hover:bg-white/90'}`}
               aria-label={`切换到第 ${i + 1} 篇文章`}
             />
           ))}

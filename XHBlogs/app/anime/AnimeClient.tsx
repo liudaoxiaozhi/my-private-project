@@ -1,7 +1,10 @@
 'use client';
-// app/anime/AnimeClient.tsx —— 追番页主体：统计、分栏、筛选、卡片墙；本地开发模式下可添加 / 编辑
+// app/anime/AnimeClient.tsx —— 追番页主体：统计、分栏、筛选、卡片墙；本地开发模式或登录网页后台后可添加 / 编辑
 import { useEffect, useMemo, useState } from 'react';
-import { Clapperboard, Plus, Search } from 'lucide-react';
+import Link from 'next/link';
+import { Clapperboard, Filter, Plus, Search, SearchX } from 'lucide-react';
+import EmptyState from '../../components/EmptyState';
+import PageHeader, { FilterChip } from '../../components/PageHeader';
 import { GLASS } from '../../components/novel/novelStyles';
 import { useToast } from '../../components/ToastProvider';
 import AnimeCard from './AnimeCard';
@@ -166,17 +169,12 @@ export default function AnimeClient({ initialEntries, editable: buildEditable, i
 
   return (
     <>
-      <header className={`${GLASS} px-5 py-6 sm:px-8 sm:py-8`}>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="flex items-center gap-2.5 text-3xl font-black text-slate-900 dark:text-white sm:text-4xl">
-              <Clapperboard className="text-indigo-500" size={30} /> 追番
-            </h1>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              {entries.length > 0 ? `在看、想看和看过的番剧与电影，共 ${entries.length} 部` : '还没有记录'}
-            </p>
-          </div>
-          {editable && (
+      <PageHeader
+        title="追番"
+        icon={<Clapperboard size={30} />}
+        subtitle={entries.length > 0 ? `在看、想看和看过的番剧与电影，共 ${entries.length} 部` : '还没有记录'}
+        actions={
+          editable && (
             <button
               type="button"
               onClick={() => setDialog({ type: 'create' })}
@@ -184,11 +182,11 @@ export default function AnimeClient({ initialEntries, editable: buildEditable, i
             >
               <Plus size={16} strokeWidth={3} /> 添加
             </button>
-          )}
-        </div>
-
+          )
+        }
+      >
         {entries.length > 0 && (
-          <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+          <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
             <Stat label="正在看" value={counts.watching} />
             <Stat label="已看完" value={counts.completed} />
             <Stat label={stats.movies > 0 ? `累计集数 · 另有 ${stats.movies} 部电影` : '累计看过的集数'} value={stats.episodes} />
@@ -196,18 +194,11 @@ export default function AnimeClient({ initialEntries, editable: buildEditable, i
           </div>
         )}
 
-        <nav aria-label="状态" className="mt-5 flex flex-wrap gap-2">
+        <nav aria-label="状态" className="flex flex-wrap gap-2">
           {tabs.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
-              aria-pressed={tab === t}
-              className={`rounded-full px-3.5 py-1.5 text-sm font-bold ring-1 transition-colors duration-300 ${tab === t ? 'bg-indigo-500 text-white ring-indigo-500 dark:bg-indigo-600' : 'bg-white/60 text-slate-700 ring-white/50 hover:bg-indigo-500 hover:text-white dark:bg-slate-900/40 dark:text-slate-200 dark:ring-white/10 dark:hover:bg-indigo-600'}`}
-            >
+            <FilterChip key={t} active={tab === t} count={counts[t]} onClick={() => setTab(t)}>
               {t === 'all' ? '全部' : STATUS_LABEL[t]}
-              <span className="ml-1.5 tabular-nums opacity-60">{counts[t]}</span>
-            </button>
+            </FilterChip>
           ))}
         </nav>
 
@@ -240,29 +231,52 @@ export default function AnimeClient({ initialEntries, editable: buildEditable, i
             </select>
           </div>
         )}
-      </header>
+      </PageHeader>
 
       {visible.length === 0 ? (
-        <div className={`${GLASS} mt-6 px-6 py-14 text-center text-sm text-slate-600 dark:text-slate-400`}>
-          {entries.length === 0 ? (
-            editable ? (
-              <>
-                <p>还没有追番记录。</p>
+        entries.length === 0 ? (
+          editable ? (
+            <EmptyState
+              className="mt-6"
+              icon={<Clapperboard size={28} />}
+              title="还没有追番记录"
+              description="搜一部番剧、电影或电视剧加进来，进度和评分都记在这里。"
+              action={
                 <button
                   type="button"
                   onClick={() => setDialog({ type: 'create' })}
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-indigo-500 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-600"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-600"
                 >
                   <Plus size={15} strokeWidth={3} /> 搜一部番剧 / 电影 / 电视剧
                 </button>
-              </>
-            ) : (
-              <p>还没有追番记录。在本地运行「本地预览」就能在这个页面上添加。</p>
-            )
+              }
+            />
           ) : (
-            <p>这里还没有符合条件的番剧。</p>
-          )}
-        </div>
+            <EmptyState
+              className="mt-6"
+              icon={<Clapperboard size={28} />}
+              title="还没有追番记录"
+              description={
+                <>
+                  登录后台{' '}
+                  <Link href="/admin" className="font-bold text-indigo-500 hover:underline dark:text-indigo-400">
+                    /admin
+                  </Link>{' '}
+                  后回到这一页，点「添加」就能搜番剧或影视；TMDB / Bangumi 密钥在后台「追番与密钥」里填。
+                </>
+              }
+            />
+          )
+        ) : query.trim() ? (
+          <EmptyState
+            className="mt-6"
+            icon={<SearchX size={28} />}
+            title={`没有找到「${query.trim()}」`}
+            description="换个关键词试试，或者切到「全部」分栏、「全部类型」再搜。"
+          />
+        ) : (
+          <EmptyState className="mt-6" icon={<Filter size={28} />} title="这里还是空的" description="这个分栏或类型下还没有番剧，换一个看看。" />
+        )
       ) : (
         <section aria-label="追番列表" className={`${GLASS} mt-6 p-3 sm:p-5`}>
           <ul className="grid grid-cols-2 gap-1 sm:grid-cols-3 sm:gap-2 lg:grid-cols-5">
@@ -285,7 +299,7 @@ export default function AnimeClient({ initialEntries, editable: buildEditable, i
 
       {editable && (
         <p className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400">
-          本地编辑模式：改动直接保存在 <code className="rounded bg-black/5 px-1 dark:bg-white/10">data/anime.json</code>，线上只展示不能改。
+          编辑模式：改动保存在 <code className="rounded bg-black/5 px-1 dark:bg-white/10">data/anime.json</code>（线上会提交到 GitHub），访客只能看不能改。
         </p>
       )}
 

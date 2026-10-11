@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
+import { Disc3 } from 'lucide-react';
 import { useMusic } from './MusicProvider';
 // 🌟 核心引入：Next.js 路由钩子
 import { useRouter } from 'next/navigation';
@@ -120,7 +121,7 @@ export default function CloudPlayer() {
                 <circle cx="34" cy="7" r="5" className="fill-slate-300 dark:fill-slate-500" />
                 <circle cx="34" cy="7" r="2" className="fill-slate-500 dark:fill-slate-300" />
                 <path d="M34 7 L 30 40 L 20 54" fill="none" strokeWidth="2.5" strokeLinecap="round" className="stroke-slate-300 dark:stroke-slate-400" />
-                <rect x="14" y="51" width="9" height="6" rx="1.5" transform="rotate(-35 18 54)" className="fill-pink-400" />
+                <rect x="14" y="51" width="9" height="6" rx="1.5" transform="rotate(-35 18 54)" className="fill-indigo-400" />
               </svg>
             </div>
           ) : (
@@ -139,7 +140,10 @@ export default function CloudPlayer() {
 
           <div className="flex-col overflow-hidden w-full">
             <div className="flex items-center justify-between mb-1">
-              <span className="lab-label text-[10px] font-black text-indigo-500 dark:text-indigo-400 tracking-widest uppercase bg-white/50 dark:bg-slate-900/50 px-2 py-0.5 rounded-sm shadow-sm transition-colors duration-700">{siteConfig.vinylPlayer ? (isPlaying ? 'Now Spinning' : 'Paused') : 'Cloud Music'}</span>
+              <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 transition-colors duration-700 dark:text-slate-400">
+                <Disc3 className={`h-4 w-4 text-indigo-500 dark:text-indigo-400 ${isPlaying ? 'motion-safe:animate-spin [animation-duration:4s]' : ''}`} aria-hidden="true" />
+                {isPlaying ? '正在播放' : '已暂停'}
+              </span>
             </div>
             <h3 className="text-xl font-bold text-slate-900 dark:text-white truncate drop-shadow-sm transition-colors duration-700">{currentSong.title}</h3>
             <p className="text-sm text-slate-700 dark:text-slate-300 font-medium truncate drop-shadow-sm transition-colors duration-700">{currentSong.artist}</p>

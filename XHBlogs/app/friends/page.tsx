@@ -8,10 +8,10 @@ export const metadata = {
 
 export default function FriendsPage() {
   return (
-    <div className="min-h-screen relative pb-20">
-      <div className="mt-28">
+    <div className="relative min-h-screen pb-24">
+      <main className="relative z-10 mx-auto mt-24 w-full max-w-6xl px-4 sm:mt-28 sm:px-6">
         <FriendsBoard />
-      </div>
+      </main>
     </div>
   );
 }

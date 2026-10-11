@@ -1,96 +1,70 @@
 "use client";
 import { useEffect, useState } from 'react';
+import { Music } from 'lucide-react';
 import { useMusic } from './MusicProvider';
 
+/** 首页歌词栏：和其他卡片一样的浅色玻璃卡，左边主题色小音符，中间逐字打出当前歌词，下面一行歌名 · 歌手 */
 export default function LyricBar() {
   const { isPlaying, currentLyric, currentSong } = useMusic();
-  const [displayedLyric, setDisplayedLyric] = useState("");
+  // 记下「打到了哪句的第几个字」；歌词一换，text 对不上就从空串重新开始，不用在 effect 里同步清空
+  const [typed, setTyped] = useState({ text: '', count: 0 });
 
   useEffect(() => {
-    setDisplayedLyric("");
+    if (!currentLyric) return;
     let i = 0;
-    const targetText = currentLyric || "";
-    if (!targetText) return;
-
     const typingInterval = setInterval(() => {
-      if (i <= targetText.length) {
-        setDisplayedLyric(targetText.slice(0, i));
-        i++;
-      } else {
-        clearInterval(typingInterval);
-      }
+      i++;
+      setTyped({ text: currentLyric, count: i });
+      if (i >= currentLyric.length) clearInterval(typingInterval);
     }, 50);
-
     return () => clearInterval(typingInterval);
   }, [currentLyric]);
 
   if (!currentSong) return null;
 
-  // 这里的波浪数据，方便循环渲染，减少代码冗余
-  const waves = [
-    { color: 'bg-indigo-400', delay: '0ms' },
-    { color: 'bg-purple-400', delay: '200ms' },
-    { color: 'bg-indigo-500', delay: '400ms' },
-    { color: 'bg-purple-500', delay: '100ms' },
-    { color: 'bg-indigo-300', delay: '300ms' },
-  ];
+  const displayedLyric = typed.text === currentLyric ? currentLyric.slice(0, typed.count) : '';
+  const meta = [currentSong.title, currentSong.artist].filter(Boolean).join(' · ');
 
   return (
     <>
       <style>{`
-        @keyframes cursorBlink {
+        @keyframes lyricCursorBlink {
           0%, 100% { opacity: 1; }
           50% { opacity: 0; }
         }
-        .animate-cursor {
-          animation: cursorBlink 0.8s step-end infinite;
+        .lyric-cursor {
+          animation: lyricCursorBlink 0.8s step-end infinite;
         }
-        /* 核心修改：让动画高度从 4px 到 28px */
-        @keyframes safeWave {
-          0%, 100% { height: 8px; }
-          50% { height: 28px; }
-        }
-        .safe-wave-active {
-          animation: safeWave 1s ease-in-out infinite;
+        @media (prefers-reduced-motion: reduce) {
+          .lyric-cursor { animation: none; }
         }
       `}</style>
 
-      <div className="w-full rounded-3xl bg-slate-900/80 dark:bg-slate-950/90 backdrop-blur-xl border border-white/10 shadow-2xl p-5 flex items-center justify-between transition-all duration-700 hover:shadow-indigo-500/20 group h-20">
+      <section
+        aria-label="当前歌词"
+        className="glass-card flex w-full items-center gap-3 px-5 py-3.5 transition-colors duration-700 sm:gap-4 sm:px-6"
+      >
+        <span
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-500 transition-opacity duration-500 dark:bg-indigo-400/15 dark:text-indigo-400 ${isPlaying ? '' : 'opacity-60'}`}
+          aria-hidden="true"
+        >
+          <Music className="h-4 w-4" strokeWidth={2.2} />
+        </span>
 
-        {/* 1. 音频波形动态部分：改用统一渲染逻辑实现过渡 */}
-        <div className="flex items-end justify-center gap-[4px] h-8 w-16">
-          {waves.map((wave, index) => (
-            <div
-              key={index}
-              className={`w-1.5 rounded-t-sm transition-all duration-500 ease-out ${
-                isPlaying 
-                  ? `${wave.color} safe-wave-active` 
-                  : 'h-1 bg-slate-600 shadow-none'
-              }`}
-              style={{
-                animationDelay: wave.delay,
-                // 当暂停时，强制回到 4px 高度
-                height: isPlaying ? undefined : '4px'
-              }}
-            ></div>
-          ))}
-        </div>
-
-        {/* 2. 歌词显示区 */}
-        <div className="flex-1 px-8 flex justify-center items-center overflow-hidden">
-          <p className="text-white text-lg font-bold tracking-widest truncate drop-shadow-[0_0_8px_rgba(99,102,241,0.8)]">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[15px] font-bold leading-snug tracking-wide text-slate-800 sm:text-base dark:text-slate-100">
             {displayedLyric}
-            <span className="inline-block w-[3px] h-5 bg-indigo-400 align-middle ml-1 shadow-[0_0_8px_rgba(99,102,241,0.8)] animate-cursor"></span>
+            <span className="lyric-cursor ml-0.5 inline-block h-[1em] w-[2px] translate-y-[2px] rounded-full bg-indigo-500 dark:bg-indigo-400" aria-hidden="true"></span>
+          </p>
+          <p className="mt-0.5 truncate text-xs font-medium text-slate-500 dark:text-slate-400">
+            {meta}
           </p>
         </div>
 
-        {/* 3. 右侧音乐图标 */}
-        <div className="w-16 flex justify-end">
-          <svg className={`w-6 h-6 text-indigo-400/50 transition-all duration-500 ${isPlaying ? 'animate-bounce' : 'opacity-30'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-          </svg>
-        </div>
-      </div>
+        <span className="hidden shrink-0 text-xs font-bold text-slate-500 sm:inline dark:text-slate-400">
+          {isPlaying ? '播放中' : '已暂停'}
+        </span>
+      </section>
     </>
   );
 }

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Images } from 'lucide-react';
 
 import SearchBar from '../components/SearchBar';
 import { siteConfig } from '../siteConfig';
@@ -77,27 +78,34 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 歌词栏 */}
-            <div className="w-full mt-[-10px]"><LyricBar/></div>
+            {/* 歌词栏（没有歌曲时整块不渲染，不会多出一道空隙） */}
+            <LyricBar/>
 
             {/* 第二行：文章轮播 + 照片墙 + 说说 + 主题切换 */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
 
               {/* 左侧：文章轮播 (电脑端占4列，手机端排最上面) */}
-              <div className="col-span-1 lg:col-span-4 flex flex-col min-h-[300px]">
+              <div className="col-span-1 lg:col-span-4 flex flex-col">
                 <LatestPostsCarousel posts={top5Posts} />
               </div>
 
               {/* 右侧：组合面板 (电脑端占8列) */}
               <div className="col-span-1 lg:col-span-8 flex flex-col gap-6">
 
-                {/* 照片墙大海报 */}
-                <Link data-glow href="/photowall" className="glass-card w-full overflow-hidden transition-all duration-700 hover:scale-[1.02] relative group min-h-[200px] sm:min-h-[220px] flex-shrink-0">
+                {/* 照片墙大海报：左上角是和其他卡片一致的小标题，左下角是最新相册 */}
+                <Link data-glow href="/photowall" className="glass-card group relative flex w-full min-h-[200px] flex-shrink-0 flex-col justify-between overflow-hidden p-5 transition-all duration-700 hover:scale-[1.02] sm:min-h-[220px] sm:p-6">
                   <AppImage src={latestAlbum.cover} alt={latestAlbum.title} fill sizes="(min-width: 1024px) 750px, 100vw" className="w-full h-full absolute inset-0 object-cover transition-transform duration-700 group-hover:scale-105 opacity-90" />
-                  <div className="absolute inset-0 bg-black/30 dark:bg-black/50 group-hover:bg-black/10 transition-colors duration-500"></div>
-                  <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 right-6">
-                    <h3 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 underline decoration-pink-400">{latestAlbum.title}</h3>
-                    <p className="text-white/90 text-sm sm:text-lg line-clamp-1">{latestAlbum.description}</p>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-black/40 transition-opacity duration-500 group-hover:opacity-80 dark:from-black/80 dark:via-black/30 dark:to-black/50"></div>
+                  <div className="relative z-10 flex items-center justify-between gap-3">
+                    <h2 className="flex items-center gap-2 text-sm font-bold text-white drop-shadow-sm">
+                      <Images className="h-4 w-4 text-indigo-300" aria-hidden="true" />
+                      照片墙
+                    </h2>
+                    {realPhotoCount > 0 && <span className="text-xs font-medium text-white/75 tabular-nums drop-shadow-sm">{realPhotoCount} 张</span>}
+                  </div>
+                  <div className="relative z-10 pt-6">
+                    <h3 className="line-clamp-1 text-xl font-bold text-white drop-shadow-md sm:text-2xl">{latestAlbum.title}</h3>
+                    <p className="mt-1 line-clamp-1 text-sm text-white/75 drop-shadow-sm">{latestAlbum.description}</p>
                   </div>
                 </Link>
 
@@ -116,7 +124,7 @@ export default function Home() {
             </div>
 
             {/* 底部数据面板 */}
-            <div className="w-full mt-4"><SiteDashboard/></div>
+            <SiteDashboard/>
           </main>
         </div>
       </div>

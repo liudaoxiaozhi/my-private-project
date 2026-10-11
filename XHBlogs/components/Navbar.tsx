@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, PanInfo } from 'framer-motion';
-import { ChevronDown, Search } from 'lucide-react';
+import { ChevronDown, Search, X } from 'lucide-react';
 import { siteConfig } from '../siteConfig';
 import { ALL_NAV_LINKS, NAV_ITEMS, isGroup, matchPath } from '../lib/navigation';
 import type { NavGroup, NavLink } from '../lib/navigation';
@@ -131,17 +131,12 @@ export default function Navbar() {
 
   // --- 🌟 物理引擎：手机端按钮拖拽逻辑 ---
   const dragY = useMotionValue(0);
-  const [constraints, setConstraints] = useState({ top: 0, bottom: 0 });
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const vh = window.innerHeight;
-      setConstraints({
-        top: -(vh / 2) + 80,
-        bottom: (vh / 2) - 80
-      });
-    }
-  }, []);
+  // 拖动范围：上下各留 80px。约束值不进 DOM，服务端给 0、客户端首帧直接算好，不会有水合差异
+  const [constraints] = useState(() => {
+    if (typeof window === 'undefined') return { top: 0, bottom: 0 };
+    const half = window.innerHeight / 2;
+    return { top: -half + 80, bottom: half - 80 };
+  });
 
   useEffect(() => {
     if (isMobileMenuOpen) rawRotation.set(0);
@@ -201,9 +196,14 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* 📱 手机端：可拖拽吸附的触发球 */}
+      {/* 📱 手机端：贴在右边缘、可上下拖动的毛玻璃小把手。
+          可见部分只有 24px 宽，按钮本身 40×64，向左多出的透明区域只用来扩大点按范围 */}
       <div className="md:hidden">
         <motion.button
+          type="button"
+          aria-label="打开导航菜单"
+          aria-expanded={isMobileMenuOpen}
+          title="导航菜单（可上下拖动）"
           drag="y"
           dragConstraints={constraints}
           dragElastic={0.1}
@@ -214,13 +214,13 @@ export default function Navbar() {
               setIsMobileMenuOpen(true);
             }
           }}
-          className={`fixed top-1/2 right-0 -translate-y-1/2 w-12 h-28 bg-indigo-500/80 backdrop-blur-xl rounded-l-full shadow-[-5px_0_20px_rgba(99,102,241,0.4)] z-[60] flex items-center justify-center transition-all duration-500 border-y border-l border-white/30 touch-none ${isMobileMenuOpen ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
+          // 只过渡 translate / opacity：transform 由拖拽逐帧写入，不能被 CSS 过渡拖慢
+          className={`group fixed top-1/2 right-0 -translate-y-1/2 z-[60] flex h-16 w-10 items-center justify-end touch-none transition-[translate,opacity] duration-300 ${isMobileMenuOpen ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
         >
-          <div className="flex flex-col gap-1.5 items-center justify-center mr-2">
-            <div className="w-1.5 h-1.5 bg-white/90 rounded-full"></div>
-            <div className="w-1.5 h-1.5 bg-white/90 rounded-full"></div>
-            <div className="w-1.5 h-1.5 bg-white/90 rounded-full"></div>
-          </div>
+          <span className="flex h-14 w-6 items-center justify-center gap-[3px] rounded-l-2xl border border-r-0 border-white/40 bg-white/60 pl-0.5 shadow-md ring-1 ring-black/5 backdrop-blur-md transition-transform duration-200 group-active:scale-95 dark:border-white/10 dark:bg-slate-800/60 dark:ring-white/10">
+            <span className="h-5 w-[3px] rounded-full bg-indigo-500/70 dark:bg-indigo-400/80" />
+            <span className="h-5 w-[3px] rounded-full bg-indigo-500/40 dark:bg-indigo-400/50" />
+          </span>
         </motion.button>
 
         {/* 2. 居中展开的巨型全圆转轴 */}
@@ -232,7 +232,7 @@ export default function Navbar() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[65]"
+                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[65]"
               />
 
               <motion.div
@@ -246,11 +246,16 @@ export default function Navbar() {
                   ref={wheelRef}
                   style={{ rotate: smoothRotation }}
                   onPan={handlePan}
-                  className="w-full h-full rounded-full border border-white/30 dark:border-slate-500/50 bg-white/40 dark:bg-slate-800/50 backdrop-blur-3xl shadow-[0_0_50px_rgba(0,0,0,0.3)] pointer-events-auto relative cursor-grab active:cursor-grabbing"
+                  className="w-full h-full rounded-full border border-white/40 dark:border-white/10 bg-white/55 dark:bg-slate-800/55 ring-1 ring-black/5 dark:ring-white/5 backdrop-blur-xl shadow-2xl pointer-events-auto relative cursor-grab active:cursor-grabbing"
                 >
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-700 border-4 border-slate-300 dark:border-slate-500 flex items-center justify-center shadow-inner z-10">
-                    <button onClick={() => setIsMobileMenuOpen(false)} className="w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center text-white font-black shadow-lg hover:bg-red-500 hover:rotate-90 transition-all duration-300 active:scale-95">
-                      ✕
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-white/50 dark:bg-slate-900/40 ring-1 ring-black/5 dark:ring-white/10 flex items-center justify-center shadow-inner z-10">
+                    <button
+                      type="button"
+                      aria-label="关闭导航菜单"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="w-12 h-12 rounded-full border border-white/60 bg-white/80 dark:border-white/10 dark:bg-slate-800/80 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-md hover:text-indigo-600 dark:hover:text-indigo-400 hover:rotate-90 transition-all duration-300 active:scale-95"
+                    >
+                      <X size={20} strokeWidth={2.5} aria-hidden="true" />
                     </button>
                   </div>
 
@@ -278,10 +283,11 @@ export default function Navbar() {
                                 openCommandPalette();
                               }
                             }}
-                            className={`flex items-center justify-center w-full h-full rounded-full transition-all duration-300 ${
-                              isActive 
-                                ? 'bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.8)] scale-110' 
-                                : 'bg-white/90 dark:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-md hover:scale-110 border border-white/50 dark:border-slate-600'
+                            aria-current={isActive ? 'page' : undefined}
+                            className={`flex items-center justify-center w-full h-full rounded-full border transition-all duration-300 ${
+                              isActive
+                                ? 'border-indigo-400/60 bg-indigo-500 text-white shadow-lg shadow-indigo-500/40 scale-110'
+                                : 'border-white/60 bg-white/80 text-slate-700 shadow-md hover:scale-110 hover:text-indigo-600 dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:text-indigo-400'
                             }`}
                           >
                             <span className="text-[11px] font-black">{link.name}</span>

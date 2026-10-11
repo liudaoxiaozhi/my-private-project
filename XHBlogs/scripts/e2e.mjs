@@ -23,9 +23,11 @@ const ADMIN_ROOT = path.resolve('.e2e-admin-root');
 /** 后台测试的起点：文章、数据、设置的副本，加三首假的歌（几 KB 的占位文件） */
 function seedAdminRoot() {
   rmSync(ADMIN_ROOT, { recursive: true, force: true });
-  for (const item of ['posts', 'chatters', 'moments', 'data', 'siteConfig.overrides.json', 'app/about/about.md']) {
+  for (const item of ['posts', 'chatters', 'moments', 'data', 'app/about/about.md']) {
     if (existsSync(item)) cpSync(item, path.join(ADMIN_ROOT, item), { recursive: true });
   }
+  // 设置从「全是默认值」开始：仓库里的 overrides 是站长在后台改过的真实设置，测试不能依赖它
+  writeFileSync(path.join(ADMIN_ROOT, 'siteConfig.overrides.json'), '{}\n');
   mkdirSync(path.join(ADMIN_ROOT, 'public/music'), { recursive: true });
   for (const name of ['01. 歌手甲 - 第一首.mp3', '02. 歌手乙 - 第二首.mp3', '03. 歌手丙 - 第三首.mp3']) {
     writeFileSync(path.join(ADMIN_ROOT, 'public/music', name), Buffer.alloc(4096, 1));

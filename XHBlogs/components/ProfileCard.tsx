@@ -1,65 +1,66 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
+import { ArrowUpRight } from 'lucide-react';
 import { siteConfig } from '../siteConfig';
 import { useToast } from './ToastProvider';
 import SocialLinks from './SocialLinks';
 import AppImage from './AppImage';
 
+/**
+ * 首页名片：上面头像 + 名字 + 一句话简介，中间一排三个统计（随卡片高度伸展、内容居中，不留大块空白），底部社交按钮。
+ * 整张卡点击去「关于」页。
+ */
 export default function ProfileCard({ postCount, chatterCount, photoCount }: { postCount: number, chatterCount: number, photoCount: number }) {
   const router = useRouter();
   const { showToast } = useToast();
 
-
   return (
     <div data-glow
       onClick={() => router.push('/about')}
-      className="glass-card md:col-span-7 p-5 sm:p-6 md:p-8 flex flex-col justify-between transition-all duration-700 hover:scale-[1.01] cursor-pointer group relative overflow-hidden h-full min-h-[220px] md:min-h-[280px]"
+      className="glass-card group relative flex h-full cursor-pointer flex-col gap-5 overflow-hidden p-5 transition-all duration-700 hover:scale-[1.01] sm:p-6 md:p-7"
     >
-      <div className="flex items-start justify-between relative z-10">
-        <div className="flex items-center gap-4 md:gap-6 w-full">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-xl md:rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-500 p-1 shadow-lg flex-shrink-0 transition-transform duration-500 group-hover:rotate-3">
-            <AppImage src={siteConfig.avatarUrl} alt={siteConfig.authorName} width={192} height={192} loading="eager" className="w-full h-full rounded-lg md:rounded-xl object-cover bg-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            {/* 🌟 核心修复点：
-                1. 增加了 pb-1 (padding-bottom) 给字母降部留空间
-                2. 增加了 leading-snug 确保行高不至于太扁
-            */}
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-1 md:mb-2 pb-1 leading-snug tracking-wider transition-colors duration-700 truncate">
-              {siteConfig.authorName}
-            </h1>
-            <p className="text-xs sm:text-sm md:text-base text-slate-700 dark:text-slate-300 font-medium leading-relaxed max-w-md transition-colors duration-700 line-clamp-2 md:line-clamp-none">
-              {siteConfig.bio}
-            </p>
-          </div>
+      {/* 头像 + 名字 + 简介 */}
+      <div className="flex items-center gap-4 md:gap-5">
+        <div className="h-16 w-16 flex-shrink-0 rounded-2xl bg-gradient-to-tr from-indigo-500 to-indigo-300 p-[3px] shadow-lg transition-transform duration-500 group-hover:rotate-3 sm:h-20 sm:w-20">
+          <AppImage src={siteConfig.avatarUrl} alt={siteConfig.authorName} width={192} height={192} loading="eager" className="h-full w-full rounded-[13px] bg-white object-cover" />
         </div>
-      </div>
-
-      <div className="flex flex-col md:flex-row items-center md:items-end justify-between mt-6 md:mt-8 gap-5 md:gap-6 relative z-10">
-        <div className="flex gap-2 sm:gap-6 w-full md:w-auto justify-between sm:justify-around md:justify-start px-2 sm:px-0">
-          <StatItem count={postCount} label="文章" color="text-indigo-600 dark:text-indigo-400" />
-          <div className="w-px h-8 md:h-10 bg-slate-300/50 dark:bg-slate-700 hidden md:block"></div>
-          <StatItem count={chatterCount} label="杂谈" color="text-purple-600 dark:text-purple-400" />
-          <div className="w-px h-8 md:h-10 bg-slate-300/50 dark:bg-slate-700 hidden md:block"></div>
-          <StatItem count={photoCount} label="照片" color="text-pink-600 dark:text-pink-400" />
+        <div className="min-w-0 flex-1">
+          {/* leading-snug + pb-0.5 给字母降部留空间 */}
+          <h1 className="truncate pb-0.5 text-xl font-bold leading-snug tracking-wide text-slate-900 transition-colors duration-700 sm:text-2xl md:text-3xl dark:text-white">
+            {siteConfig.authorName}
+          </h1>
+          <p className="mt-0.5 truncate text-sm font-medium text-slate-500 transition-colors duration-700 dark:text-slate-400">
+            {siteConfig.bio}
+          </p>
         </div>
-
-        <SocialLinks
-          size="md"
-          className="justify-center md:justify-end w-full md:w-auto"
-          onCopied={(label, value) => showToast(`✨ ${label}已复制到剪贴板: ${value}`, 'success')}
+        <ArrowUpRight
+          className="hidden h-5 w-5 flex-shrink-0 self-start text-slate-400 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-indigo-500 sm:block dark:text-slate-500 dark:group-hover:text-indigo-400"
+          aria-hidden="true"
         />
       </div>
+
+      {/* 统计：一排三格，细分隔线；flex-1 吃掉剩余高度，数字在其中垂直居中 */}
+      <dl className="glass-panel grid flex-1 grid-cols-3 items-center divide-x divide-slate-200/80 rounded-2xl py-3 dark:divide-white/10">
+        <StatItem count={postCount} label="文章" />
+        <StatItem count={chatterCount} label="杂谈" />
+        <StatItem count={photoCount} label="照片" />
+      </dl>
+
+      <SocialLinks
+        size="md"
+        className="justify-center sm:justify-start"
+        onCopied={(label, value) => showToast(`✨ ${label}已复制到剪贴板: ${value}`, 'success')}
+      />
     </div>
   );
 }
 
-function StatItem({ count, label, color }: { count: number, label: string, color: string }) {
+function StatItem({ count, label }: { count: number, label: string }) {
   return (
-    <div className="text-center group/stat px-2">
-      <div className={`text-xl md:text-2xl font-black ${color} transition-transform group-hover/stat:scale-110`}>{count}</div>
-      <div className="lab-label text-[9px] md:text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-0.5">{label}</div>
+    <div className="group/stat flex flex-col-reverse items-center gap-0.5 px-2 py-1">
+      <dt className="lab-label text-xs font-medium text-slate-500 dark:text-slate-400">{label}</dt>
+      <dd className="text-2xl font-black leading-none text-slate-900 tabular-nums transition-colors group-hover/stat:text-indigo-600 md:text-[1.75rem] dark:text-white dark:group-hover/stat:text-indigo-400">{count}</dd>
     </div>
   );
 }

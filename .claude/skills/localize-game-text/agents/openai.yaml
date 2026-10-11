@@ -1,0 +1,4 @@
+interface:
+  display_name: "游戏汉化补丁构建与修复"
+  short_description: "含 Terra 试翻与 Sol 质量门槛的完整游戏汉化补丁流程"
+  default_prompt: "Use $localize-game-text to build or repair a reversible Chinese localization patch, trial Terra rough translation with an independent Sol quality gate, and verify source, package, installation, and runtime evidence."

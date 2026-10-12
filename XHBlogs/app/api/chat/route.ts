@@ -46,7 +46,7 @@ export async function POST(req: Request): Promise<Response> {
     return jsonResponse({ error: `Message must be 1-${MAX_MESSAGE_LENGTH} characters` }, 400);
   }
 
-  // 4. 读取密钥：环境变量，或网页后台「追番与密钥」里加密保存的（绝不写进 siteConfig）
+  // 4. 读取密钥：环境变量，或网页后台「书影音与密钥」里加密保存的（绝不写进 siteConfig）
   const apiKey = (process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || '').trim() || (await getSecret('GEMINI_API_KEY'));
   if (!apiKey) {
     console.error('[api/chat] 未配置 GEMINI_API_KEY');

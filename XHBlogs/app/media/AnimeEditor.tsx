@@ -1,5 +1,7 @@
 'use client';
-// app/anime/AnimeEditor.tsx —— 添加（先搜 Bangumi / TMDB，再确认信息）/ 编辑追番条目
+// app/media/AnimeEditor.tsx —— 添加（先搜 Bangumi / TMDB / Open Library，再确认信息）/ 编辑书影音条目
+//
+// 状态是「想看 / 想读 / 想听」时多出想看清单的字段：优先级、想看的理由、在哪看（这些字段换了状态也会保留）。
 import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { ExternalLink, Loader2, Minus, PencilLine, Plus, RefreshCw, Trash2 } from 'lucide-react';
@@ -10,26 +12,40 @@ import { AnimeCover } from './AnimeCard';
 import {
   KIND_LABEL,
   KIND_ORDER,
-  STATUS_LABEL,
+  PLATFORM_SUGGESTIONS,
+  PRIORITY_MAX,
+  PROGRESS_UNIT,
+  SECTION_DEFAULT_KIND,
   STATUS_ORDER,
   bangumiUrl,
+  creatorLabel,
+  dateLabels,
   emptyInput,
   hasParts,
   isSingleMovie,
+  openLibraryUrl,
+  sectionOf,
+  statusLabel,
   toInput,
   tmdbUrl,
+  verbOf,
   withProgress,
   withStatus,
   type AnimeEntry,
   type AnimeInput,
+  type AnimeKind,
+  type MediaSection,
   type TmdbDetail,
+  type WorkIds,
 } from '../../lib/anime';
 
 interface AnimeEditorProps {
   /** 有值时为编辑模式 */
   entry: AnimeEntry | null;
-  /** 已在列表里的同一部（按 Bangumi / TMDB 编号），用来提示重复添加 */
-  findExisting: (ids: Pick<AnimeInput, 'bangumiId' | 'tmdbId' | 'tmdbType'>) => AnimeEntry | undefined;
+  /** 新建时的默认类型（页面当前所在的大类 / 小类） */
+  defaultKind?: AnimeKind;
+  /** 已在列表里的同一部（按 Bangumi / TMDB / Open Library 编号），用来提示重复添加 */
+  findExisting: (ids: WorkIds) => AnimeEntry | undefined;
   credentials: Credentials;
   onCredentialSaved: (service: CredentialService, nickname?: string) => void;
   onSave: (input: AnimeInput) => Promise<void>;
@@ -65,6 +81,7 @@ const parseTags = (text: string): string[] => [...new Set(text.split(/[,，、\s
 
 export default function AnimeEditor({
   entry,
+  defaultKind = 'anime',
   findExisting,
   credentials,
   onCredentialSaved,
@@ -95,8 +112,9 @@ export default function AnimeEditor({
     setDirty(true);
   };
 
-  const manual = (title: string) => {
-    setForm({ ...emptyInput(), title });
+  const manual = (title: string, section: MediaSection) => {
+    const kind = sectionOf(defaultKind) === section ? defaultKind : SECTION_DEFAULT_KIND[section];
+    setForm({ ...emptyInput(), kind, title });
     setTagsText('');
     setStep('form');
   };
@@ -160,6 +178,11 @@ export default function AnimeEditor({
 
   const isMovie = form.kind === 'movie';
   const multiPart = hasParts(form);
+  const unit = PROGRESS_UNIT[form.kind];
+  const verb = verbOf(form.kind);
+  const labels = dateLabels(form.kind);
+  const creator = creatorLabel(form.kind);
+  const platformLabel = `在哪${verb}`;
   const canRefresh = credentials.tmdb && !!form.tmdbId && (form.tmdbType === 'tv' || form.tmdbType === 'collection');
 
   const footer =
@@ -199,13 +222,14 @@ export default function AnimeEditor({
 
   return (
     <AnimeModal
-      title={entry ? `编辑：${entry.title}` : step === 'search' ? '添加追番' : '确认信息'}
+      title={entry ? `编辑：${entry.title}` : step === 'search' ? '添加到书影音' : '确认信息'}
       onClose={onClose}
       footer={footer}
       confirmClose={() => !dirty || window.confirm('还没保存，确定要关闭吗？')}
     >
       {step === 'search' ? (
         <AnimeSearch
+          initialSection={sectionOf(defaultKind)}
           credentials={credentials}
           onCredentialSaved={onCredentialSaved}
           findExisting={findExisting}
@@ -227,6 +251,21 @@ export default function AnimeEditor({
               <Field label="原名">
                 <input value={form.originalTitle} onChange={(e) => update({ originalTitle: e.target.value })} className={INPUT} maxLength={200} />
               </Field>
+              {creator && (
+                <Field label={creator}>
+                  <input value={form.creator} onChange={(e) => update({ creator: e.target.value })} className={INPUT} maxLength={100} />
+                </Field>
+              )}
+              {form.openLibraryKey && (
+                <a
+                  href={openLibraryUrl(form.openLibraryKey)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-x-1 text-xs font-bold text-indigo-500 hover:underline"
+                >
+                  Open Library {form.openLibraryKey} <ExternalLink size={12} />
+                </a>
+              )}
               {form.bangumiId && (
                 <a
                   href={bangumiUrl(form.bangumiId)}
@@ -266,7 +305,7 @@ export default function AnimeEditor({
             </div>
           </div>
 
-          <Field label="封面地址（Bangumi / TMDB 的封面保存时会自动下载到本地）">
+          <Field label="封面地址（Bangumi / TMDB / Open Library 的封面保存时会自动下载到本地）">
             <input
               value={form.cover}
               onChange={(e) => update({ cover: e.target.value })}
@@ -301,11 +340,54 @@ export default function AnimeEditor({
                   className={chip(form.status === s)}
                   aria-pressed={form.status === s}
                 >
-                  {STATUS_LABEL[s]}
+                  {statusLabel(s, form.kind)}
                 </button>
               ))}
             </div>
           </div>
+
+          {form.status === 'planned' && (
+            <div className="space-y-3 rounded-2xl bg-sky-500/5 p-4 ring-1 ring-sky-500/20">
+              <p className="text-xs font-black text-sky-700 dark:text-sky-300">想{verb}清单</p>
+              <div>
+                <span className="mb-1.5 block text-xs font-bold text-slate-500 dark:text-slate-400">优先级</span>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from({ length: PRIORITY_MAX + 1 }, (_, n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => update({ priority: n })}
+                      className={chip(form.priority === n)}
+                      aria-pressed={form.priority === n}
+                      aria-label={n === 0 ? '不设优先级' : `优先级 ${n}`}
+                    >
+                      {n === 0 ? '不设' : '★'.repeat(n)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <Field label={`为什么想${verb}`}>
+                <textarea
+                  value={form.wishReason}
+                  onChange={(e) => update({ wishReason: e.target.value })}
+                  rows={2}
+                  maxLength={500}
+                  className={`${INPUT} resize-y leading-relaxed`}
+                  placeholder="朋友安利、看了预告、想补的经典……"
+                />
+              </Field>
+              <Field label={platformLabel}>
+                <input value={form.platform} onChange={(e) => update({ platform: e.target.value })} className={INPUT} maxLength={40} />
+              </Field>
+              <div className="-mt-1 flex flex-wrap gap-1.5" role="group" aria-label={`${platformLabel}：常用`}>
+                {PLATFORM_SUGGESTIONS[sectionOf(form.kind)].map((p) => (
+                  <button key={p} type="button" onClick={() => update({ platform: p })} className={chip(form.platform === p)} aria-pressed={form.platform === p}>
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {multiPart && (
             <div>
@@ -330,7 +412,7 @@ export default function AnimeEditor({
                   type="button"
                   onClick={() => setProgress(form.progress - 1)}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
-                  aria-label="少看一集"
+                  aria-label={`少${verb}一${unit}`}
                 >
                   <Minus size={16} />
                 </button>
@@ -340,13 +422,13 @@ export default function AnimeEditor({
                   onChange={(e) => setProgress(toInt(e.target.value))}
                   placeholder="0"
                   className={`${INPUT_BASE} w-20 text-center tabular-nums`}
-                  aria-label="已看集数"
+                  aria-label={`已${verb}${unit}数`}
                 />
                 <button
                   type="button"
                   onClick={() => setProgress(form.progress + 1)}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
-                  aria-label="多看一集"
+                  aria-label={`多${verb}一${unit}`}
                 >
                   <Plus size={16} />
                 </button>
@@ -365,12 +447,14 @@ export default function AnimeEditor({
                   }}
                   placeholder="?"
                   className={`${INPUT_BASE} w-20 text-center tabular-nums`}
-                  aria-label="总集数"
+                  aria-label={`总${unit}数`}
                 />
-                <span className="text-sm text-slate-500 dark:text-slate-400">集</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">{unit}</span>
               </div>
               {form.totalEpisodes > 0 && form.progress > form.totalEpisodes && (
-                <p className="mt-1 text-xs text-amber-600">已看集数超过了总集数，保存时会按总集数计。</p>
+                <p className="mt-1 text-xs text-amber-600">
+                  已{verb}{unit}数超过了总{unit}数，保存时会按总{unit}数计。
+                </p>
               )}
             </div>
           )}
@@ -394,13 +478,13 @@ export default function AnimeEditor({
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Field label={isMovie ? '上映日期' : '首播日期'}>
+            <Field label={`${labels.air}日期`}>
               <input type="date" value={form.airDate} onChange={(e) => update({ airDate: e.target.value })} className={INPUT} />
             </Field>
-            <Field label="开始看">
+            <Field label={labels.start}>
               <input type="date" value={form.startedAt} onChange={(e) => update({ startedAt: e.target.value })} className={INPUT} />
             </Field>
-            <Field label="看完">
+            <Field label={labels.finish}>
               <input type="date" value={form.finishedAt} onChange={(e) => update({ finishedAt: e.target.value })} className={INPUT} />
             </Field>
           </div>
@@ -424,7 +508,7 @@ export default function AnimeEditor({
               rows={4}
               maxLength={2000}
               className={`${INPUT} resize-y leading-relaxed`}
-              placeholder="看完的感想、喜欢的角色、名场面……"
+              placeholder={`${labels.finish}的感想、喜欢的角色、印象深的片段……`}
             />
           </Field>
 

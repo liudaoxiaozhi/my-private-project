@@ -1,4 +1,4 @@
-// lib/server/outboundFetch.ts —— 追番访问外网（TMDB / Bangumi / 封面）用的 fetch：配置了代理就走代理（仅服务端）
+// lib/server/outboundFetch.ts —— 书影音访问外网（TMDB / Bangumi / Open Library / 封面）用的 fetch：配置了代理就走代理（仅服务端）
 //
 // Node 自带的 fetch 不会走系统代理（Clash、v2rayN 等），所以浏览器能打开 TMDB，本地服务器却可能连不上。
 // 在 .env.local 里加一行 HTTPS_PROXY=http://127.0.0.1:7890（端口换成代理软件的 HTTP 端口）即可。

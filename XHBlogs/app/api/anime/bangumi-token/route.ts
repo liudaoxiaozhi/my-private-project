@@ -1,4 +1,4 @@
-// app/api/anime/bangumi-token/route.ts —— 在追番页里登录 Bangumi：验证 Access Token 后保存（本地写进 .env.local，线上加密存进仓库）
+// app/api/anime/bangumi-token/route.ts —— 在书影音页里登录 Bangumi：验证 Access Token 后保存（本地写进 .env.local，线上加密存进仓库）
 import { NextResponse } from 'next/server';
 import { AnimeError, verifyBangumiToken } from '../../../../lib/server/animeStore';
 import { SECRET_PATTERN } from '../../../../lib/server/envFile';

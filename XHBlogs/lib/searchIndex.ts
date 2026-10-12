@@ -15,7 +15,8 @@ export interface SearchIndex {
   posts: SearchEntry[];
   chatters: SearchEntry[];
   books: SearchEntry[];
-  anime: SearchEntry[];
+  /** 书影音（data/anime.json） */
+  media: SearchEntry[];
 }
 
 export const SEARCH_INDEX_URL = '/search-index.json';

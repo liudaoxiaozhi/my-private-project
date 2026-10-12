@@ -40,8 +40,9 @@ npx playwright show-report                # 打开上次的测试报告（失败
 | `toolbox.spec.ts` | 工具箱：白噪音、今日御神签、召回桌宠 |
 | `easter-eggs.spec.ts` | ⌘K 命令面板、控制台 / 标题 / 科乐美秘籍彩蛋、节日飘落、桌宠的招呼 / 瞌睡 / 生气 |
 | `weather.spec.ts` | 天气：NEA / Open-Meteo 数据解析（模拟响应）、首页时间栏、雨 / 雷 / 雾等特效、桌宠和命令面板联动 |
+| `media.spec.ts` | 书影音：/anime 跳转、分类筛选和文案（想读 / 读过）、想看清单排序、登录后「开始读」 |
 | `support.ts` | 共用的准备工作（跳过开屏、默认主题、页面报错检查） |
-| `fixtures/` | 测试用的文章和杂谈 |
+| `fixtures/` | 测试用的文章和杂谈；`fixtures/data/` 里的数据文件（如书影音的 `anime.json`）测试时临时替换 `data/` 里的同名文件 |
 
 ## 注意
 

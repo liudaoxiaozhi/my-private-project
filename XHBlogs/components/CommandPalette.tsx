@@ -1,7 +1,7 @@
 "use client";
 // components/CommandPalette.tsx —— ⌘K / Ctrl+K 命令面板（也可以按 /，或点导航栏的搜索按钮、手机轮盘的「搜索」）
 //
-// - 搜：文章、杂谈、书架、追番（索引在构建时生成，第一次打开才下载，见 app/search-index.json/route.ts）
+// - 搜：文章、杂谈、书架、书影音（索引在构建时生成，第一次打开才下载，见 app/search-index.json/route.ts）
 // - 跳：全部栏目、最近看过的页面
 // - 做：切换日夜、播放 / 暂停音乐、随机看一篇、复制链接、回到顶部、召回桌宠
 // - 工具：特效档位、白噪音、今日御神签直接在面板里打开（手机上没有左下角工具箱，从这里用）
@@ -13,7 +13,7 @@ import { createPortal } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  ArrowLeft, ArrowUp, AudioWaveform, BookOpen, Clapperboard, Clock, CornerDownLeft, Dices, FileText,
+  ArrowLeft, ArrowUp, AudioWaveform, BookOpen, Clock, CornerDownLeft, Dices, FileText, LibraryBig,
   Link2, Moon, Music, PawPrint, Pause, Play, Search, SkipForward, Sparkles, Sun, MessageSquareText, Compass,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -256,7 +256,7 @@ export default function CommandPalette() {
       ...fromIndex(index?.posts, '文章', BookOpen),
       ...fromIndex(index?.chatters, '杂谈', MessageSquareText),
       ...fromIndex(index?.books, '书架', BookOpen),
-      ...fromIndex(index?.anime, '追番', Clapperboard),
+      ...fromIndex(index?.media, '书影音', LibraryBig),
     ];
   }, [open, isDark, toggleTheme, music, index, close, go, flash, weather]);
 
@@ -374,7 +374,7 @@ export default function CommandPalette() {
                       setActive(0);
                     }}
                     onKeyDown={onInputKey}
-                    placeholder="搜文章、杂谈、书架、追番，或输入命令……"
+                    placeholder="搜文章、杂谈、书架、书影音，或输入命令……"
                     role="combobox"
                     aria-expanded="true"
                     aria-controls="cmd-list"

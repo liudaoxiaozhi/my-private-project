@@ -1,6 +1,6 @@
 // lib/server/tmdb.ts —— TMDB（电影 / 电视剧）搜索与详情（仅服务端）
 //
-// Key：环境变量 TMDB_API_KEY，或在追番页「电影 / 电视剧」搜索里 / 网页后台「追番与密钥」里填（本地写进 .env.local，
+// Key：环境变量 TMDB_API_KEY，或在书影音页「影视 · TMDB」搜索里 / 网页后台的密钥板块里填（本地写进 .env.local，
 // 线上加密存进仓库，见 lib/server/admin/secrets.ts）：
 // v3 的 API Key 或 v4 的 Read Access Token（eyJ 开头）都可以。
 // 访问不了 api.themoviedb.org 时：在 .env.local 里配 HTTPS_PROXY 走本机代理（见 outboundFetch），
@@ -46,7 +46,7 @@ function unreachableMessage(error: unknown): string {
 
 async function tmdbFetch<T>(pathname: string, params: Record<string, string> = {}, keyOverride?: string): Promise<T> {
   const key = keyOverride ?? (await apiKey());
-  if (!key) throw new AnimeError('还没有配置 TMDB Key：在追番页「电影 / 电视剧」搜索里填一下', 400);
+  if (!key) throw new AnimeError('还没有配置 TMDB Key：在书影音页「影视 · TMDB」搜索里填一下', 400);
 
   const url = new URL(`${API_BASE}/3${pathname}`);
   url.searchParams.set('language', LANGUAGE);
@@ -122,6 +122,7 @@ export async function searchTmdb(keyword: string): Promise<SearchResult[]> {
       return {
         source: 'tmdb' as const,
         id: r.id,
+        key: null,
         mediaType: r.media_type,
         title: str(isMovie ? r.title : r.name, 200) || original,
         originalTitle: original,
@@ -133,6 +134,7 @@ export async function searchTmdb(keyword: string): Promise<SearchResult[]> {
         summary: str(r.overview, 160),
         tags: [],
         platform: isMovie ? '电影' : '电视剧',
+        creator: '',
       };
     });
 }

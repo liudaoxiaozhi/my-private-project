@@ -1,5 +1,5 @@
 // lib/navigation.ts —— 全站导航结构（导航栏、手机轮盘、⌘K 命令面板共用）
-import { Clapperboard, Images, Wallet } from 'lucide-react';
+import { Images, LibraryBig, Wallet } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface NavLink {
@@ -31,9 +31,9 @@ export const NAV_ITEMS: NavItem[] = [
   {
     name: '我的',
     children: [
+      { name: '书影音', href: '/media', Icon: LibraryBig, hint: '书 · 影 · 音' },
       { name: '照片墙', href: '/photowall', Icon: Images, hint: '相册与插画收藏' },
       { name: '账单', href: '/bills', Icon: Wallet, hint: '收支统计' },
-      { name: '追番', href: '/anime', Icon: Clapperboard, hint: '番剧与电影' },
     ],
   },
   { name: '友链', href: '/friends' },

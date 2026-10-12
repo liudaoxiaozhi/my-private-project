@@ -1,4 +1,4 @@
-// app/api/admin/secrets/route.ts —— 后台「追番与密钥」：GET 每个密钥的状态（不返回内容），PUT 保存 / 删除一个密钥
+// app/api/admin/secrets/route.ts —— 后台「书影音与密钥」：GET 每个密钥的状态（不返回内容），PUT 保存 / 删除一个密钥
 //
 // TMDB Key、Bangumi 令牌保存前先验证一下能用；Gemini Key 直接保存。
 import { adminRoute, AdminInputError, json, readJson } from '../../../../lib/server/admin/api';

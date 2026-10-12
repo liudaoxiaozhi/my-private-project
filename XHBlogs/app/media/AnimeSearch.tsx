@@ -1,6 +1,8 @@
 'use client';
-// app/anime/AnimeSearch.tsx —— 添加追番的第一步：从 Bangumi（动画）或 TMDB（电影 / 电视剧）搜索
+// app/media/AnimeSearch.tsx —— 添加到书影音的第一步：先选大类，再从对应的来源搜索
 //
+// 影视：Bangumi（动画 + 三次元）/ TMDB（电影 / 电视剧）；书：Bangumi 书籍 / Open Library；音乐：Bangumi 音乐。
+// 搜不到时随时可以手动填写，类型默认是当前大类的。
 // TMDB 的结果要再取一次详情：电视剧拿到每季集数；电影如果属于某个系列（如指环王），让用户选加单部还是整个系列。
 import { useEffect, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
@@ -8,52 +10,86 @@ import { ChevronLeft, ExternalLink, Film, KeyRound, Layers, Loader2, Search } fr
 import AppImage from '../../components/AppImage';
 import {
   KIND_LABEL,
-  STATUS_LABEL,
-  inputFromBangumi,
+  PROGRESS_UNIT,
+  SECTION_LABEL,
+  SECTION_ORDER,
+  inputFromSearch,
   parseTmdbLink,
+  statusLabel,
   type AnimeEntry,
   type AnimeInput,
+  type MediaSection,
   type SearchResult,
   type SearchSource,
   type TmdbDetail,
   type TmdbType,
+  type WorkIds,
 } from '../../lib/anime';
 
-type ExistingFinder = (ids: Pick<AnimeInput, 'bangumiId' | 'tmdbId' | 'tmdbType'>) => AnimeEntry | undefined;
+type ExistingFinder = (ids: WorkIds) => AnimeEntry | undefined;
 
 export type CredentialService = 'tmdb' | 'bangumi';
 /** 服务端是否已保存 TMDB Key / Bangumi 令牌 */
 export type Credentials = Record<CredentialService, boolean>;
 
 interface AnimeSearchProps {
+  /** 一开始在哪个大类下搜（可以在弹窗里切换） */
+  initialSection: MediaSection;
   credentials: Credentials;
   onCredentialSaved: (service: CredentialService, nickname?: string) => void;
   findExisting: ExistingFinder;
   onDraft: (draft: AnimeInput) => void;
   onOpenExisting: (entry: AnimeEntry) => void;
-  onManual: (title: string) => void;
+  /** 手动填写：带上搜索框里的文字和当前大类 */
+  onManual: (title: string, section: MediaSection) => void;
   inputClassName: string;
 }
 
-const SOURCE_KEY = 'anime-search-source';
+interface SourceOption {
+  id: SearchSource;
+  label: string;
+  hint: string;
+  /** 搜索框下面的一句说明 */
+  note: string;
+}
 
-const SOURCES: Array<{ id: SearchSource; label: string; hint: string }> = [
-  { id: 'bangumi', label: '动画 · Bangumi', hint: '番名，或 Bangumi 条目链接 / 编号' },
-  { id: 'tmdb', label: '电影 / 电视剧 · TMDB', hint: '片名 / 剧名，或 TMDB 链接' },
-];
+const SOURCES: Record<MediaSection, SourceOption[]> = {
+  video: [
+    { id: 'bangumi', label: '动画 · Bangumi', hint: '番名，或 Bangumi 条目链接 / 编号', note: '自动填好封面、集数和首播日期。' },
+    { id: 'tmdb', label: '电影 / 电视剧 · TMDB', hint: '片名 / 剧名，或 TMDB 链接', note: '自动填好海报、每季集数；系列电影可以整套一起记。' },
+  ],
+  book: [
+    { id: 'bangumi', label: '书籍 · Bangumi', hint: '书名，或 Bangumi 条目链接 / 编号', note: '中文书、轻小说、漫画比较全；自动填好封面、作者和页数。' },
+    { id: 'openlibrary', label: 'Open Library', hint: '书名或作者（外文书更全）', note: '外文书比较全，不用密钥；自动填好封面、作者和页数。' },
+  ],
+  music: [{ id: 'bangumi', label: '音乐 · Bangumi', hint: '专辑 / 单曲名，或 Bangumi 条目链接 / 编号', note: '自动填好封面、艺人和曲目数。' }],
+};
 
-function readSource(): SearchSource {
+/** 每个大类记住上次用的来源（影视沿用追番时期的键） */
+const SOURCE_KEY: Record<MediaSection, string> = {
+  video: 'anime-search-source',
+  book: 'media-search-source-book',
+  music: 'media-search-source-music',
+};
+
+const SOURCE_NAME: Record<SearchSource, string> = { bangumi: 'Bangumi', tmdb: 'TMDB', openlibrary: 'Open Library' };
+
+function readSource(section: MediaSection): SearchSource {
+  const options = SOURCES[section];
   try {
-    return localStorage.getItem(SOURCE_KEY) === 'tmdb' ? 'tmdb' : 'bangumi';
+    const stored = localStorage.getItem(SOURCE_KEY[section]);
+    return options.find((s) => s.id === stored)?.id ?? options[0].id;
   } catch {
-    return 'bangumi';
+    return options[0].id;
   }
 }
 
-const idsOf = (r: SearchResult): Pick<AnimeInput, 'bangumiId' | 'tmdbId' | 'tmdbType'> =>
-  r.source === 'bangumi'
-    ? { bangumiId: r.id, tmdbId: null, tmdbType: null }
-    : { bangumiId: null, tmdbId: r.id, tmdbType: r.mediaType };
+const idsOf = (r: SearchResult): WorkIds =>
+  r.source === 'tmdb'
+    ? { bangumiId: null, tmdbId: r.id, tmdbType: r.mediaType, openLibraryKey: null }
+    : r.source === 'openlibrary'
+      ? { bangumiId: null, tmdbId: null, tmdbType: null, openLibraryKey: r.key }
+      : { bangumiId: r.id, tmdbId: null, tmdbType: null, openLibraryKey: null };
 
 async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -202,6 +238,7 @@ function CredentialForm({
 }
 
 export default function AnimeSearch({
+  initialSection,
   credentials,
   onCredentialSaved,
   findExisting,
@@ -211,7 +248,8 @@ export default function AnimeSearch({
   inputClassName,
 }: AnimeSearchProps) {
   // 弹窗只在点击后挂载，不参与服务端渲染，可以直接读 localStorage
-  const [source, setSource] = useState<SearchSource>(readSource);
+  const [section, setSection] = useState<MediaSection>(initialSection);
+  const [source, setSource] = useState<SearchSource>(() => readSource(initialSection));
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -228,10 +266,19 @@ export default function AnimeSearch({
     setResults(null);
     setError('');
     try {
-      localStorage.setItem(SOURCE_KEY, next);
+      localStorage.setItem(SOURCE_KEY[section], next);
     } catch {
       // 无痕模式等情况下存不了，不影响使用
     }
+  };
+
+  const switchSection = (next: MediaSection) => {
+    if (next === section) return;
+    setSection(next);
+    setSource(readSource(next));
+    setEditingCredential(null);
+    setResults(null);
+    setError('');
   };
 
   const finish = (draft: AnimeInput) => {
@@ -266,7 +313,9 @@ export default function AnimeSearch({
     setLoading(true);
     setError('');
     try {
-      const data = await getJson<{ results?: SearchResult[] }>(`/api/anime/search?source=${source}&q=${encodeURIComponent(q)}`);
+      const data = await getJson<{ results?: SearchResult[] }>(
+        `/api/anime/search?source=${source}&section=${section}&q=${encodeURIComponent(q)}`,
+      );
       setResults(data.results ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : '搜索失败');
@@ -278,7 +327,7 @@ export default function AnimeSearch({
 
   const pick = (r: SearchResult) => {
     if (loadingKey) return;
-    if (r.source === 'bangumi') finish(inputFromBangumi(r));
+    if (r.source !== 'tmdb') finish(inputFromSearch(r));
     else if (r.mediaType) {
       const existing = findExisting(idsOf(r));
       if (existing) onOpenExisting(existing);
@@ -335,7 +384,8 @@ export default function AnimeSearch({
     );
   }
 
-  const current = SOURCES.find((s) => s.id === source)!;
+  const options = SOURCES[section];
+  const current = options.find((s) => s.id === source) ?? options[0];
   // TMDB 必须有 Key 才能搜；Bangumi 登录是可选的，只在用户点了「登录」时出现
   const formService: CredentialService | null =
     source === 'tmdb' && (!credentials.tmdb || editingCredential === 'tmdb')
@@ -346,8 +396,22 @@ export default function AnimeSearch({
 
   return (
     <div>
+      <div className="mb-3 flex flex-wrap items-center gap-2" role="group" aria-label="添加哪一类">
+        {SECTION_ORDER.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => switchSection(s)}
+            aria-pressed={section === s}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors ${section === s ? 'bg-indigo-500 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}
+          >
+            {SECTION_LABEL[s]}
+          </button>
+        ))}
+      </div>
+
       <div className="mb-3 flex gap-1 rounded-full bg-slate-100 p-1 dark:bg-slate-800" role="tablist" aria-label="搜索来源">
-        {SOURCES.map((s) => (
+        {options.map((s) => (
           <button
             key={s.id}
             type="button"
@@ -397,19 +461,21 @@ export default function AnimeSearch({
       )}
       {!formService && (
         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-          {source === 'tmdb' ? '自动填好海报、每季集数；系列电影可以整套一起记。' : '自动填好封面、集数和首播日期。'}
+          {current.note}
           搜不到也可以
-          <button type="button" onClick={() => onManual(query.trim())} className="ml-1 font-bold text-indigo-500 hover:underline">
+          <button type="button" onClick={() => onManual(query.trim(), section)} className="ml-1 font-bold text-indigo-500 hover:underline">
             手动填写
           </button>
           。
-          <button
-            type="button"
-            onClick={() => setEditingCredential(source)}
-            className="ml-2 font-bold text-slate-400 hover:text-indigo-500 hover:underline"
-          >
-            {source === 'tmdb' ? '更换 TMDB Key' : credentials.bangumi ? '已登录 Bangumi · 更换' : '登录 Bangumi（能搜到全部条目）'}
-          </button>
+          {source !== 'openlibrary' && (
+            <button
+              type="button"
+              onClick={() => setEditingCredential(source === 'tmdb' ? 'tmdb' : 'bangumi')}
+              className="ml-2 font-bold text-slate-400 hover:text-indigo-500 hover:underline"
+            >
+              {source === 'tmdb' ? '更换 TMDB Key' : credentials.bangumi ? '已登录 Bangumi · 更换' : '登录 Bangumi（能搜到全部条目）'}
+            </button>
+          )}
         </p>
       )}
 
@@ -446,7 +512,7 @@ export default function AnimeSearch({
                       <span className="truncate text-sm font-black text-slate-900 dark:text-white">{r.title}</span>
                       {existing && (
                         <span className="shrink-0 rounded-full bg-indigo-500/15 px-2 py-px text-[10px] font-bold text-indigo-600 dark:text-indigo-300">
-                          已添加 · {STATUS_LABEL[existing.status]}
+                          已添加 · {statusLabel(existing.status, existing.kind)}
                         </span>
                       )}
                     </p>
@@ -456,10 +522,11 @@ export default function AnimeSearch({
                     <p className="mt-0.5 text-xs font-bold tabular-nums text-slate-500 dark:text-slate-400">
                       {[
                         KIND_LABEL[r.kind],
+                        r.creator,
                         r.platform && r.platform !== KIND_LABEL[r.kind] ? r.platform : '',
                         r.airDate.slice(0, 4),
-                        r.totalEpisodes > 0 && r.kind !== 'movie' ? `${r.totalEpisodes} 集` : '',
-                        r.score > 0 ? `${r.source === 'tmdb' ? 'TMDB' : 'Bangumi'} ${r.score.toFixed(1)}` : '',
+                        r.totalEpisodes > 0 && r.kind !== 'movie' ? `${r.totalEpisodes} ${PROGRESS_UNIT[r.kind]}` : '',
+                        r.score > 0 ? `${SOURCE_NAME[r.source]} ${r.score.toFixed(1)}` : '',
                       ]
                         .filter(Boolean)
                         .join(' · ')}

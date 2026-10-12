@@ -1,4 +1,4 @@
-// app/api/anime/[id]/route.ts —— 修改 / 删除追番条目（本地开发模式，或登录了网页后台）
+// app/api/anime/[id]/route.ts —— 修改 / 删除书影音条目（本地开发模式，或登录了网页后台）
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { deleteAnime, updateAnime } from '../../../../lib/server/animeStore';

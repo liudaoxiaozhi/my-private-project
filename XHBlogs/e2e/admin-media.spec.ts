@@ -1,4 +1,4 @@
-// e2e/admin-media.spec.ts —— 网易云歌曲导入、歌词代取、密钥加密保存、登录后台后在追番页编辑
+// e2e/admin-media.spec.ts —— 网易云歌曲导入、歌词代取、密钥加密保存、登录后台后在书影音页编辑
 //
 // 网易云接口用 e2e/fake-netease.mjs 假的（测试环境连不上 music.163.com）；后台写的是 .e2e-admin-root 里的副本。
 import fs from 'node:fs';
@@ -69,7 +69,7 @@ test.describe('密钥', () => {
 
   test('后台保存 Gemini Key：仓库里只有密文，状态变成「已保存」，可以删除', async ({ page }) => {
     await adminLogin(page, ADMIN_PASSWORD);
-    await section(page, '追番与密钥');
+    await section(page, '书影音与密钥');
     const row = page.locator('.admin-row').filter({ hasText: 'Gemini Key' });
     await expect(row).toContainText('没有配置');
     await row.getByLabel('Gemini Key').fill('gemini-test-key-1234567890');
@@ -88,15 +88,15 @@ test.describe('密钥', () => {
   });
 });
 
-test.describe('追番', () => {
-  test('没登录：追番页只读，接口拒绝；登录后台后可以手动添加一部，写进 data/anime.json', async ({ page, request }) => {
+test.describe('书影音', () => {
+  test('没登录：书影音页只读，接口拒绝；登录后台后可以手动添加一部，写进 data/anime.json', async ({ page, request }) => {
     expect((await request.post('/api/anime', { data: { title: 'x' }, headers: { Origin: 'http://localhost:3123' } })).status()).toBe(403);
-    await page.goto('/anime');
+    await page.goto('/media');
     await page.waitForTimeout(1500);
     await expect(page.getByRole('button', { name: /添加/ })).toHaveCount(0);
 
     await adminLogin(page, ADMIN_PASSWORD);
-    await page.goto('/anime');
+    await page.goto('/media');
     await page.getByRole('button', { name: /添加/ }).first().click();
     await page.getByRole('button', { name: '手动填写' }).click();
     const title = `后台测试番-${Date.now().toString(36)}`;

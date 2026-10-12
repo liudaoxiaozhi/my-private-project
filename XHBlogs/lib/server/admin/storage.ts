@@ -69,7 +69,7 @@ const ALLOWED: RegExp[] = [
   /^chatters\/[^/]+\.md$/,
   /^moments\/[^/]+\.md$/,
   /^app\/about\/about\.md$/,
-  /^data\/(albums|friends|projects|netease|anime|secrets)\.json$/,
+  /^data\/(albums|friends|projects|netease|anime|secrets|bills)\.json$/,
   /^public\/anime\/covers\/[^/]+$/,
   /^siteConfig\.overrides\.json$/,
   /^public\/images\/uploads\/[^/]+(\/[^/]+)*$/,

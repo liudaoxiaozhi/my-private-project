@@ -1,4 +1,4 @@
-// app/api/anime/tmdb-key/route.ts —— 在追番页里填写 TMDB Key：先验证，再保存（本地写进 .env.local，线上加密存进仓库，见 lib/server/admin/secrets.ts）
+// app/api/anime/tmdb-key/route.ts —— 在书影音页里填写 TMDB Key：先验证，再保存（本地写进 .env.local，线上加密存进仓库，见 lib/server/admin/secrets.ts）
 import { NextResponse } from 'next/server';
 import { AnimeError } from '../../../../lib/server/animeStore';
 import { SECRET_PATTERN } from '../../../../lib/server/envFile';

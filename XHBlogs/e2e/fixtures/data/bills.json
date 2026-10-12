@@ -1,0 +1,183 @@
+{
+  "categories": [
+    {
+      "id": "food",
+      "name": "餐饮",
+      "type": "expense"
+    },
+    {
+      "id": "transport",
+      "name": "交通",
+      "type": "expense"
+    },
+    {
+      "id": "housing",
+      "name": "住房",
+      "type": "expense"
+    },
+    {
+      "id": "shopping",
+      "name": "购物",
+      "type": "expense"
+    },
+    {
+      "id": "fun",
+      "name": "娱乐",
+      "type": "expense"
+    },
+    {
+      "id": "study",
+      "name": "学习",
+      "type": "expense"
+    },
+    {
+      "id": "medical",
+      "name": "医疗",
+      "type": "expense"
+    },
+    {
+      "id": "phone",
+      "name": "通讯",
+      "type": "expense"
+    },
+    {
+      "id": "other",
+      "name": "其他",
+      "type": "expense"
+    },
+    {
+      "id": "salary",
+      "name": "工资",
+      "type": "income"
+    },
+    {
+      "id": "scholarship",
+      "name": "奖学金",
+      "type": "income"
+    },
+    {
+      "id": "parttime",
+      "name": "兼职",
+      "type": "income"
+    },
+    {
+      "id": "invest",
+      "name": "理财",
+      "type": "income"
+    },
+    {
+      "id": "other-income",
+      "name": "其他收入",
+      "type": "income"
+    }
+  ],
+  "budget": {
+    "monthly": 1500
+  },
+  "entries": [
+    {
+      "id": "e2e-13",
+      "date": "2026-10-09",
+      "type": "expense",
+      "amount": 8.6,
+      "category": "food",
+      "note": "便利店"
+    },
+    {
+      "id": "e2e-12",
+      "date": "2026-10-08",
+      "type": "expense",
+      "amount": 150,
+      "category": "study",
+      "note": "教材"
+    },
+    {
+      "id": "e2e-11",
+      "date": "2026-10-06",
+      "type": "expense",
+      "amount": 20,
+      "category": "phone",
+      "note": "话费"
+    },
+    {
+      "id": "e2e-10",
+      "date": "2026-10-04",
+      "type": "expense",
+      "amount": 23.75,
+      "category": "food",
+      "note": "火锅"
+    },
+    {
+      "id": "e2e-09",
+      "date": "2026-10-02",
+      "type": "expense",
+      "amount": 1200,
+      "category": "housing",
+      "note": "十月房租"
+    },
+    {
+      "id": "e2e-08",
+      "date": "2026-10-01",
+      "type": "income",
+      "amount": 3000,
+      "category": "salary",
+      "note": "十月工资"
+    },
+    {
+      "id": "e2e-07",
+      "date": "2026-09-20",
+      "type": "income",
+      "amount": 250,
+      "category": "parttime",
+      "note": "家教"
+    },
+    {
+      "id": "e2e-06",
+      "date": "2026-09-15",
+      "type": "expense",
+      "amount": 89.9,
+      "category": "shopping",
+      "note": "机密备注-E2E"
+    },
+    {
+      "id": "e2e-05",
+      "date": "2026-09-10",
+      "type": "expense",
+      "amount": 45.3,
+      "category": "transport",
+      "note": "地铁充值"
+    },
+    {
+      "id": "e2e-04",
+      "date": "2026-09-05",
+      "type": "expense",
+      "amount": 12.5,
+      "category": "food",
+      "note": "午饭"
+    },
+    {
+      "id": "e2e-03",
+      "date": "2026-09-03",
+      "type": "expense",
+      "amount": 1200,
+      "category": "housing",
+      "note": "九月房租"
+    },
+    {
+      "id": "e2e-02",
+      "date": "2026-09-01",
+      "type": "income",
+      "amount": 3000,
+      "category": "salary",
+      "note": "九月工资"
+    },
+    {
+      "id": "e2e-01",
+      "date": "2025-12-31",
+      "type": "expense",
+      "amount": 30,
+      "category": "fun",
+      "note": "跨年"
+    }
+  ]
+}

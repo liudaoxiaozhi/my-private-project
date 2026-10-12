@@ -1,10 +1,11 @@
-// lib/server/animeStore.ts —— 追番数据的读写（仅服务端）
+// lib/server/animeStore.ts —— 书影音数据的读写（仅服务端）
 //
-// 数据就是 data/anime.json 里的一个数组，可以直接手改；读的时候会补齐缺省字段。
+// 整个书影音库（番剧、电影、电视剧、书、音乐）就是 data/anime.json 里的一个数组（文件名沿用追番时期的），
+// 可以直接手改；读的时候会补齐缺省字段（旧数据没有的想看清单字段等）。
 // 写入：本地开发模式（npm run dev / 本地预览.bat），或者登录了网页后台（见 app/api/anime/guard.ts）。
 // 写入都经过后台的存储层（lib/server/admin/storage.ts）：本地直接写磁盘，线上提交到 GitHub，一次修改一个提交。
-// Bangumi / TMDB 封面会下载到 public/anime/covers/，这样不依赖外链，部署后也能显示。
-// TMDB 的搜索与详情见 lib/server/tmdb.ts。
+// Bangumi / TMDB / Open Library 封面会下载到 public/anime/covers/，这样不依赖外链，部署后也能显示。
+// TMDB 的搜索与详情见 lib/server/tmdb.ts，Open Library（书）见 lib/server/openLibrary.ts。
 import fs from 'fs';
 import path from 'path';
 import {
@@ -15,12 +16,14 @@ import {
   type AnimeInput,
   type AnimeKind,
   type AnimePart,
+  type MediaSection,
   type SearchResult,
   type TmdbType,
 } from '../anime';
 import { AnimeError, cover, date, int, str } from './animeClean';
 import { outboundFetch } from './outboundFetch';
 import { TMDB_IMAGE_HOST } from './tmdb';
+import { OPEN_LIBRARY_COVER_HOST } from './openLibrary';
 import { getSecret } from './admin/secrets';
 import { getStorage } from './admin/storage';
 import type { Change } from './admin/storage';
@@ -47,6 +50,8 @@ const positiveId = (value: unknown): number | null => {
 };
 
 const TMDB_TYPES: readonly TmdbType[] = ['movie', 'tv', 'collection'];
+
+const OPEN_LIBRARY_KEY = /^OL\d{1,12}[WM]$/;
 
 function sanitizeParts(value: unknown): AnimePart[] {
   if (!Array.isArray(value)) return [];
@@ -80,6 +85,10 @@ export function sanitizeInput(raw: unknown): AnimeInput {
     totalEpisodes,
     parts,
     rating: int(o.rating, 0, 10),
+    creator: str(o.creator, 100),
+    priority: int(o.priority, 0, 3),
+    wishReason: str(o.wishReason, 500),
+    platform: str(o.platform, 40),
     comment: str(o.comment, 2000),
     tags,
     airDate: date(o.airDate),
@@ -90,6 +99,7 @@ export function sanitizeInput(raw: unknown): AnimeInput {
     tmdbId: tmdbId && tmdbType ? tmdbId : null,
     tmdbType: tmdbId && tmdbType ? tmdbType : null,
     tmdbScore: score10(o.tmdbScore),
+    openLibraryKey: typeof o.openLibraryKey === 'string' && OPEN_LIBRARY_KEY.test(o.openLibraryKey) ? o.openLibraryKey : null,
   };
 }
 
@@ -178,11 +188,13 @@ export function createAnime(raw: unknown): Promise<AnimeEntry> {
       ? `bgm-${input.bangumiId}`
       : input.tmdbId
         ? `tmdb-${input.tmdbType}-${input.tmdbId}`
-        : `m-${Date.now().toString(36)}`;
+        : input.openLibraryKey
+          ? `ol-${input.openLibraryKey}`
+          : `m-${Date.now().toString(36)}`;
     const now = new Date().toISOString();
     const cover = await localizeCover(input.cover, id);
     const entry: AnimeEntry = { id, ...input, cover: cover.url, createdAt: now, updatedAt: now };
-    await writeAnimeList([entry, ...list], cover.changes, `追番：添加「${entry.title}」`);
+    await writeAnimeList([entry, ...list], cover.changes, `书影音：添加「${entry.title}」`);
     return entry;
   });
 }
@@ -199,7 +211,7 @@ export function updateAnime(id: string, raw: unknown): Promise<AnimeEntry> {
     const entry: AnimeEntry = { ...prev, ...input, cover: cover.url, id, updatedAt: new Date().toISOString() };
     list[index] = entry;
     const removed = prev.cover !== entry.cover ? removeOwnCover(prev.cover, id) : [];
-    await writeAnimeList(list, [...cover.changes, ...removed], `追番：更新「${entry.title}」`);
+    await writeAnimeList(list, [...cover.changes, ...removed], `书影音：更新「${entry.title}」`);
     return entry;
   });
 }
@@ -209,15 +221,16 @@ export function deleteAnime(id: string): Promise<void> {
     const list = await readLatest();
     const target = list.find((e) => e.id === id);
     if (!target) throw new AnimeError('条目不存在，可能已被删除', 404);
-    await writeAnimeList(list.filter((e) => e.id !== id), removeOwnCover(target.cover, id), `追番：删除「${target.title}」`);
+    await writeAnimeList(list.filter((e) => e.id !== id), removeOwnCover(target.cover, id), `书影音：删除「${target.title}」`);
   });
 }
 
 // ============================== 封面 ==============================
 
-/** 只下载 Bangumi / TMDB 图床的图片，其他外链原样保存 */
+/** 只下载 Bangumi / TMDB / Open Library 图床的图片，其他外链原样保存 */
 const BANGUMI_IMAGE_HOST = /(^|\.)(bgm\.tv|bangumi\.tv|chii\.in)$/i;
-const canDownloadCover = (host: string): boolean => BANGUMI_IMAGE_HOST.test(host) || host === TMDB_IMAGE_HOST;
+const canDownloadCover = (host: string): boolean =>
+  BANGUMI_IMAGE_HOST.test(host) || host === TMDB_IMAGE_HOST || host === OPEN_LIBRARY_COVER_HOST;
 const COVER_EXT: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -294,11 +307,32 @@ interface RawSubject {
   rating?: { score?: number } | null;
   score?: number;
   tags?: Array<{ name?: string }>;
+  /** 条目的信息框：[{ key: '作者', value: '刘慈欣' }]，value 也可能是 [{ v: '…' }] */
+  infobox?: Array<{ key?: string; value?: unknown }>;
 }
 
+/** Bangumi 条目类型：1 书籍、2 动画、3 音乐、4 游戏、6 三次元 */
+export const BANGUMI_TYPES: Record<MediaSection, number[]> = { video: [2, 6], book: [1], music: [3] };
+
 function kindOf(type: number | undefined, platform: string): AnimeKind {
+  if (type === 1) return 'book';
+  if (type === 3) return 'music';
   if (/剧场版|电影|movie/i.test(platform)) return 'movie';
   return type === 6 ? 'drama' : 'anime';
+}
+
+/** 从信息框里取第一个有值的字段 */
+function infoboxValue(raw: RawSubject, keys: readonly string[]): string {
+  for (const key of keys) {
+    const item = raw.infobox?.find((i) => i?.key === key);
+    const value = item?.value;
+    if (typeof value === 'string' && value.trim()) return str(value, 100);
+    if (Array.isArray(value)) {
+      const first = value.map((v) => str((v as { v?: unknown } | null)?.v, 100)).find(Boolean);
+      if (first) return first;
+    }
+  }
+  return '';
 }
 
 function toSubject(raw: RawSubject): SearchResult | null {
@@ -308,15 +342,19 @@ function toSubject(raw: RawSubject): SearchResult | null {
   const platform = str(raw.platform, 20);
   const airDate = date(raw.date) || date(raw.air_date);
   const score = raw.rating?.score ?? raw.score ?? 0;
+  const kind = kindOf(raw.type, platform);
+  // 书的「集数」记页数（信息框里的「页数」），专辑记曲目数
+  const total = kind === 'book' ? int(infoboxValue(raw, ['页数']).replace(/\D/g, ''), 0, 99_999) : raw.total_episodes || raw.eps || raw.eps_count;
   return {
     source: 'bangumi',
     id: raw.id,
+    key: null,
     mediaType: null,
     title: nameCn || name,
     originalTitle: name,
-    kind: kindOf(raw.type, platform),
+    kind,
     cover: cover(raw.images?.large || raw.images?.common || raw.image || '').replace(/^http:/, 'https:'),
-    totalEpisodes: int(raw.total_episodes || raw.eps || raw.eps_count, 0, 9999),
+    totalEpisodes: int(total, 0, 9999),
     airDate,
     score: typeof score === 'number' ? score : 0,
     summary: str(raw.summary, 160),
@@ -325,6 +363,7 @@ function toSubject(raw: RawSubject): SearchResult | null {
       .filter(Boolean)
       .slice(0, 5),
     platform,
+    creator: kind === 'book' ? infoboxValue(raw, ['作者', '作家']) : kind === 'music' ? infoboxValue(raw, ['艺术家', '作曲', '作者']) : '',
   };
 }
 
@@ -345,8 +384,8 @@ async function bangumiFetch(url: string, init?: { method?: string; body?: string
   return res.json();
 }
 
-/** 关键词搜索（动画 + 三次元），或直接按条目 id 取详情 */
-export async function searchBangumi(keyword: string, subjectId: number | null): Promise<SearchResult[]> {
+/** 关键词搜索（types 是 Bangumi 条目类型，见 BANGUMI_TYPES），或直接按条目 id 取详情 */
+export async function searchBangumi(keyword: string, subjectId: number | null, types: readonly number[] = BANGUMI_TYPES.video): Promise<SearchResult[]> {
   if (subjectId) {
     const raw = (await bangumiFetch(`${BANGUMI_API}/v0/subjects/${subjectId}`)) as RawSubject | null;
     const subject = raw ? toSubject(raw) : null;
@@ -357,17 +396,18 @@ export async function searchBangumi(keyword: string, subjectId: number | null): 
   try {
     const data = (await bangumiFetch(`${BANGUMI_API}/v0/search/subjects?limit=12`, {
       method: 'POST',
-      body: JSON.stringify({ keyword, sort: 'match', filter: { type: [2, 6] } }),
+      body: JSON.stringify({ keyword, sort: 'match', filter: { type: types } }),
     })) as { data?: RawSubject[] } | null;
     list = data?.data ?? [];
   } catch (error) {
     if (error instanceof AnimeError) throw error;
-    // 新版搜索接口偶尔不稳定，退回旧版接口（只搜动画）
+    // 新版搜索接口偶尔不稳定，退回旧版接口（只能搜一种类型，取第一个：动画 / 书籍 / 音乐）
     console.warn('Bangumi v0 搜索失败，改用旧接口:', error);
+    const type = types[0] ?? 2;
     const data = (await bangumiFetch(
-      `${BANGUMI_API}/search/subject/${encodeURIComponent(keyword)}?type=2&responseGroup=medium&max_results=12`,
+      `${BANGUMI_API}/search/subject/${encodeURIComponent(keyword)}?type=${type}&responseGroup=medium&max_results=12`,
     )) as { list?: RawSubject[] } | null;
-    list = (data?.list ?? []).map((s) => ({ ...s, type: 2 }));
+    list = (data?.list ?? []).map((s) => ({ ...s, type }));
   }
   return list.map(toSubject).filter((s): s is SearchResult => s !== null);
 }

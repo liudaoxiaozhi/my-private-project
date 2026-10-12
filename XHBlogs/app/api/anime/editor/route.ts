@@ -1,4 +1,4 @@
-// app/api/anime/editor/route.ts —— 追番页打开时问一下：能不能编辑（本地开发 / 登录了网页后台），TMDB、Bangumi 的密钥配好没有
+// app/api/anime/editor/route.ts —— 书影音页、想看清单打开时问一下：能不能编辑（本地开发 / 登录了网页后台），TMDB、Bangumi 的密钥配好没有
 import { NextResponse } from 'next/server';
 import { bangumiConfigured } from '../../../../lib/server/animeStore';
 import { tmdbConfigured } from '../../../../lib/server/tmdb';

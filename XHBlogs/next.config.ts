@@ -28,6 +28,13 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true, // 忽略 TS 错误，方便快速部署
   },
+
+  async redirects() {
+    return [
+      // 「追番」改名「书影音」：旧链接永久跳到新页面。只匹配 /anime 本身，封面图 /anime/covers/... 不受影响
+      { source: '/anime', destination: '/media', permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

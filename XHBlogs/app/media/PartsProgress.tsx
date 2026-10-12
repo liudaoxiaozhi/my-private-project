@@ -1,5 +1,5 @@
 'use client';
-// app/anime/PartsProgress.tsx —— 分季电视剧 / 系列电影的进度编辑
+// app/media/PartsProgress.tsx —— 分季电视剧 / 系列电影的进度编辑
 //
 // 电视剧：选「第几季第几集」，下面列出每一季，点一下「看完这季」；
 // 系列电影：每一部一行，点一下表示看到这一部（再点一次取消）。

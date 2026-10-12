@@ -1,0 +1,78 @@
+{
+  "categories": [
+    {
+      "id": "food",
+      "name": "餐饮",
+      "type": "expense"
+    },
+    {
+      "id": "transport",
+      "name": "交通",
+      "type": "expense"
+    },
+    {
+      "id": "housing",
+      "name": "住房",
+      "type": "expense"
+    },
+    {
+      "id": "shopping",
+      "name": "购物",
+      "type": "expense"
+    },
+    {
+      "id": "fun",
+      "name": "娱乐",
+      "type": "expense"
+    },
+    {
+      "id": "study",
+      "name": "学习",
+      "type": "expense"
+    },
+    {
+      "id": "medical",
+      "name": "医疗",
+      "type": "expense"
+    },
+    {
+      "id": "phone",
+      "name": "通讯",
+      "type": "expense"
+    },
+    {
+      "id": "other",
+      "name": "其他",
+      "type": "expense"
+    },
+    {
+      "id": "salary",
+      "name": "工资",
+      "type": "income"
+    },
+    {
+      "id": "scholarship",
+      "name": "奖学金",
+      "type": "income"
+    },
+    {
+      "id": "parttime",
+      "name": "兼职",
+      "type": "income"
+    },
+    {
+      "id": "invest",
+      "name": "理财",
+      "type": "income"
+    },
+    {
+      "id": "other-income",
+      "name": "其他收入",
+      "type": "income"
+    }
+  ],
+  "budget": {
+    "monthly": 0
+  },
+  "entries": []
+}

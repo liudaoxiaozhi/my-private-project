@@ -15,10 +15,11 @@ import MusicSection from './MusicSection';
 import SecretsSection from './SecretsSection';
 import { AppearanceSection, DanmakuSection, SettingsSection } from './ConfigSections';
 import { AlbumsSection, FriendsSection, ProjectsSection } from './DataSections';
+import BillsSection from './BillsSection';
 import { AdminContext, Button, Loading, Panel, Row, inputClass } from './ui';
 import type { AdminContextValue } from './ui';
 
-type SectionId = 'overview' | ContentKind | 'music' | 'danmaku' | 'appearance' | 'albums' | 'friends' | 'projects' | 'anime' | 'settings';
+type SectionId = 'overview' | ContentKind | 'music' | 'danmaku' | 'appearance' | 'albums' | 'friends' | 'projects' | 'bills' | 'anime' | 'settings';
 
 const SECTIONS: { id: SectionId; label: string }[] = [
   { id: 'overview', label: '概览' },
@@ -31,8 +32,9 @@ const SECTIONS: { id: SectionId; label: string }[] = [
   { id: 'albums', label: '照片墙' },
   { id: 'friends', label: '友链' },
   { id: 'projects', label: '项目' },
+  { id: 'bills', label: '账单' },
   { id: 'about', label: '关于我' },
-  { id: 'anime', label: '追番与密钥' },
+  { id: 'anime', label: '书影音与密钥' },
   { id: 'settings', label: '站点设置' },
 ];
 
@@ -356,6 +358,8 @@ function SectionView({ section, storage, go }: { section: SectionId; storage: St
       return <FriendsSection />;
     case 'projects':
       return <ProjectsSection />;
+    case 'bills':
+      return <BillsSection />;
     case 'anime':
       return <SecretsSection />;
     case 'settings':
@@ -366,7 +370,7 @@ function SectionView({ section, storage, go }: { section: SectionId; storage: St
 }
 
 interface OverviewData {
-  counts: Record<'posts' | 'chatters' | 'moments' | 'songs' | 'albums' | 'photos' | 'friends' | 'projects', number>;
+  counts: Record<'posts' | 'chatters' | 'moments' | 'songs' | 'albums' | 'photos' | 'friends' | 'projects' | 'bills', number>;
   commits: { sha: string; message: string; date: string; url: string }[];
   deploy: Deploy | null;
 }
@@ -389,6 +393,7 @@ function Overview({ storage, go }: { storage: StorageInfo; go: (id: SectionId) =
     { label: '照片', value: (d) => `${d.counts.photos}`, to: 'albums' },
     { label: '友链', value: (d) => `${d.counts.friends}`, to: 'friends' },
     { label: '项目', value: (d) => `${d.counts.projects}`, to: 'projects' },
+    { label: '记账', value: (d) => `${d.counts.bills}`, to: 'bills' },
   ];
 
   const deployText: Record<Deploy['state'], string> = { success: '已上线', pending: '部署中', failure: '部署失败', error: '部署失败', unknown: '—' };
@@ -414,7 +419,7 @@ function Overview({ storage, go }: { storage: StorageInfo; go: (id: SectionId) =
       {!data && !error && <Loading />}
       {data && (
         <div className="flex flex-col gap-6">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8">
             {cards.map((c) => (
               <button key={c.label} type="button" onClick={() => go(c.to)} className="admin-row flex flex-col items-start gap-1 px-4 py-4 text-left hover:bg-white/5">
                 <span className="font-lab text-2xl font-black text-white">{c.value(data)}</span>

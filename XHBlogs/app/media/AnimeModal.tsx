@@ -1,5 +1,5 @@
 'use client';
-// app/anime/AnimeModal.tsx —— 追番页的弹窗外壳：挂到 body 上（页面外层有 transform 动画，fixed 会错位），Esc / 点遮罩关闭
+// app/media/AnimeModal.tsx —— 书影音页的弹窗外壳：挂到 body 上（页面外层有 transform 动画，fixed 会错位），Esc / 点遮罩关闭
 // 层级要压过桌宠、播放器等全站浮层（z-9999）；提示条（ToastProvider）在它之上
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';

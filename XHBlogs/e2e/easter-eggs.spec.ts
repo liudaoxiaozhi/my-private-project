@@ -99,13 +99,13 @@ test('节日飘落预览：?season= 换成雪花 / 梅花 / 彩带', async ({ pa
   }
 });
 
-test('导航栏里没有已删除的栏目，追番页正常', async ({ page }) => {
+test('导航栏里没有已删除的栏目，书影音页正常', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('header').getByText('灵境')).toHaveCount(0);
   await page.locator('header').getByRole('button', { name: /我的/ }).hover();
-  await page.getByRole('link', { name: /追番/ }).click();
-  await page.waitForURL('**/anime');
-  // 追番页自己有个 <header>，这里只数站点导航栏
+  await page.getByRole('link', { name: /书影音/ }).click();
+  await page.waitForURL('**/media');
+  // 书影音页自己可能有 <header>，这里只数站点导航栏
   await expect(page.locator('header').filter({ has: page.getByRole('link', { name: '归档' }) })).toHaveCount(1);
   await expect(page.locator('main').first()).toBeVisible();
 });

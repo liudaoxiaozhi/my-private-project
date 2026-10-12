@@ -1,12 +1,17 @@
-// lib/anime.ts —— 追番：类型、文案与纯函数（客户端 / 服务端通用，不依赖 fs）
+// lib/anime.ts —— 书影音（番剧 / 电影 / 电视剧 / 书 / 音乐）：类型、文案与纯函数（客户端 / 服务端通用，不依赖 fs）
 //
-// 数据存放在 data/anime.json（一个数组），读写见 lib/server/animeStore.ts。
+// 整个书影音库都存放在 data/anime.json（一个数组；文件名和条目 id 沿用追番时期的，没有改），读写见 lib/server/animeStore.ts。
+// 页面在 /media（书影音）和 /media/wishlist（想看清单），接口仍在 /api/anime/**。
+//
+// 三个大类：影视 = 番剧 | 电影 | 电视剧，书，音乐。状态文案随类型变：想看 / 想读 / 想听、在看 / 在读 / 在听……（见 statusLabel）。
 //
 // 分季的电视剧、分部的系列电影（如指环王三部曲）都是一条记录：parts 是季 / 部的列表，
 // progress 是从第一季第一集算起的累计集数（系列电影每部算 1 集），据此换算出「第几季第几集」。
 
 export type AnimeStatus = 'watching' | 'planned' | 'completed' | 'paused';
-export type AnimeKind = 'anime' | 'movie' | 'drama';
+export type AnimeKind = 'anime' | 'movie' | 'drama' | 'book' | 'music';
+/** 书影音的三个大类 */
+export type MediaSection = 'video' | 'book' | 'music';
 export type TmdbType = 'movie' | 'tv' | 'collection';
 
 /** 电视剧的一季，或系列电影里的一部 */
@@ -36,6 +41,14 @@ export interface AnimeEntry {
   parts: AnimePart[];
   /** 我的评分 1–10，0 表示未评分 */
   rating: number;
+  /** 作者（书）/ 艺人（音乐），影视一般留空 */
+  creator: string;
+  /** 想看清单：优先级 1–3，0 表示没设 */
+  priority: number;
+  /** 想看清单：为什么想看 */
+  wishReason: string;
+  /** 在哪看 / 读 / 听：影院、B站、微信读书、网易云…… */
+  platform: string;
   comment: string;
   tags: string[];
   /** 首播 / 上映日期 YYYY-MM-DD */
@@ -50,6 +63,8 @@ export interface AnimeEntry {
   tmdbType: TmdbType | null;
   /** TMDB 评分，仅作参考 */
   tmdbScore: number;
+  /** Open Library 作品编号，如 OL27448W */
+  openLibraryKey: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -57,12 +72,14 @@ export interface AnimeEntry {
 /** 新建 / 编辑时客户端提交的字段（id 与时间戳由服务端生成） */
 export type AnimeInput = Omit<AnimeEntry, 'id' | 'createdAt' | 'updatedAt'>;
 
-export type SearchSource = 'bangumi' | 'tmdb';
+export type SearchSource = 'bangumi' | 'tmdb' | 'openlibrary';
 
-/** Bangumi / TMDB 搜索结果（服务端已整理成统一格式） */
+/** Bangumi / TMDB / Open Library 搜索结果（服务端已整理成统一格式） */
 export interface SearchResult {
   source: SearchSource;
   id: number;
+  /** Open Library 作品编号（OL…W）；其他来源为 null */
+  key: string | null;
   /** TMDB 结果是电影还是电视剧；Bangumi 结果为 null */
   mediaType: 'movie' | 'tv' | null;
   title: string;
@@ -74,7 +91,10 @@ export interface SearchResult {
   score: number;
   summary: string;
   tags: string[];
+  /** 来源站点上的「平台」（TV / 剧场版 / 小说 / 专辑……），只用来显示和判断类型，不是条目的 platform */
   platform: string;
+  /** 作者 / 艺人 */
+  creator: string;
 }
 
 /** TMDB 详情：已整理好的表单草稿；电影属于某个系列时附带系列信息，让用户选择加单部还是整个系列 */
@@ -85,6 +105,7 @@ export interface TmdbDetail {
 
 export const STATUS_ORDER: readonly AnimeStatus[] = ['watching', 'planned', 'completed', 'paused'];
 
+/** 不分类型时的中性文案（全部分栏、搜索索引）；具体条目用 statusLabel(status, kind) */
 export const STATUS_LABEL: Record<AnimeStatus, string> = {
   watching: '在看',
   planned: '想看',
@@ -99,13 +120,75 @@ export const STATUS_STYLE: Record<AnimeStatus, string> = {
   paused: 'bg-amber-500/15 text-amber-700 ring-amber-500/30 dark:text-amber-300',
 };
 
-export const KIND_ORDER: readonly AnimeKind[] = ['anime', 'movie', 'drama'];
+export const KIND_ORDER: readonly AnimeKind[] = ['anime', 'movie', 'drama', 'book', 'music'];
 
 export const KIND_LABEL: Record<AnimeKind, string> = {
   anime: '番剧',
   movie: '电影',
   drama: '电视剧',
+  book: '书',
+  music: '音乐',
 };
+
+export const SECTION_ORDER: readonly MediaSection[] = ['video', 'book', 'music'];
+
+export const SECTION_LABEL: Record<MediaSection, string> = {
+  video: '影视',
+  book: '书',
+  music: '音乐',
+};
+
+/** 每个大类包含的类型 */
+export const SECTION_KINDS: Record<MediaSection, readonly AnimeKind[]> = {
+  video: ['anime', 'movie', 'drama'],
+  book: ['book'],
+  music: ['music'],
+};
+
+/** 在某个大类下新建条目时的默认类型 */
+export const SECTION_DEFAULT_KIND: Record<MediaSection, AnimeKind> = { video: 'anime', book: 'book', music: 'music' };
+
+export const sectionOf = (kind: AnimeKind): MediaSection => (kind === 'book' ? 'book' : kind === 'music' ? 'music' : 'video');
+
+/** 看 / 读 / 听 */
+export const verbOf = (kind: AnimeKind): string => (kind === 'book' ? '读' : kind === 'music' ? '听' : '看');
+
+/** 按类型的状态文案：想看 / 想读 / 想听、在看 / 在读 / 在听、看过 / 读过 / 听过、搁置；不传类型时用中性的「看」 */
+export function statusLabel(status: AnimeStatus, kind?: AnimeKind): string {
+  const v = kind ? verbOf(kind) : '看';
+  switch (status) {
+    case 'watching':
+      return `在${v}`;
+    case 'planned':
+      return `想${v}`;
+    case 'completed':
+      return `${v}过`;
+    default:
+      return '搁置';
+  }
+}
+
+/** 进度单位：集（番剧 / 电视剧）、部（电影）、页（书）、首（音乐） */
+export const PROGRESS_UNIT: Record<AnimeKind, string> = { anime: '集', drama: '集', movie: '部', book: '页', music: '首' };
+
+/** 首播 / 上映 / 出版 / 发行，开始看 / 看完…… */
+export function dateLabels(kind: AnimeKind): { air: string; start: string; finish: string } {
+  const v = verbOf(kind);
+  const air = kind === 'movie' ? '上映' : kind === 'book' ? '出版' : kind === 'music' ? '发行' : '首播';
+  return { air, start: `开始${v}`, finish: `${v}完` };
+}
+
+/** 作者 / 艺人这一栏叫什么；影视不显示 */
+export const creatorLabel = (kind: AnimeKind): string | null => (kind === 'book' ? '作者' : kind === 'music' ? '艺人' : null);
+
+/** 「在哪看 / 读 / 听」的建议，编辑时点一下填入 */
+export const PLATFORM_SUGGESTIONS: Record<MediaSection, readonly string[]> = {
+  video: ['影院', 'B站', 'Netflix', '爱奇艺', '腾讯视频', '优酷'],
+  book: ['微信读书', 'Kindle', '实体书', '图书馆'],
+  music: ['网易云', 'Apple Music', 'Spotify', 'QQ音乐', '黑胶 / CD'],
+};
+
+export const PRIORITY_MAX = 3;
 
 export const isAnimeStatus = (v: unknown): v is AnimeStatus =>
   typeof v === 'string' && (STATUS_ORDER as readonly string[]).includes(v);
@@ -131,6 +214,10 @@ export function emptyInput(): AnimeInput {
     totalEpisodes: 0,
     parts: [],
     rating: 0,
+    creator: '',
+    priority: 0,
+    wishReason: '',
+    platform: '',
     comment: '',
     tags: [],
     airDate: '',
@@ -141,12 +228,16 @@ export function emptyInput(): AnimeInput {
     tmdbId: null,
     tmdbType: null,
     tmdbScore: 0,
+    openLibraryKey: null,
   };
 }
 
-/** Bangumi 搜索结果直接转成表单；TMDB 结果需要再取详情（季 / 系列），见 /api/anime/tmdb */
-export function inputFromBangumi(subject: SearchResult): AnimeInput {
-  return {
+/**
+ * Bangumi / Open Library 搜索结果直接转成表单；TMDB 结果需要再取详情（季 / 系列），见 /api/anime/tmdb。
+ * 结果里的 platform 是来源站点的分类（TV / 小说……），不是「在哪看」，不带过来。
+ */
+export function inputFromSearch(subject: SearchResult): AnimeInput {
+  const base: AnimeInput = {
     ...emptyInput(),
     title: subject.title,
     originalTitle: subject.originalTitle === subject.title ? '' : subject.originalTitle,
@@ -155,9 +246,10 @@ export function inputFromBangumi(subject: SearchResult): AnimeInput {
     totalEpisodes: subject.totalEpisodes,
     airDate: subject.airDate,
     tags: subject.tags,
-    bangumiId: subject.id,
-    bangumiScore: subject.score,
+    creator: subject.creator,
   };
+  if (subject.source === 'openlibrary') return { ...base, openLibraryKey: subject.key };
+  return { ...base, bangumiId: subject.id, bangumiScore: subject.score };
 }
 
 export function toInput({ id: _id, createdAt: _c, updatedAt: _u, ...input }: AnimeEntry): AnimeInput {
@@ -191,7 +283,7 @@ export function withProgress(input: AnimeInput, progress: number, today = todayS
   return next;
 }
 
-/** 「+1 集 / +1 部」 */
+/** 「+1 集 / +1 部 / +1 首」 */
 export const bumpProgress = (input: AnimeInput, today = todayString()): AnimeInput => withProgress(input, input.progress + 1, today);
 
 type ProgressFields = Pick<AnimeEntry, 'progress' | 'totalEpisodes' | 'kind' | 'status' | 'parts'>;
@@ -201,6 +293,16 @@ export const hasParts = (entry: Pick<AnimeEntry, 'parts'>): boolean => entry.par
 
 /** 单部电影只有「看没看」，没有进度 */
 export const isSingleMovie = (entry: Pick<AnimeEntry, 'kind' | 'parts'>): boolean => entry.kind === 'movie' && !hasParts(entry);
+
+/**
+ * 卡片上的快捷按钮：bump =「+1 集 / 部 / 首」；finish = 直接标记看过 / 读过 / 听过。
+ * 单部电影、书（一页一页点没意义）、没填曲目数的专辑用 finish。
+ */
+export function quickAction(entry: Pick<AnimeEntry, 'kind' | 'parts' | 'totalEpisodes' | 'status'>): 'bump' | 'finish' | null {
+  if (entry.status === 'completed') return null;
+  if (isSingleMovie(entry) || entry.kind === 'book' || (entry.kind === 'music' && entry.totalEpisodes <= 0)) return 'finish';
+  return 'bump';
+}
 
 /**
  * 累计集数 → 最后看到的是第几季（下标）的第几集。
@@ -228,9 +330,11 @@ export function cumulativeProgress(parts: readonly AnimePart[], index: number, e
 export const progressThroughPart = (parts: readonly AnimePart[], index: number): number =>
   cumulativeProgress(parts, index, parts[index]?.episodes ?? 0);
 
-/** 进度文案：12 / 24 集、第 2 季 · 3 / 10 集、已看 1 / 3 部、电影看过显示「已看完」 */
+/** 进度文案：12 / 24 集、第 2 季 · 3 / 10 集、已看 1 / 3 部、120 / 320 页、电影看过显示「已看完」 */
 export function progressText(entry: ProgressFields): string {
   const n = entry.parts.length;
+  const v = verbOf(entry.kind);
+  const unit = PROGRESS_UNIT[entry.kind];
   if (entry.kind === 'movie') {
     if (n > 1) return entry.progress >= n ? `全 ${n} 部看完` : `已看 ${entry.progress} / ${n} 部`;
     return entry.status === 'completed' ? '已看完' : '未看';
@@ -241,8 +345,9 @@ export function progressText(entry: ProgressFields): string {
     const { index, episode } = locateProgress(entry.parts, entry.progress);
     return `第 ${index + 1} 季 · ${episode} / ${entry.parts[index].episodes} 集`;
   }
-  if (entry.totalEpisodes > 0) return `${entry.progress} / ${entry.totalEpisodes} 集`;
-  return entry.progress > 0 ? `已看 ${entry.progress} 集` : '未开始';
+  if (entry.totalEpisodes > 0) return `${entry.progress} / ${entry.totalEpisodes} ${unit}`;
+  if (entry.progress > 0) return `已${v} ${entry.progress} ${unit}`;
+  return entry.status === 'completed' ? `已${v}完` : '未开始';
 }
 
 export function progressRatio(entry: ProgressFields): number {
@@ -268,11 +373,23 @@ export function parseTmdbLink(text: string): { type: TmdbType; id: number } | nu
 
 export const tmdbUrl = (type: TmdbType, id: number): string => `https://www.themoviedb.org/${type}/${id}`;
 
-/** 列表里是否已有同一部（按 Bangumi / TMDB 编号判断） */
-export function isSameWork(
-  a: Pick<AnimeInput, 'bangumiId' | 'tmdbId' | 'tmdbType'>,
-  b: Pick<AnimeInput, 'bangumiId' | 'tmdbId' | 'tmdbType'>,
-): boolean {
+export const openLibraryUrl = (key: string): string => `https://openlibrary.org/works/${key}`;
+
+/** 判断是不是同一部用到的外部编号 */
+export type WorkIds = Pick<AnimeInput, 'bangumiId' | 'tmdbId' | 'tmdbType' | 'openLibraryKey'>;
+
+/** 列表里是否已有同一部（按 Bangumi / TMDB / Open Library 编号判断） */
+export function isSameWork(a: WorkIds, b: WorkIds): boolean {
   if (a.bangumiId && a.bangumiId === b.bangumiId) return true;
+  if (a.openLibraryKey && a.openLibraryKey === b.openLibraryKey) return true;
   return !!a.tmdbId && a.tmdbId === b.tmdbId && a.tmdbType === b.tmdbType;
+}
+
+export const DAY_MS = 86_400_000;
+
+/** 加入多少天：today 是「从 1970 年起的第几天」（Math.floor(Date.now() / DAY_MS)）；没有 createdAt 时返回 null */
+export function daysSince(iso: string, today: number): number | null {
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return null;
+  return Math.max(0, today - Math.floor(t / DAY_MS));
 }

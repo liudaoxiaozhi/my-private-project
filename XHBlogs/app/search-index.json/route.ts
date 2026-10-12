@@ -2,7 +2,7 @@
 import { formatDisplayDate, getAllChatters, getAllPosts } from '../../lib/content';
 import { bookHref, getAllBooks } from '../../lib/novel';
 import { readAnimeList } from '../../lib/server/animeStore';
-import { STATUS_LABEL } from '../../lib/anime';
+import { KIND_LABEL, statusLabel } from '../../lib/anime';
 import type { SearchIndex } from '../../lib/searchIndex';
 
 export const dynamic = 'force-static';
@@ -27,11 +27,11 @@ export function GET(): Response {
       meta: [b.author, b.category].filter(Boolean).join(' · '),
       keywords: [b.title, ...b.tags, b.status].join(' '),
     })),
-    anime: readAnimeList().map((a) => ({
-      href: '/anime',
+    media: readAnimeList().map((a) => ({
+      href: '/media',
       title: a.title,
-      meta: STATUS_LABEL[a.status],
-      keywords: a.originalTitle,
+      meta: `${KIND_LABEL[a.kind]} · ${statusLabel(a.status, a.kind)}`,
+      keywords: [a.originalTitle, a.creator].join(' '),
     })),
   };
   return Response.json(index);

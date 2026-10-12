@@ -1,16 +1,19 @@
 'use client';
-// app/anime/AnimeDetail.tsx —— 只读模式（线上 / 正式预览）下点开卡片看到的详情
-import { Check, ExternalLink, Star } from 'lucide-react';
+// app/media/AnimeDetail.tsx —— 只读模式（线上 / 正式预览）下点开卡片看到的详情
+import { Check, ExternalLink, MapPin, Star } from 'lucide-react';
 import AnimeModal from './AnimeModal';
 import { AnimeCover } from './AnimeCard';
 import {
   KIND_LABEL,
-  STATUS_LABEL,
   STATUS_STYLE,
   bangumiUrl,
+  creatorLabel,
+  dateLabels,
   hasParts,
+  openLibraryUrl,
   progressText,
   progressThroughPart,
+  statusLabel,
   tmdbUrl,
   type AnimeEntry,
 } from '../../lib/anime';
@@ -18,11 +21,14 @@ import {
 const dot = (d: string) => d.replace(/-/g, '.');
 
 export default function AnimeDetail({ entry, onClose }: { entry: AnimeEntry; onClose: () => void }) {
+  const labels = dateLabels(entry.kind);
   const dates = [
-    entry.airDate && `${entry.kind === 'movie' ? '上映' : '首播'} ${dot(entry.airDate)}`,
-    entry.startedAt && `开始看 ${dot(entry.startedAt)}`,
-    entry.finishedAt && `看完 ${dot(entry.finishedAt)}`,
+    entry.airDate && `${labels.air} ${dot(entry.airDate)}`,
+    entry.startedAt && `${labels.start} ${dot(entry.startedAt)}`,
+    entry.finishedAt && `${labels.finish} ${dot(entry.finishedAt)}`,
   ].filter(Boolean);
+  const creator = creatorLabel(entry.kind);
+  const wished = entry.status === 'planned' && (entry.priority > 0 || entry.wishReason);
 
   return (
     <AnimeModal title={entry.title} onClose={onClose}>
@@ -33,9 +39,14 @@ export default function AnimeDetail({ entry, onClose }: { entry: AnimeEntry; onC
         <div className="min-w-0 flex-1">
           <h3 className="text-xl font-black leading-snug text-slate-900 dark:text-white">{entry.title}</h3>
           {entry.originalTitle && <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{entry.originalTitle}</p>}
+          {creator && entry.creator && (
+            <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">
+              {creator}：{entry.creator}
+            </p>
+          )}
 
           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold">
-            <span className={`rounded-full px-2.5 py-1 ring-1 ${STATUS_STYLE[entry.status]}`}>{STATUS_LABEL[entry.status]}</span>
+            <span className={`rounded-full px-2.5 py-1 ring-1 ${STATUS_STYLE[entry.status]}`}>{statusLabel(entry.status, entry.kind)}</span>
             <span className="rounded-full bg-slate-500/10 px-2.5 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">{KIND_LABEL[entry.kind]}</span>
             <span className="rounded-full bg-slate-500/10 px-2.5 py-1 tabular-nums text-slate-600 dark:bg-white/10 dark:text-slate-300">{progressText(entry)}</span>
             {entry.rating > 0 && (
@@ -43,7 +54,23 @@ export default function AnimeDetail({ entry, onClose }: { entry: AnimeEntry; onC
                 <Star size={12} className="fill-current" /> {entry.rating} / 10
               </span>
             )}
+            {entry.platform && (
+              <span className="flex items-center gap-1 rounded-full bg-slate-500/10 px-2.5 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-300">
+                <MapPin size={12} /> {entry.platform}
+              </span>
+            )}
           </div>
+
+          {wished && (
+            <p className="mt-3 rounded-2xl bg-sky-500/10 px-4 py-3 text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+              {entry.priority > 0 && (
+                <span className="mr-2 font-black tracking-widest text-amber-500" aria-label={`优先级 ${entry.priority}`}>
+                  {'★'.repeat(entry.priority)}
+                </span>
+              )}
+              {entry.wishReason}
+            </p>
+          )}
 
           {dates.length > 0 && <p className="mt-3 text-xs tabular-nums text-slate-500 dark:text-slate-400">{dates.join(' · ')}</p>}
 
@@ -101,6 +128,17 @@ export default function AnimeDetail({ entry, onClose }: { entry: AnimeEntry; onC
               className="mr-4 mt-4 inline-flex items-center gap-1 text-xs font-bold text-indigo-500 hover:underline"
             >
               在 TMDB 查看{entry.tmdbScore > 0 ? `（${entry.tmdbScore.toFixed(1)} 分）` : ''} <ExternalLink size={12} />
+            </a>
+          )}
+
+          {entry.openLibraryKey && (
+            <a
+              href={openLibraryUrl(entry.openLibraryKey)}
+              target="_blank"
+              rel="noreferrer"
+              className="mr-4 mt-4 inline-flex items-center gap-1 text-xs font-bold text-indigo-500 hover:underline"
+            >
+              在 Open Library 查看 <ExternalLink size={12} />
             </a>
           )}
 

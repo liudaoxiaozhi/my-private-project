@@ -1,4 +1,4 @@
-// lib/server/animeClean.ts —— 追番数据清洗用的小工具与错误类型（animeStore / tmdb 共用）
+// lib/server/animeClean.ts —— 书影音数据清洗用的小工具与错误类型（animeStore / tmdb 共用）
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 

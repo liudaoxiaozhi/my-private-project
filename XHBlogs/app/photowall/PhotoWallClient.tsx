@@ -1,16 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useCallback, type ReactNode } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, CalendarDays, Image as ImageIcon, Images, Search, SearchX } from 'lucide-react';
+import { useState, useMemo, useEffect, type ReactNode } from 'react';
+import { ArrowLeft, CalendarDays, Image as ImageIcon, Images, Search, SearchX, X } from 'lucide-react';
 import { albums, Album } from '../../data/albums';
 import AppImage from '../../components/AppImage';
 import PageHeader from '../../components/PageHeader';
 import EmptyState from '../../components/EmptyState';
-import { useEffectsLevel } from '../../components/EffectGate';
-import Lightbox, { zoomIn, type LightboxPhoto } from '../../components/photo/Lightbox';
-import Viewfinder from '../../components/photo/Viewfinder';
-import { useDevelopGuard } from '../../components/photo/useDevelopGuard';
 
 const SEARCH_INPUT =
   'h-10 w-full rounded-full bg-white/70 pl-10 pr-4 text-sm text-slate-800 placeholder-slate-400 ring-1 ring-black/5 outline-none transition-shadow focus:ring-2 focus:ring-indigo-400 dark:bg-slate-800/60 dark:text-white dark:placeholder-slate-500 dark:ring-white/10';
@@ -28,37 +23,9 @@ function SectionLabel({ icon, children }: { icon: ReactNode; children: ReactNode
   );
 }
 
-type LightboxScope = 'album' | 'search';
-interface LightboxState { scope: LightboxScope; index: number; zoomed: boolean; }
-
-/** 这次打开的相册是不是从列表点进来的（是的话「返回画廊」直接后退，浏览器历史不会多一条） */
-let openedFromList = false;
-function markOpenedFromList(): void {
-  openedFromList = true;
-}
-function takeOpenedFromList(): boolean {
-  const value = openedFromList;
-  openedFromList = false;
-  return value;
-}
-
-/**
- * 照片墙。打开的相册记在网址里（?album=<id>）：浏览器后退回到相册列表，带参数的链接直接打开相册。
- * useSearchParams 需要 Suspense 边界，见 page.tsx；换相册时整个视图按 key 重新挂载（搜索框、灯箱一起复位）。
- */
 export default function PhotoWallClient() {
-  const albumId = useSearchParams().get('album');
-  return <PhotoWallView key={albumId ?? ''} albumId={albumId} />;
-}
-
-export function PhotoWallView({ albumId }: { albumId: string | null }) {
-  const router = useRouter();
-  const level = useEffectsLevel();
-  const currentAlbum: Album | null = (albumId && albums.find((a) => a.id === albumId)) || null;
-  const [lightbox, setLightbox] = useState<LightboxState | null>(null);
-  const albumGridRef = useRef<HTMLDivElement>(null);
-  const searchGridRef = useRef<HTMLDivElement>(null);
-  useDevelopGuard(albumGridRef, level !== 'off' && currentAlbum !== null);
+  const [currentAlbum, setCurrentAlbum] = useState<Album | null>(null);
+  const [selectedImage, setSelectedImage] = useState<{url: string, caption?: string} | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   // 输入停顿 250ms 后才真正生效；两者不一致时就是「过渡中」，直接推导，不再额外存一份状态
@@ -89,36 +56,7 @@ export function PhotoWallView({ albumId }: { albumId: string | null }) {
     return { matchedAlbums, matchedPhotos };
   }, [query]);
 
-  const openAlbum = (album: Album) => {
-    markOpenedFromList();
-    router.push(`/photowall?album=${encodeURIComponent(album.id)}`);
-  };
-
-  const closeAlbum = () => {
-    if (takeOpenedFromList()) {
-      router.back();
-    } else {
-      router.push('/photowall');
-    }
-  };
-
-  const albumPhotos = useMemo<LightboxPhoto[]>(() => currentAlbum?.photos ?? [], [currentAlbum]);
-  const searchPhotos = useMemo<LightboxPhoto[]>(
-    () => matchedPhotos.map((p) => ({ url: p.url, caption: p.caption, album: p.albumName })),
-    [matchedPhotos],
-  );
-
-  const getThumb = useCallback((scope: LightboxScope, index: number) => {
-    const grid = scope === 'album' ? albumGridRef.current : searchGridRef.current;
-    return grid?.querySelector<HTMLElement>(`[data-photo-index="${index}"]`) ?? null;
-  }, []);
-  const lightboxScope = lightbox?.scope;
-  const getLightboxThumb = useCallback((index: number) => (lightboxScope ? getThumb(lightboxScope, index) : null), [getThumb, lightboxScope]);
-  const closeLightbox = useCallback(() => setLightbox(null), []);
-
-  const openPhoto = (scope: LightboxScope, index: number, thumb: HTMLElement) => {
-    zoomIn(thumb, (zoomed) => setLightbox({ scope, index, zoomed }));
-  };
+  const openAlbum = (album: Album) => { setSearchQuery(''); setCurrentAlbum(album); };
 
   return (
     <div className="min-h-screen relative pb-24">
@@ -166,22 +104,19 @@ export function PhotoWallView({ albumId }: { albumId: string | null }) {
                   <SectionLabel icon={<ImageIcon size={16} />}>
                     匹配的单张照片 <span className="tabular-nums text-slate-500 dark:text-slate-400">{matchedPhotos.length}</span>
                   </SectionLabel>
-                  <div ref={searchGridRef} className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
+                  <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
                     {matchedPhotos.map((photo, index) => (
-                      <button data-reveal
-                        type="button"
+                      <div data-reveal
                         key={`search-photo-${index}`}
-                        data-photo-index={index}
-                        aria-label={`查看大图：${photo.caption || photo.albumName}`}
-                        onClick={(e) => openPhoto('search', index, e.currentTarget)}
-                        className="block w-full text-left break-inside-avoid relative group rounded-2xl overflow-hidden cursor-zoom-in shadow-lg bg-white/20 dark:bg-slate-800/20 border border-white/30 dark:border-white/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                        onClick={() => setSelectedImage(photo)}
+                        className="break-inside-avoid relative group rounded-2xl overflow-hidden cursor-zoom-in shadow-lg bg-white/20 dark:bg-slate-800/20 border border-white/30 dark:border-white/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/20"
                       >
                         <AppImage src={photo.url} alt={photo.caption || '照片'} width={800} height={600} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105" />
-                        <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-5">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-5">
                           <span className="text-indigo-300 font-bold text-xs mb-1 drop-shadow-md">{photo.albumName}</span>
-                          <span className="block text-white font-medium text-sm drop-shadow-md translate-y-4 group-hover:translate-y-0 transition-transform duration-500">{photo.caption}</span>
-                        </span>
-                      </button>
+                          <p className="text-white font-medium text-sm drop-shadow-md translate-y-4 group-hover:translate-y-0 transition-transform duration-500">{photo.caption}</p>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </section>
@@ -260,7 +195,7 @@ export function PhotoWallView({ albumId }: { albumId: string | null }) {
               actions={
                 <button
                   type="button"
-                  onClick={closeAlbum}
+                  onClick={() => setCurrentAlbum(null)}
                   className="glass-chip group inline-flex cursor-pointer items-center gap-2 px-4 py-2 text-sm font-bold text-slate-600 transition-colors duration-300 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400"
                 >
                   <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" aria-hidden="true" />
@@ -289,34 +224,24 @@ export function PhotoWallView({ albumId }: { albumId: string | null }) {
                 description="在后台「相册」里给它添加几张吧。"
               />
             ) : (
-              <div ref={albumGridRef} className="relative mt-8">
-                <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
-                  {currentAlbum.photos.map((photo, index) => (
-                    <button
-                      type="button"
-                      key={`${photo.url}-${index}`}
-                      data-photo-index={index}
-                      aria-label={`查看大图：${photo.caption || `第 ${index + 1} 张`}`}
-                      onClick={(e) => openPhoto('album', index, e.currentTarget)}
-                      className="block w-full text-left break-inside-avoid relative group rounded-2xl overflow-hidden cursor-zoom-in shadow-lg bg-white/20 dark:bg-slate-800/20 border border-white/30 dark:border-white/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 animate-fade-in-up"
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <AppImage data-develop src={photo.url} alt={photo.caption || '照片'} width={800} height={600} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105" />
-                      <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-5">
-                        {photo.caption && (
-                          <span data-photo-caption className="block text-white font-medium text-sm drop-shadow-md translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                            {photo.caption}
-                          </span>
-                        )}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                <Viewfinder
-                  captions={currentAlbum.photos.map((p) => p.caption)}
-                  albumTitle={currentAlbum.title}
-                  date={currentAlbum.date}
-                />
+              <div className="mt-8 columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
+                {currentAlbum.photos.map((photo, index) => (
+                  <div
+                    key={`${photo.url}-${index}`}
+                    onClick={() => setSelectedImage(photo)}
+                    className="break-inside-avoid relative group rounded-2xl overflow-hidden cursor-zoom-in shadow-lg bg-white/20 dark:bg-slate-800/20 border border-white/30 dark:border-white/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/20 animate-fade-in-up"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <AppImage src={photo.url} alt={photo.caption || '照片'} width={800} height={600} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-5">
+                      {photo.caption && (
+                        <p className="text-white font-medium text-sm drop-shadow-md translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                          {photo.caption}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -324,14 +249,30 @@ export function PhotoWallView({ albumId }: { albumId: string | null }) {
 
       </div>
 
-      {lightbox && (
-        <Lightbox
-          photos={lightbox.scope === 'album' ? albumPhotos : searchPhotos}
-          startIndex={lightbox.index}
-          zoomed={lightbox.zoomed}
-          getThumb={getLightboxThumb}
-          onClose={closeLightbox}
-        />
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center p-4 sm:p-10 cursor-zoom-out animate-fade-in"
+          onClick={() => setSelectedImage(null)}
+        >
+          <button type="button" aria-label="关闭" className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors bg-white/10 hover:bg-white/20 rounded-full p-2">
+            <X size={24} aria-hidden="true" />
+          </button>
+
+          {/* 灯箱展示原图，刻意保留原生 <img>，不经过尺寸压缩 */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={selectedImage.url}
+            alt={selectedImage.caption || '全屏照片'}
+            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {selectedImage.caption && (
+            <div className="absolute bottom-10 mx-4 px-6 py-3 bg-white/10 backdrop-blur-md border border-white/10 rounded-full text-white text-sm font-medium tracking-wide shadow-2xl">
+              {selectedImage.caption}
+            </div>
+          )}
+        </div>
       )}
 
       <style jsx global>{`

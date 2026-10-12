@@ -2,8 +2,6 @@
 // app/anime/AnimeDetail.tsx —— 只读模式（线上 / 正式预览）下点开卡片看到的详情
 import { Check, ExternalLink, Star } from 'lucide-react';
 import AnimeModal from './AnimeModal';
-import MovieOpening, { useMovieOpening } from '../../components/cinema/MovieOpening';
-import { useEffectsLevel } from '../../components/EffectGate';
 import { AnimeCover } from './AnimeCard';
 import {
   KIND_LABEL,
@@ -20,10 +18,6 @@ import {
 const dot = (d: string) => d.replace(/-/g, '.');
 
 export default function AnimeDetail({ entry, onClose }: { entry: AnimeEntry; onClose: () => void }) {
-  // 电影：遮幅黑边 + 片头字幕卡（「阅读」档 / 减少动态效果时不播，和原来一样）
-  const level = useEffectsLevel();
-  const cinematic = entry.kind === 'movie' && level !== 'off';
-  const opening = useMovieOpening(cinematic, onClose);
   const dates = [
     entry.airDate && `${entry.kind === 'movie' ? '上映' : '首播'} ${dot(entry.airDate)}`,
     entry.startedAt && `开始看 ${dot(entry.startedAt)}`,
@@ -31,19 +25,7 @@ export default function AnimeDetail({ entry, onClose }: { entry: AnimeEntry; onC
   ].filter(Boolean);
 
   return (
-    <AnimeModal
-      title={entry.title}
-      onClose={cinematic ? opening.close : onClose}
-      cinema={
-        cinematic
-          ? {
-              overlay: <MovieOpening entry={entry} tier={level === 'lite' ? 'lite' : 'full'} state={opening} />,
-              opening: opening.opening,
-              closing: opening.closing,
-            }
-          : undefined
-      }
-    >
+    <AnimeModal title={entry.title} onClose={onClose}>
       <div className="flex flex-col gap-5 sm:flex-row">
         <div className="mx-auto w-40 shrink-0 sm:mx-0 sm:w-44">
           <AnimeCover entry={entry} sizes="176px" eager />

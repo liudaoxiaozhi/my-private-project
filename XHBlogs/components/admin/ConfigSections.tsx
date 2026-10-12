@@ -230,19 +230,6 @@ export function AppearanceSection() {
               <Field label="回车后输出的一行"><TextInput value={f.str('homeHero.output')} onChange={(v) => f.set('homeHero.output', v)} /></Field>
               <Field label="「往下滚」提示"><TextInput value={f.str('homeHero.scrollPrompt')} onChange={(v) => f.set('homeHero.scrollPrompt', v)} /></Field>
             </Grid>
-            <Toggle checked={f.bool('homeHero.montage')} onChange={(v) => f.set('homeHero.montage', v)} label="镜头蒙太奇开场" hint="滚动/滑动推进几组镜头，最后进入正文；默认关" />
-            {f.bool('homeHero.montage') && (
-              <Field label="蒙太奇图片（每行一个地址）" hint="最多 6 张；留空则用背景插画（电脑）+ 照片墙里的照片">
-                {/* 输入时原样保存（不然回车换不了行），离开输入框时再去掉空行和首尾空格 */}
-                <TextArea
-                  value={f.list('homeHero.montageImages').join('\n')}
-                  onChange={(v) => f.set('homeHero.montageImages', v.split('\n'))}
-                  onBlur={() => f.set('homeHero.montageImages', f.list('homeHero.montageImages').map((l) => l.trim()).filter(Boolean))}
-                  rows={4}
-                  placeholder={'/images/bg/bg-madoka.webp\n/images/gallery/xxx.webp'}
-                />
-              </Field>
-            )}
           </Group>
           <Group title="默认图片">
             <Field group label="文章默认封面" hint={f.reset('defaultPostCover')}>

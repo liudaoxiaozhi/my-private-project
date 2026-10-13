@@ -31,6 +31,16 @@ http
         playlist: { name: '测试歌单', trackIds: [{ id: 101 }, { id: 102 }, { id: 103 }], tracks: [{ id, name, ar: [{ name: '周杰伦' }], al: { picUrl: 'https://p1.music.126.net/a.jpg' }, fee, dt: 269000 }] },
       });
     }
+    if (url.pathname === '/api/song/lyric/v1') {
+      // 新接口：多一份逐字歌词（yrc）；102 模拟新接口出错，走旧接口
+      if (url.searchParams.get('id') === '102') return send(res, { code: 500 });
+      return send(res, {
+        code: 200,
+        lrc: { lyric: '[00:00.00]作词 : 测试\n[00:01.00]第一句\n[00:02.00]第二句' },
+        tlyric: { lyric: '[00:01.00]first line' },
+        yrc: { lyric: '{"t":0,"c":[{"tx":"作词: "},{"tx":"测试"}]}\n[1000,900](1000,400,0)第(1400,500,0)一句\n[2000,800](2000,800,0)第二句' },
+      });
+    }
     if (url.pathname === '/api/song/lyric') {
       return send(res, { code: 200, lrc: { lyric: '[00:01.00]第一句\n[00:02.00]第二句' }, tlyric: { lyric: '[00:01.00]first line' } });
     }

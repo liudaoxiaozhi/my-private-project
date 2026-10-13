@@ -3,6 +3,7 @@
 // 用的是网页版的公开接口（不需要登录）。歌曲信息在后台导入时查一次存进 data/netease.json；
 // 播放时浏览器直接用官方外链 music.163.com/song/media/outer/url?id=…，歌词由 /api/music/lyric 代取。
 // 注意：VIP / 付费歌曲（fee 为 1 或 4）外链通常放不了或只有 30 秒；部分歌曲有地区限制。
+import type { NeteaseLyricPayload } from '../music';
 import { outboundFetch } from './outboundFetch';
 
 export interface NeteaseSong {
@@ -102,29 +103,27 @@ export async function playlistSongs(id: number): Promise<{ name: string; songs: 
   return { name: playlist.name ?? '', songs: order.slice(0, MAX_SONGS).map((n) => known.get(n)).filter((s): s is NeteaseSong => !!s) };
 }
 
-/** LRC 歌词；有翻译时把译文合并在原文下一行（同一时间戳）；纯音乐 / 没有歌词时返回空字符串 */
-export async function lyric(id: number): Promise<string> {
-  const data = await getJson<{ lrc?: { lyric?: string }; tlyric?: { lyric?: string }; nolyric?: boolean }>(
-    `${API_BASE}/api/song/lyric?id=${id}&lv=-1&kv=-1&tv=-1`,
-  );
-  if (data.nolyric) return '';
-  const original = data.lrc?.lyric ?? '';
-  const translated = data.tlyric?.lyric ?? '';
-  if (!translated.trim()) return original;
-  // 译文按时间戳挂到原文后面
-  const byStamp = new Map<string, string>();
-  for (const line of translated.split(/\r?\n/)) {
-    const m = /^(\[\d{1,3}:\d{1,2}(?:[.:]\d{1,3})?\])(.*)$/.exec(line.trim());
-    if (m && m[2].trim()) byStamp.set(m[1], m[2].trim());
+interface RawLyric {
+  lrc?: { lyric?: string };
+  tlyric?: { lyric?: string };
+  yrc?: { lyric?: string };
+  nolyric?: boolean;
+  uncollected?: boolean;
+}
+
+/**
+ * 歌词：LRC、逐字歌词（yrc，每个字的时间）、翻译。先用新接口拿逐字歌词，
+ * 新接口出错时退回只有 LRC + 翻译的旧接口；纯音乐 / 没有歌词时三项都是空字符串
+ */
+export async function lyric(id: number): Promise<NeteaseLyricPayload> {
+  let data: RawLyric;
+  try {
+    data = await getJson<RawLyric>(`${API_BASE}/api/song/lyric/v1?id=${id}&cv=0&lv=0&kv=0&tv=0&rv=0&yv=0&ytv=0&yrv=0`);
+  } catch {
+    data = await getJson<RawLyric>(`${API_BASE}/api/song/lyric?id=${id}&lv=-1&kv=-1&tv=-1`);
   }
-  return original
-    .split(/\r?\n/)
-    .map((line) => {
-      const m = /^(\[\d{1,3}:\d{1,2}(?:[.:]\d{1,3})?\])(.*)$/.exec(line.trim());
-      const t = m && byStamp.get(m[1]);
-      return t ? `${line.trim()}\n${m![1]}${t}` : line;
-    })
-    .join('\n');
+  if (data.nolyric) return { lrc: '', yrc: '', translation: '' };
+  return { lrc: data.lrc?.lyric ?? '', yrc: data.yrc?.lyric ?? '', translation: data.tlyric?.lyric ?? '' };
 }
 
 /**

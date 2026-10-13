@@ -202,6 +202,7 @@ export default function MusicClient() {
                 lyrics={currentSong.lyrics}
                 currentTime={shownTime}
                 duration={safeDuration}
+                isPlaying={isPlaying}
                 onSeekTime={seekToTime}
                 emptyText="纯音乐，请欣赏"
               />

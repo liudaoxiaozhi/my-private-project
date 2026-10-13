@@ -1,10 +1,30 @@
 // lib/music.ts —— 音乐相关的共享类型（客户端 / 服务端通用，无运行时依赖）
 // 歌曲来自两处：网易云（data/netease.json，后台导入）和本地上传（public/music/，由 scripts/build-music-manifest.mjs 生成歌单）
 
+/** 逐字歌词里的一个字（或一个英文单词），时间单位为秒 */
+export interface LyricWord {
+  start: number;
+  end: number;
+  text: string;
+}
+
 /** 一行已解析的歌词；time 单位为秒，-1 表示没有时间轴的纯文本歌词（只显示、不滚动高亮） */
 export interface LyricLine {
   time: number;
   text: string;
+  /** 这一行的译文（同一时间戳的第二行，或网易云的翻译歌词） */
+  translation?: string;
+  /** 网易云逐字歌词（yrc）里每个字的时间；没有时由页面按整行时长估算 */
+  words?: LyricWord[];
+  /** 这一行唱完的时间（逐字歌词才有） */
+  end?: number;
+}
+
+/** /api/music/lyric 返回的原始歌词：LRC、逐字歌词（yrc）、翻译（LRC 格式），没有的为空字符串 */
+export interface NeteaseLyricPayload {
+  lrc: string;
+  yrc: string;
+  translation: string;
 }
 
 /** scripts/build-music-manifest.mjs 生成的本地歌单条目（public/music/playlist.json） */

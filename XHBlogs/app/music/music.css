@@ -1,10 +1,10 @@
 /* app/music/music.css —— 音乐页（Apple Music 风格）专用样式，类名统一 am- 前缀 */
 
-/* 让歌词填充进度可以平滑过渡（不支持 @property 的浏览器会直接跳到新进度） */
-@property --am-fill {
+/* 逐字点亮的填充位置：-30% 还没唱、100% 唱完；只在每个字自己身上用，不需要继承 */
+@property --w {
   syntax: '<percentage>';
   inherits: false;
-  initial-value: 0%;
+  initial-value: -30%;
 }
 
 .am-root {
@@ -39,20 +39,48 @@
   transform-origin: left center;
   transition:
     opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
-    transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 0.6s cubic-bezier(0.34, 1.32, 0.64, 1),
     filter 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-/* 当前行：按这一行的播放进度从左到右填亮 */
-.am-line-active .am-line-text {
+/* 当前行逐字点亮：每个字从左到右由半透明扫成白色，边缘带一段柔和的过渡 */
+.am-w {
+  display: inline-block;
+  white-space: pre;
   color: transparent;
-  background-image: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 1) var(--am-fill),
-    rgba(255, 255, 255, 0.42) calc(var(--am-fill) + 10%)
-  );
+  background-image: linear-gradient(90deg, #fff var(--w), rgba(255, 255, 255, 0.34) calc(var(--w) + 30%));
   -webkit-background-clip: text;
           background-clip: text;
-  transition: --am-fill 0.3s linear;
+  transform: translateY(1px);
+  transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.6s ease;
+}
+/* 空格保持普通行内，长句能在空格处换行 */
+.am-w-space { display: inline; }
+/* 唱过的字轻轻上浮 */
+.am-w[data-sung],
+.am-w[data-on] { transform: translateY(-2px); }
+/* 拖长音的字唱的时候带一点光 */
+.am-w[data-long][data-on] { filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5)); }
+.am-w[data-long][data-sung] { filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.22)); }
+
+/* 译文：比原文小、淡一些，当前行也不抢原文的风头 */
+.am-line-trans { opacity: 0.55; }
+.am-line-active .am-line-trans { opacity: 0.72; }
+
+/* 前奏 / 间奏的三个小圆点：逐个亮起，整体轻轻呼吸 */
+.am-dots { transform-origin: left center; animation: am-breathe 2.4s ease-in-out infinite; }
+.am-dots i {
+  display: block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 9999px;
+  background: #fff;
+  transition: opacity 0.3s linear;
+}
+@keyframes am-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .am-w, .am-w[data-sung], .am-w[data-on] { transform: none; transition: none; }
+  .am-dots { animation: none; }
 }
 
 /* ---------- 进度条 / 音量条 ---------- */

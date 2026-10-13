@@ -50,10 +50,16 @@ test.describe('网易云', () => {
     expect(saved[1].cover).toBe('https://p1.music.126.net/a.jpg?param=400y400');
   });
 
-  test('歌词接口：代取网易云歌词，译文挂在原文下一行', async ({ request }) => {
+  test('歌词接口：代取网易云歌词、逐字歌词和翻译；新接口出错时退回旧接口', async ({ request }) => {
     const res = await request.get('/api/music/lyric?id=101');
     expect(res.ok()).toBe(true);
-    expect(await res.text()).toBe('[00:01.00]第一句\n[00:01.00]first line\n[00:02.00]第二句');
+    const body = await res.json();
+    expect(body.lrc).toContain('[00:01.00]第一句');
+    expect(body.yrc).toContain('(1000,400,0)第');
+    expect(body.translation).toBe('[00:01.00]first line');
+
+    const old = await (await request.get('/api/music/lyric?id=102')).json();
+    expect(old).toEqual({ lrc: '[00:01.00]第一句\n[00:02.00]第二句', yrc: '', translation: '[00:01.00]first line' });
     expect((await request.get('/api/music/lyric?id=abc')).status()).toBe(400);
   });
 });

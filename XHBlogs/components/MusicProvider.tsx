@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useContext, useState, useRef, useEffect, ReactNode } from 'react';
-import type { LocalPlaylistManifest, LyricLine, NeteaseTrack, Song } from '../lib/music';
+import type { LocalPlaylistManifest, LyricLine, NeteaseLyricPayload, NeteaseTrack, Song } from '../lib/music';
+import { buildNeteaseLyrics, parseLrc } from '../lib/lyrics';
 import { siteConfig } from '../siteConfig';
 import neteaseData from '../data/netease.json';
 
@@ -57,42 +58,17 @@ function neteaseSongs(): Song[] {
   }));
 }
 
-// 【增强版 LRC 歌词解析】
-function parseLrc(lrcText: string): LyricLine[] {
-  if (!lrcText || lrcText.length > 30000) return [];
-
-  const lines = lrcText.split(/\r?\n/);
-  const result: LyricLine[] = [];
-
-  for (let line of lines) {
-    // 兼容 [mm:ss]、[mm:ss.x]、[mm:ss.xx]、[mm:ss.xxx] 以及 [mm:ss:xx] 等写法
-    const matches = [...line.matchAll(/\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]/g)];
-    if (matches.length > 0) {
-      let text = line.replace(/\[\d{1,3}:\d{1,2}(?:[.:]\d{1,3})?\]/g, '').trim();
-
-      // 剔除控制字符
-      const cleanText = text.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, "");
-
-      if (cleanText) {
-        for (const match of matches) {
-          const min = parseInt(match[1], 10);
-          const sec = parseInt(match[2], 10);
-          // 小数部分按位数换算：.5 = 0.5 秒，.50 = 0.5 秒，.500 = 0.5 秒
-          const fraction = match[3] ? Number(`0.${match[3]}`) : 0;
-          const time = min * 60 + sec + fraction;
-          result.push({ time, text: cleanText });
-        }
-      }
+/** 歌词文件 → 歌词行：网易云接口返回 JSON（含逐字歌词和翻译），本地 .lrc 是纯文本；旧缓存里的纯文本也能认 */
+function parseLyricResponse(body: string): LyricLine[] {
+  const text = body.trim();
+  if (text.startsWith('{')) {
+    try {
+      return buildNeteaseLyrics(JSON.parse(text) as Partial<NeteaseLyricPayload>);
+    } catch {
+      return [];
     }
   }
-  if (result.length > 0) return result.sort((a, b) => a.time - b.time);
-
-  // 没有任何时间标签：按纯文本歌词处理（time = -1），页面上静态显示
-  return lines
-    .map((l) => l.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '').trim())
-    // 去掉 [ar:歌手]、[ti:歌名] 这类 LRC 信息标签
-    .filter((l) => l && !/^\[[a-z]+:.*\]$/i.test(l))
-    .map((text) => ({ time: -1, text }));
+  return parseLrc(text);
 }
 
 // 🌟 1. 扩充 Context 类型，加入 MusicPage 需要的所有属性
@@ -183,7 +159,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         .then((res) => (res.ok ? res.text() : ''))
         .then((text) => {
           if (!isMounted) return;
-          const parsed = parseLrc(text);
+          const parsed = parseLyricResponse(text);
           setLyrics(parsed);
           // 纯文本歌词没有时间轴，顶部歌词条显示歌名即可
           setCurrentLyric(parsed[0]?.time === -1 ? `♪ ${currentSong.title} ♪` : parsed[0]?.text || PURE_MUSIC_TEXT);

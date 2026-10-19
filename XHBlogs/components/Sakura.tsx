@@ -20,6 +20,7 @@ import type { Piece } from './PetalField';
 import { getSeason } from '../lib/seasons';
 import type { Season } from '../lib/seasons';
 import { siteConfig } from '../siteConfig';
+import { subscribeReduceMotion, reduceMotion } from '../lib/effects';
 
 /** 这些页面有自己的沉浸式背景，不飘花瓣 */
 const EXCLUDED = [/^\/music(\/|$)/];
@@ -58,17 +59,16 @@ export default function Sakura() {
   const lite = useEffectsLevel() === 'lite';
 
   useEffect(() => {
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
     const mobile = window.matchMedia('(max-width: 767px)');
     const update = () => {
       setSeason(currentSeason());
-      setLayers(reduce.matches ? EMPTY : makeLayers(mobile.matches, lite));
+      setLayers(reduceMotion() ? EMPTY : makeLayers(mobile.matches, lite));
     };
     update();
-    reduce.addEventListener('change', update);
+    const unsubscribe = subscribeReduceMotion(update);
     mobile.addEventListener('change', update);
     return () => {
-      reduce.removeEventListener('change', update);
+      unsubscribe();
       mobile.removeEventListener('change', update);
     };
   }, [lite]);

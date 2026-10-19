@@ -13,6 +13,7 @@
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useEffectsLevel } from './EffectGate';
+import { reduceMotion } from '../lib/effects';
 
 const MAX_TILT = 5;
 const STAGGER_MS = 70;
@@ -26,7 +27,7 @@ export default function CardFx() {
   useEffect(() => {
     const fine = window.matchMedia('(hover: hover) and (pointer: fine)');
     if (level === 'off' || !fine.matches) return;
-    const tiltOn = level === 'full' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const tiltOn = level === 'full' && !reduceMotion();
 
     let active: HTMLElement | null = null;
     let frame = 0;
@@ -82,7 +83,7 @@ export default function CardFx() {
   // ---------- 滚动浮现 ----------
   useEffect(() => {
     const root = document.documentElement;
-    if (level === 'off' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (level === 'off' || reduceMotion()) {
       root.classList.remove('reveal-ready');
       document.querySelectorAll('[data-reveal]').forEach((el) => el.setAttribute('data-revealed', ''));
       return;

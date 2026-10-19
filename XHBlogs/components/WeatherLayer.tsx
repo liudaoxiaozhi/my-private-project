@@ -11,7 +11,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { useEffectsLevel } from './EffectGate';
+import { useEffectsLevel, useReduceMotion } from './EffectGate';
 import PetalField, { makePieces } from './PetalField';
 import { useWeather } from '../lib/useWeather';
 import { isDaytime } from '../lib/weather';
@@ -42,18 +42,6 @@ function makeDrops(count: number, intensity: WeatherIntensity): Drop[] {
       opacity: 0.35 + Math.random() * 0.5,
     };
   });
-}
-
-function useReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const update = () => setReduced(mq.matches);
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
-  }, []);
-  return reduced;
 }
 
 function Rain({ intensity, lite }: { intensity: WeatherIntensity; lite: boolean }) {
@@ -96,7 +84,7 @@ function useWeatherScene() {
   const weather = useWeather();
   const level = useEffectsLevel();
   const pathname = usePathname();
-  const reduced = useReducedMotion();
+  const reduced = useReduceMotion();
   const hidden = !weather || level === 'off' || EXCLUDED.some((re) => re.test(pathname));
   return { weather: hidden ? null : weather, level, lite: level === 'lite', animate: !reduced };
 }

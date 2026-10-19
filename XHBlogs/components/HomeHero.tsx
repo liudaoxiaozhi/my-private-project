@@ -5,9 +5,9 @@
 // - 终端行等开屏动画结束后才开始打字；「阅读」档、系统开了「减少动态效果」时直接显示全文
 // - 最下面的「往下滚」提示点了滚到卡片区（#home-main）
 // - 背景飘弹幕（components/HeroDanmaku.tsx，siteConfig.enableDanmaku）
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 import { siteConfig } from '../siteConfig';
-import { useEffectsLevel } from './EffectGate';
+import { useEffectsLevel, useReduceMotion } from './EffectGate';
 import HeroDanmaku from './HeroDanmaku';
 
 const hero = siteConfig.homeHero;
@@ -55,17 +55,10 @@ function useTyping(text: string, instant: boolean): { typed: string; done: boole
   return { typed: chars.slice(0, shown).join(''), done: shown >= chars.length };
 }
 
-const REDUCED_QUERY = '(prefers-reduced-motion: reduce)';
-function subscribeReduced(onChange: () => void): () => void {
-  const mq = window.matchMedia(REDUCED_QUERY);
-  mq.addEventListener('change', onChange);
-  return () => mq.removeEventListener('change', onChange);
-}
-
 /** danmaku：弹幕文字（siteConfig.danmakuList + 最新文章标题，由首页传进来） */
 export default function HomeHero({ danmaku = [] }: { danmaku?: string[] }) {
   const level = useEffectsLevel();
-  const reduced = useSyncExternalStore(subscribeReduced, () => window.matchMedia(REDUCED_QUERY).matches, () => false);
+  const reduced = useReduceMotion();
   const { typed, done } = useTyping(hero.command, level === 'off' || reduced);
 
   const scrollDown = () => {

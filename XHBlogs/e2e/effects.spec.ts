@@ -162,3 +162,39 @@ test.describe('滚动浮现', () => {
     });
   });
 });
+
+test.describe('系统关了动画（Windows「动画效果」、减少动态效果）', () => {
+  test.use({ contextOptions: { reducedMotion: 'reduce' } });
+
+  // 用一个持续 2 秒的测试动画看全局「减少动态」规则有没有生效（生效时会被压成 0.01 毫秒）
+  const probeDuration = (page: Page) =>
+    page.evaluate(() => {
+      const el = document.createElement('div');
+      el.style.animation = 'test-probe 2s linear infinite';
+      document.body.appendChild(el);
+      const d = getComputedStyle(el).animationDuration;
+      el.remove();
+      return d;
+    });
+
+  test('「自动」跟随系统降到「阅读」；手动选「完整」后以读者的选择为准，动画照常', async ({ page }) => {
+    await page.goto('/');
+    await expect.poll(() => level(page)).toBe('off');
+    expect(await page.evaluate(() => document.documentElement.dataset.effectsChoice)).toBeUndefined();
+    expect(await probeDuration(page)).toBe('1e-05s');
+
+    await openToolbox(page);
+    await page.getByRole('button', { name: /✨ 特效/ }).click();
+    await page.getByRole('button', { name: /完整/ }).first().click();
+    await expect.poll(() => level(page)).toBe('full');
+    expect(await page.evaluate(() => document.documentElement.dataset.effectsChoice)).toBe('manual');
+    expect(await probeDuration(page)).toBe('2s');
+    // 樱花等「完整」档特效挂载出来
+    await expect.poll(() => page.evaluate(() => [...document.querySelectorAll('[data-fx="full"]')].every((el) => el.childElementCount > 0))).toBe(true);
+
+    // 刷新后仍然记得手动选择
+    await page.reload();
+    await expect.poll(() => level(page)).toBe('full');
+    expect(await probeDuration(page)).toBe('2s');
+  });
+});

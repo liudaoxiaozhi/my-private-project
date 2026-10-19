@@ -691,9 +691,12 @@ html.dark[data-bg="manga"] .bg-tint {
   to { transform: scaleX(0.85); }
 }
 
-/* 用户开启「减少动态效果」时，停用背景轮播的淡入淡出与卡片缩放过渡 */
+/* 用户开启「减少动态效果」时，停用背景轮播的淡入淡出与卡片缩放过渡。
+   读者在「特效」菜单里手动选过档位（data-effects-choice="manual"）时以读者的选择为准，不压住动画 */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  html:not([data-effects-choice="manual"]) *,
+  html:not([data-effects-choice="manual"]) *::before,
+  html:not([data-effects-choice="manual"]) *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

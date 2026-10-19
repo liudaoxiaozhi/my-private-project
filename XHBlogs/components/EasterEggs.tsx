@@ -17,6 +17,7 @@ import { getSeason } from '../lib/seasons';
 import type { Season } from '../lib/seasons';
 import { readJSON, writeJSON } from '../lib/localStore';
 import { siteConfig } from '../siteConfig';
+import { reduceMotion } from '../lib/effects';
 
 const KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
 const STORM_MS = 10_000;
@@ -102,7 +103,7 @@ export default function EasterEggs() {
       progress = key === KONAMI[progress] ? progress + 1 : key === KONAMI[0] ? 1 : 0;
       if (progress < KONAMI.length) return;
       progress = 0;
-      const motion = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const motion = !reduceMotion();
       const mobile = window.matchMedia('(max-width: 767px)').matches;
       setStorm({
         pieces: motion ? makePieces(mobile ? 36 : 80, { fall: [3, 6], delayMax: 4, once: true, size: [12, 26] }) : [],
@@ -121,7 +122,7 @@ export default function EasterEggs() {
   useEffect(() => {
     const onBurst = () => {
       if (document.documentElement.getAttribute('data-effects') === 'off') return;
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      if (reduceMotion()) return;
       const mobile = window.matchMedia('(max-width: 767px)').matches;
       setStorm((current) =>
         current ?? {

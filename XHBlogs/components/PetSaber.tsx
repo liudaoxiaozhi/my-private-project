@@ -21,13 +21,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { FormEvent, KeyboardEvent, MouseEvent, PointerEvent } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { EyeOff, MessageCircle, Send } from 'lucide-react';
 import AppImage from './AppImage';
 import { useMusic } from './MusicProvider';
 import { useFullPlayerOnScreen } from '../lib/playerPresence';
 import { PET_COMMAND_EVENT } from '../lib/petBus';
 import type { PetCommand } from '../lib/petBus';
+import { useReduceMotion } from './EffectGate';
 
 const IMG = { src: '/images/pet/saber.webp', width: 360, height: 364, edge: 0.9262 } as const;
 // 比原来小 13%，右下角不那么挤
@@ -144,7 +145,7 @@ interface Heart {
 }
 
 export default function PetSaber() {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReduceMotion();
   const [hidden, setHidden] = useState(false);
   const [speech, setSpeech] = useState<string | null>(null);
   const [showInput, setShowInput] = useState(false);

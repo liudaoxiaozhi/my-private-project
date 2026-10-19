@@ -36,7 +36,7 @@ export default function LyricBar() {
           animation: lyricCursorBlink 0.8s step-end infinite;
         }
         @media (prefers-reduced-motion: reduce) {
-          .lyric-cursor { animation: none; }
+          html:not([data-effects-choice="manual"]) .lyric-cursor { animation: none; }
         }
       `}</style>
 

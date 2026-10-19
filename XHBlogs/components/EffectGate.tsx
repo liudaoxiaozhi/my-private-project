@@ -6,11 +6,16 @@
 
 import { useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
-import { getEffectsLevel, meetsLevel, subscribeEffects } from '../lib/effects';
+import { getEffectsLevel, meetsLevel, reduceMotion, subscribeEffects, subscribeReduceMotion } from '../lib/effects';
 import type { EffectsLevel } from '../lib/effects';
 
 export function useEffectsLevel(): EffectsLevel {
   return useSyncExternalStore(subscribeEffects, getEffectsLevel, () => 'full');
+}
+
+/** 是否该减少动画（系统要求减少动态且读者没手动选档位，见 lib/effects.ts）；服务端按「不减少」渲染 */
+export function useReduceMotion(): boolean {
+  return useSyncExternalStore(subscribeReduceMotion, reduceMotion, () => false);
 }
 
 interface EffectGateProps {

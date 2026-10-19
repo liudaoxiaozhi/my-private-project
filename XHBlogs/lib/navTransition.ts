@@ -2,6 +2,7 @@
 //
 // 点击封面卡片走「共享元素」视图过渡时，页面自身的入场动画要让位，
 // 否则新页面会以透明状态被截进过渡画面里。
+import { reduceMotion } from './effects';
 
 let viewTransitionNav = false;
 
@@ -18,6 +19,6 @@ export function canUseViewTransition(): boolean {
   return (
     typeof document !== 'undefined' &&
     'startViewTransition' in document &&
-    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    !reduceMotion()
   );
 }

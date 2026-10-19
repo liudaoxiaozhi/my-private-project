@@ -16,6 +16,7 @@ import { isAdminPath, isReaderPath } from '../lib/routes';
 import { isViewTransitionNav } from '../lib/navTransition';
 import { consumeTraverse, installNavHistory } from '../lib/navHistory';
 import type { NavDirection } from '../lib/navHistory';
+import { reduceMotion } from '../lib/effects';
 
 const ENTER_OFFSET = 20;
 const SLIDE_OFFSET = 28;
@@ -46,11 +47,11 @@ export default function RouteTransition({ children }: { children: ReactNode }) {
     const direction = consumeTraverse(pathname);
     if (!el || !shouldAnimate(pathname) || isViewTransitionNav()) return;
 
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduced = reduceMotion();
     const controls = animate(
       el,
-      reduceMotion ? { opacity: [0, 1] } : keyframes(direction),
-      { duration: reduceMotion ? 0.2 : direction === 'push' ? 0.6 : 0.45, ease: 'easeOut' },
+      reduced ? { opacity: [0, 1] } : keyframes(direction),
+      { duration: reduced ? 0.2 : direction === 'push' ? 0.6 : 0.45, ease: 'easeOut' },
     );
     // 动画中途又换页：直接跳到终点，避免页面停在半透明状态
     return () => controls.complete();

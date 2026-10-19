@@ -11,11 +11,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import type { Transition, Variants } from 'framer-motion';
 import { siteConfig } from '../siteConfig';
 import { formatDateParts, isValidTimeZone } from '../lib/time';
 import AppImage from './AppImage';
+import { useReduceMotion } from './EffectGate';
 
 interface SplashBanner {
   src: string;
@@ -50,7 +51,7 @@ export default function SplashScreen() {
   const [show, setShow] = useState(false);
   const [dateLine, setDateLine] = useState('');
   const [banner, setBanner] = useState<SplashBanner | null>(null);
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReduceMotion();
   const exited = useRef(false);
 
   const exitSplash = useCallback(() => {

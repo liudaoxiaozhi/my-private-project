@@ -79,8 +79,8 @@
 @keyframes am-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .am-w, .am-w[data-sung], .am-w[data-on] { transform: none; transition: none; }
-  .am-dots { animation: none; }
+  html:not([data-effects-choice="manual"]) :is(.am-w, .am-w[data-sung], .am-w[data-on]) { transform: none; transition: none; }
+  html:not([data-effects-choice="manual"]) .am-dots { animation: none; }
 }
 
 /* ---------- 进度条 / 音量条 ---------- */

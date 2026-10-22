@@ -50,10 +50,14 @@ function cleanup() {
   for (const file of copied.splice(0)) rmSync(file, { force: true });
   for (const [file, original] of replaced.splice(0)) writeFileSync(file, original);
 }
-process.on('SIGINT', () => {
-  cleanup();
-  process.exit(130);
-});
+// Ctrl+C（SIGINT）或被别的进程停掉（SIGTERM）时也要把 data/ 还原，否则测试数据会留在工作区里
+for (const [signal, code] of [['SIGINT', 130], ['SIGTERM', 143]]) {
+  process.on(signal, () => {
+    cleanup();
+    rmSync(ADMIN_ROOT, { recursive: true, force: true });
+    process.exit(code);
+  });
+}
 
 function run(command, commandArgs) {
   // Windows 上 npm / npx 是 .cmd，需要经过 shell

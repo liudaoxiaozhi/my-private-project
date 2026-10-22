@@ -55,14 +55,22 @@ export default function BillsSection() {
   const [tab, setTab] = useState<'entries' | 'settings'>('entries');
   /** 重新载入 / 撤销 / 保存后加一，让输入框按新数据重新初始化 */
   const [revision, setRevision] = useState(0);
+  /** 仓库里的账单文件解不开（钥匙变了）：默认不能保存；读者确认放弃旧账单后才允许覆盖 */
+  const [locked, setLocked] = useState(false);
+  const [overwriteLocked, setOverwriteLocked] = useState(false);
+  /** 是否单独设置了 ADMIN_SECRETS_KEY（没设时改管理员密码会让账单解不开） */
+  const [secretsKey, setSecretsKey] = useState(true);
   const { toast, saved } = useAdmin();
 
-  const reload = useLoader<{ bills: BillsData }>(
+  const reload = useLoader<{ bills: BillsData; state?: string; secretsKey?: boolean }>(
     '/api/admin/bills',
     (d) => {
       setOriginal(d.bills);
       setDraft(d.bills);
       setFailed(false);
+      setLocked(d.state === 'locked');
+      setOverwriteLocked(false);
+      setSecretsKey(d.secretsKey !== false);
       setRevision((r) => r + 1);
     },
     () => setFailed(true),
@@ -91,7 +99,9 @@ export default function BillsSection() {
     const sent = draft;
     setSaving(true);
     try {
-      const res = await api<SaveResult & { bills: BillsData }>('/api/admin/bills', { method: 'PUT', body: { bills: sent } });
+      const res = await api<SaveResult & { bills: BillsData }>('/api/admin/bills', { method: 'PUT', body: { bills: sent, overwriteLocked } });
+      setLocked(false);
+      setOverwriteLocked(false);
       setOriginal(res.bills);
       // 保存期间又改了的话保留新的改动
       setDraft((d) => (d === sent ? res.bills : d));
@@ -130,6 +140,30 @@ export default function BillsSection() {
         </div>
       }
     >
+      {locked && (
+        <div role="alert" className="mb-4 rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+          <p className="font-bold">账单文件无法解密</p>
+          <p className="mt-1 text-rose-100/80">
+            可能改过管理员密码或 ADMIN_SECRETS_KEY。改回原来的密码 / 钥匙后点「重新读取」就能恢复；为免覆盖原来的数据，现在保存会被拒绝。
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <Button tone="indigo" onClick={reload}>重新读取</Button>
+            {overwriteLocked ? (
+              <span className="text-xs text-rose-100/80">已确认放弃旧账单：下次保存会用现在的内容覆盖它（无法恢复）</span>
+            ) : (
+              <ConfirmButton label="确定放弃？无法恢复" onConfirm={() => setOverwriteLocked(true)}>
+                放弃旧账单，重新开始
+              </ConfirmButton>
+            )}
+          </div>
+        </div>
+      )}
+      {!secretsKey && !locked && (
+        <div className="mb-4 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-xs leading-relaxed text-amber-100">
+          账单加密保存在仓库里，钥匙现在跟着管理员密码走：<b>改管理员密码前</b>请先在服务器 / Vercel 的环境变量里设置 <code>ADMIN_SECRETS_KEY</code>（一串随机长字符，设好后不要再改），
+          并在「记账」里导出一份 CSV 备份。设好后已有的账单照样能读，下次保存时自动换成新钥匙；换好之前改密码，旧账单会解不开。
+        </div>
+      )}
       {tab === 'entries' ? <EntriesTab draft={draft} update={update} /> : <SettingsTab key={revision} draft={draft} update={update} />}
       <SaveBar
         dirty={dirty}

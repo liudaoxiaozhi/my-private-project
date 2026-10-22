@@ -7,7 +7,7 @@ import { test, expect, adminLogin } from './support';
 import type { Page } from '@playwright/test';
 import { ADMIN_PASSWORD, ADMIN_ROOT } from './adminEnv';
 import { parseNeteaseInput } from '../lib/server/netease';
-import { decrypt, encrypt } from '../lib/server/admin/secrets';
+import { cipherKey, decrypt, encrypt, openSealed } from '../lib/server/admin/secrets';
 import crypto from 'node:crypto';
 
 const read = (...parts: string[]) => fs.readFileSync(path.join(ADMIN_ROOT, ...parts), 'utf8');
@@ -73,6 +73,31 @@ test.describe('密钥', () => {
     expect(decrypt(sealed, crypto.createHash('sha256').update('b').digest())).toBeNull();
   });
 
+  test('后来才设置 ADMIN_SECRETS_KEY：管理员密码加密的旧密文照样能解开，并标出要换成新钥匙', () => {
+    const before = { ADMIN_PASSWORD: process.env.ADMIN_PASSWORD, ADMIN_SECRETS_KEY: process.env.ADMIN_SECRETS_KEY };
+    try {
+      process.env.ADMIN_PASSWORD = 'old-password';
+      delete process.env.ADMIN_SECRETS_KEY;
+      const old = encrypt('tmdb-key-1234567890', cipherKey()!);
+      expect(openSealed(old)).toEqual({ text: 'tmdb-key-1234567890', legacy: false });
+
+      process.env.ADMIN_SECRETS_KEY = 'a-long-random-secrets-key';
+      expect(openSealed(old)).toEqual({ text: 'tmdb-key-1234567890', legacy: true });
+      const fresh = encrypt('tmdb-key-1234567890', cipherKey()!);
+      expect(openSealed(fresh)).toEqual({ text: 'tmdb-key-1234567890', legacy: false });
+
+      // 换成新钥匙之前又改了管理员密码：旧密文解不开；新钥匙加密的不受影响
+      process.env.ADMIN_PASSWORD = 'new-password';
+      expect(openSealed(old)).toBeNull();
+      expect(openSealed(fresh)?.text).toBe('tmdb-key-1234567890');
+    } finally {
+      for (const [name, value] of Object.entries(before)) {
+        if (value === undefined) delete process.env[name];
+        else process.env[name] = value;
+      }
+    }
+  });
+
   test('后台保存 Gemini Key：仓库里只有密文，状态变成「已保存」，可以删除', async ({ page }) => {
     await adminLogin(page, ADMIN_PASSWORD);
     await section(page, '书影音与密钥');
@@ -110,5 +135,25 @@ test.describe('书影音', () => {
     await page.getByRole('button', { name: '添加', exact: true }).last().click();
     await expect(page.getByText(`已添加《${title}》`)).toBeVisible();
     expect(read('data', 'anime.json')).toContain(title);
+  });
+});
+
+test.describe('接口自检', () => {
+  test('后台一键检测外部接口：假网易云能连上、拿到逐字歌词；连不上的给出原因；没配 TMDB 时跳过', async ({ page }) => {
+    await adminLogin(page, ADMIN_PASSWORD);
+    // 接口：换成假网易云里有的歌
+    const data = await page.evaluate(async () => (await (await fetch('/api/admin/diagnostics?song=101', { headers: { 'X-Admin': '1' } })).json()) as {
+      results: { id: string; ok: boolean | null; detail: string }[];
+    });
+    const byId = Object.fromEntries(data.results.map((r) => [r.id, r]));
+    expect(byId['netease-song']).toMatchObject({ ok: true, detail: expect.stringContaining('晴天') });
+    expect(byId['netease-lyric']).toMatchObject({ ok: true, detail: expect.stringContaining('逐字歌词') });
+    expect(Object.keys(byId)).toEqual(expect.arrayContaining(['bangumi-book', 'bangumi-music', 'openlibrary', 'tmdb']));
+    for (const r of data.results) expect(r.detail.length).toBeGreaterThan(0);
+
+    // 页面：按钮能用，每项都有一行结果
+    await section(page, '书影音与密钥');
+    await page.getByRole('button', { name: '开始检测' }).click();
+    await expect(page.locator('[data-diagnostic]')).toHaveCount(6, { timeout: 20_000 });
   });
 });

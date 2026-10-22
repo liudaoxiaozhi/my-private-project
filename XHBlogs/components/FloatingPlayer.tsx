@@ -3,17 +3,15 @@
 import { usePathname } from 'next/navigation';
 import { useMusic } from './MusicProvider';
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+
 import AppImage from './AppImage';
+import { useIsClient } from '../lib/useIsClient';
 
 export default function FloatingPlayer() {
   const pathname = usePathname();
   const { currentSong, isPlaying, togglePlay, nextSong, currentLyric, isLoading } = useMusic();
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  // 只在浏览器里显示（服务端不知道播放状态）
+  const isMounted = useIsClient();
 
   // 这里只拦截还没有初始化的情况，不拦截首页
   if (!isMounted || isLoading || !currentSong) return null;

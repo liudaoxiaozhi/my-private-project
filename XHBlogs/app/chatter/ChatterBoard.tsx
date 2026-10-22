@@ -52,7 +52,7 @@ export default function ChatterBoard({ chatters }: { chatters: Chatter[] }) {
   const description = siteConfig.chatterDescription || "日常碎片与灵感记录";
 
   return (
-    <div className="relative z-10 mx-auto mt-24 w-full max-w-6xl px-4 pb-24 sm:mt-28 sm:px-6">
+    <div className="relative z-10 mx-auto mt-8 w-full max-w-6xl px-4 pb-24 md:mt-28 sm:px-6">
       <PageHeader
         title={siteConfig.chatterTitle || "杂谈"}
         icon={<NotebookPen size={30} />}

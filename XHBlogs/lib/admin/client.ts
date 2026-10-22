@@ -3,7 +3,8 @@
 //
 // 上传的文件不会马上提交：先「暂存」拿到一个 id，点保存时随这次提交一起写进仓库（见 lib/server/admin/storage.ts）。
 // - 图片：在浏览器里压成 WebP（长边不超过 2400px），一般几百 KB，走 /api/admin/stage
-// - 音频：3MB 以内同样走 /api/admin/stage；更大的直接从浏览器传到 GitHub（Vercel 的接口收不了 4.5MB 以上的请求）
+// - 音频：3MB 以内同样走 /api/admin/stage；更大的：GitHub 存储时直接从浏览器传到 GitHub（Vercel 的接口收不了 4.5MB 以上的请求），
+//   本地存储（自己的服务器）时把原始文件直接传给服务器，不经过 GitHub
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {
@@ -66,9 +67,32 @@ export async function stage(blob: Blob): Promise<string> {
       if (!res.ok) throw new ApiError(`上传到 GitHub 失败（${res.status}）`, res.status);
       return ((await res.json()) as { sha: string }).sha;
     }
+    return stageRaw(blob);
   }
   const { id } = await api<{ id: string }>('/api/admin/stage', { method: 'POST', body: { data: await toBase64(blob) } });
   return id;
+}
+
+/** 本地存储（自己的服务器）：大文件按原始字节上传，比 base64 小三分之一，服务器也不用解一个巨大的 JSON */
+async function stageRaw(blob: Blob): Promise<string> {
+  const res = await fetch('/api/admin/stage', {
+    method: 'POST',
+    headers: { 'X-Admin': '1', 'Content-Type': 'application/octet-stream' },
+    body: blob,
+    cache: 'no-store',
+  });
+  let data: { id?: string; error?: string } | null = null;
+  try {
+    data = (await res.json()) as { id?: string; error?: string };
+  } catch {
+    /* 非 JSON（比如 nginx 的报错页） */
+  }
+  if (!res.ok || !data?.id) {
+    const message =
+      data?.error ?? (res.status === 413 ? '文件太大，被服务器拒收了（nginx 的 client_max_body_size，见 docs/DEPLOY-BAOTA.md）' : `上传失败（${res.status}）`);
+    throw new ApiError(message, res.status);
+  }
+  return data.id;
 }
 
 const MAX_SIDE = 2400;

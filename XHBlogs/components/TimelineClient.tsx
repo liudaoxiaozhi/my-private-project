@@ -106,7 +106,7 @@ export default function TimelineClient({ posts, tags }: TimelineClientProps) {
     }`;
 
   return (
-    <div className="relative z-10 mx-auto mt-24 w-full max-w-6xl px-4 sm:mt-28 sm:px-6">
+    <div className="relative z-10 mx-auto mt-8 w-full max-w-6xl px-4 md:mt-28 sm:px-6">
       <PageHeader
         // z-30：让搜索下拉盖住下面的卡片（卡片各自有 backdrop-blur / transform 层叠上下文）
         className="z-30"

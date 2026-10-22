@@ -60,7 +60,7 @@ export default function PhotoWallClient() {
 
   return (
     <div className="min-h-screen relative pb-24">
-      <div className="relative z-10 mx-auto mt-24 w-full max-w-6xl px-4 sm:mt-28 sm:px-6">
+      <div className="relative z-10 mx-auto mt-8 w-full max-w-6xl px-4 md:mt-28 sm:px-6">
 
         {!currentAlbum && (
           <div className="animate-fade-in-up">

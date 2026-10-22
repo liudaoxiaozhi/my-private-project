@@ -16,6 +16,8 @@ import SecretsSection from './SecretsSection';
 import { AppearanceSection, DanmakuSection, SettingsSection } from './ConfigSections';
 import { AlbumsSection, FriendsSection, ProjectsSection } from './DataSections';
 import BillsSection from './BillsSection';
+import { RebuildBanner, RebuildPanel } from './RebuildStatus';
+import type { RebuildInfo } from './RebuildStatus';
 import { AdminContext, Button, Loading, Panel, Row, inputClass } from './ui';
 import type { AdminContextValue } from './ui';
 
@@ -42,6 +44,8 @@ interface StorageInfo {
   kind: 'github' | 'local' | 'none';
   target: string;
   problem?: string;
+  /** 自己的服务器：本地存储，保存后自动重新构建网站 */
+  rebuild?: boolean;
 }
 
 interface Session {
@@ -54,6 +58,8 @@ interface Deploy {
   state: 'success' | 'pending' | 'failure' | 'error' | 'unknown';
   url: string | null;
   description: string;
+  /** 自己的服务器才有：重建的详细状态 */
+  rebuild?: RebuildInfo;
 }
 
 const COMPACT_KEY = 'admin-compact';
@@ -164,6 +170,8 @@ function Console({ storage, onLogout }: { storage: StorageInfo; onLogout: () => 
   });
   const [toasts, setToasts] = useState<{ id: number; message: string; tone: 'ok' | 'error' | 'info' }[]>([]);
   const [deploy, setDeploy] = useState<{ sha: string; status: Deploy | null } | null>(null);
+  /** 自己的服务器：保存后跟踪重建进度（值是保存的时间，用作 key，每次保存重新开始跟） */
+  const [rebuildWatch, setRebuildWatch] = useState<number | null>(null);
   const toastId = useRef(0);
 
   useEffect(() => {
@@ -188,13 +196,18 @@ function Console({ storage, onLogout }: { storage: StorageInfo; onLogout: () => 
   const saved = useCallback<AdminContextValue['saved']>(
     (result: SaveResult, what = '已保存') => {
       if (!result.sha) {
+        if (storage.rebuild) {
+          toast(`${what}，网站重建后上线（约 1~3 分钟）`, 'ok');
+          setRebuildWatch(Date.now());
+          return;
+        }
         toast(storage.kind === 'local' ? `${what}（本地模式：已写入磁盘）` : `${what}（没有变化）`, 'ok');
         return;
       }
       toast(`${what}，网站约 1~2 分钟后更新`, 'ok');
       setDeploy({ sha: result.sha, status: null });
     },
-    [storage.kind, toast],
+    [storage.kind, storage.rebuild, toast],
   );
 
   // 保存后每 8 秒查一次部署状态，直到成功或失败（最多 6 分钟）
@@ -285,6 +298,9 @@ function Console({ storage, onLogout }: { storage: StorageInfo; onLogout: () => 
               <p className="rounded-2xl border border-rose-400/30 bg-rose-500/15 px-5 py-3 text-sm text-rose-100">{storage.problem}</p>
             )}
             {deploy && <DeployBanner deploy={deploy.status} onClose={() => setDeploy(null)} />}
+            {rebuildWatch !== null && (
+              <RebuildBanner key={rebuildWatch} onClose={() => setRebuildWatch(null)} onDetails={() => go('overview')} />
+            )}
             <SectionView section={section} storage={storage} go={go} />
             <button type="button" onClick={() => void logout()} className="admin-panel px-5 py-3 text-left text-sm font-bold text-rose-400 lg:hidden">
               退出登录
@@ -404,9 +420,11 @@ function Overview({ storage, go }: { storage: StorageInfo; go: (id: SectionId) =
       subtitle={
         storage.kind === 'github'
           ? `保存的修改会提交到 ${storage.target}，Vercel 自动部署`
-          : storage.kind === 'local'
-            ? `本地模式：修改直接写入 ${storage.target}`
-            : '还没配置存储'
+          : storage.kind === 'local' && storage.rebuild
+            ? `本地模式（自己的服务器）：修改直接写入 ${storage.target}，保存后网站自动重建，约 1~3 分钟后上线`
+            : storage.kind === 'local'
+              ? `本地模式：修改直接写入 ${storage.target}`
+              : '还没配置存储'
       }
       actions={
         <>
@@ -427,6 +445,7 @@ function Overview({ storage, go }: { storage: StorageInfo; go: (id: SectionId) =
               </button>
             ))}
           </div>
+          {storage.kind === 'local' && storage.rebuild && <RebuildPanel initial={data.deploy?.rebuild ?? null} />}
           {storage.kind === 'github' && (
             <div className="flex flex-col gap-2">
               <h3 className="flex items-center gap-3 text-sm font-black text-indigo-200">

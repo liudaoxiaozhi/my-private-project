@@ -2,11 +2,10 @@
 
 import { useState, useSyncExternalStore } from 'react';
 import { motion, type Variants } from 'framer-motion';
-import { ArrowDown, Check, Copy, Link2, MessageSquare, Users } from 'lucide-react';
+import { Check, Copy, Link2, Mail, Users } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import EmptyState from '../../components/EmptyState';
 import { friendsData } from '../../data/friends';
-import Comments from '../../components/Comments'; // 🌟 引入你的 Gitalk 组件
 import { siteConfig } from '../../siteConfig'; // 🌟 引入刚刚更新的全局配置文件
 import { fillFriendLinkTemplate } from '../../lib/friendLink';
 import AppImage from '../../components/AppImage';
@@ -73,7 +72,7 @@ export default function FriendsBoard() {
           className="mt-6"
           icon={<Users size={30} />}
           title="还没有友链"
-          description="欢迎按下方的格式在留言区申请，成为这里的第一位朋友。"
+          description="欢迎按下方的格式发邮件申请，成为这里的第一位朋友。"
         />
       ) : (
         <motion.div
@@ -133,7 +132,7 @@ export default function FriendsBoard() {
           建立神经连接
         </h2>
         <p className="mx-auto mt-2 mb-5 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-slate-300 sm:mb-6">
-          欢迎各位大佬交换友链！请一键复制下方格式，并在底部的 Gitalk 留言板申请：
+          欢迎各位大佬交换友链！请一键复制下方格式，发邮件给我申请：
         </p>
 
         {/* 代码展示框 & 一键复制按钮 */}
@@ -156,35 +155,19 @@ export default function FriendsBoard() {
             )}
           </button>
         </div>
-
-        <div className="mt-6 sm:mt-8">
-          <a
-            href="#gitalk-container"
-            className="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 sm:px-8 sm:py-3 sm:text-base"
-          >
-            前往留言区申请
-            <ArrowDown size={16} strokeWidth={2.5} aria-hidden="true" />
-          </a>
-        </div>
+        {siteConfig.social.email && (
+          <div className="mt-6 sm:mt-8">
+            <a
+              href={`mailto:${siteConfig.social.email}?subject=${encodeURIComponent('友链申请')}&body=${encodeURIComponent(applyFormat)}`}
+              className="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 sm:px-8 sm:py-3 sm:text-base"
+            >
+              <Mail size={16} strokeWidth={2.5} aria-hidden="true" />
+              发邮件申请
+            </a>
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{siteConfig.social.email}</p>
+          </div>
+        )}
       </motion.div>
-
-      {/* Gitalk 评论区：放进毛玻璃卡片，标题不再直接压在背景上；抵消 Comments 自带的上边距 */}
-      <motion.section
-        id="gitalk-container"
-        className="glass-card mt-10 scroll-mt-24 p-5 sm:mt-14 sm:p-8 [&>div]:mt-5"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.8 }}
-      >
-        <h2 className="flex items-center gap-2 text-xl font-black tracking-tight text-slate-900 dark:text-white">
-          <MessageSquare size={20} className="text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
-          终端留言板
-        </h2>
-
-        {/* 渲染评论组件 */}
-        <Comments />
-      </motion.section>
 
     </div>
   );

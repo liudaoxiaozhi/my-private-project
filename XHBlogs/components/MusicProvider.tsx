@@ -58,6 +58,13 @@ function neteaseSongs(): Song[] {
   }));
 }
 
+/** 一首歌还没有播放进度时显示的歌词 */
+function defaultLyric(song: Song | undefined, loading: boolean): string {
+  if (!song) return loading ? '正在连接高可用神经云端...' : '歌单还是空的';
+  if (song.lyrics.length > 0) return song.lyrics[0].time === -1 ? `♪ ${song.title} ♪` : song.lyrics[0].text || PURE_MUSIC_TEXT;
+  return song.lrcUrl ? '♪ 正在缓冲 ♪' : PURE_MUSIC_TEXT;
+}
+
 /** 歌词文件 → 歌词行：网易云接口返回 JSON（含逐字歌词和翻译），本地 .lrc 是纯文本；旧缓存里的纯文本也能认 */
 function parseLyricResponse(body: string): LyricLine[] {
   const text = body.trim();
@@ -109,14 +116,18 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [lyrics, setLyrics] = useState<LyricLine[]>([]);
-  const [currentLyric, setCurrentLyric] = useState("正在连接高可用神经云端...");
+  /** 播放中更新的「当前歌词」，记着是哪首歌的：换歌后自动失效，回到新歌的默认文字（见下面 currentLyric） */
+  const [lyricState, setLyricState] = useState<{ songId: string; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // 🌟 2. 新增音量和播放模式状态
   const [volume, setVolumeState] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [playMode, setPlayMode] = useState<PlayMode>('loop');
+
+  // 当前歌词：这首歌播放中更新过就用更新的，否则用这首歌的默认文字（第一行歌词 / 正在缓冲 / 纯享音乐）
+  const songNow = playlist[currentIndex];
+  const currentLyric = songNow && lyricState?.songId === songNow.id ? lyricState.text : defaultLyric(songNow, isLoading);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   /** 连续加载失败的次数；整张歌单都失败时停止跳歌，避免无限循环 */
@@ -135,7 +146,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       if (!isMounted) return;
 
       if (merged.length > 0) setPlaylist(merged);
-      else setCurrentLyric('歌单还是空的');
       setIsLoading(false);
     };
 
@@ -147,28 +157,18 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     if (playlist.length === 0) return;
     let isMounted = true;
     const currentSong = playlist[currentIndex];
-    setLyrics([]);
-    setCurrentLyric("♪ 正在缓冲 ♪");
-    if (currentSong.lyrics.length > 0) {
-      // 网易云歌词随歌单一起返回；本地歌词加载过一次后也会缓存在这里
-      setLyrics(currentSong.lyrics);
-      setCurrentLyric(currentSong.lyrics[0]?.time === -1 ? `♪ ${currentSong.title} ♪` : currentSong.lyrics[0]?.text || PURE_MUSIC_TEXT);
-    } else if (currentSong.lrcUrl) {
-      // 本地歌曲：切到这首时才加载同名 .lrc
+    // 歌词还没加载过（网易云和本地歌曲都是切到这首时才去取）：取回来存进歌单，当前歌词跟着显示第一行
+    if (currentSong.lyrics.length === 0 && currentSong.lrcUrl) {
       fetch(currentSong.lrcUrl)
         .then((res) => (res.ok ? res.text() : ''))
         .then((text) => {
           if (!isMounted) return;
           const parsed = parseLyricResponse(text);
-          setLyrics(parsed);
-          // 纯文本歌词没有时间轴，顶部歌词条显示歌名即可
-          setCurrentLyric(parsed[0]?.time === -1 ? `♪ ${currentSong.title} ♪` : parsed[0]?.text || PURE_MUSIC_TEXT);
           // 不可变更新，供音乐页的滚动歌词使用；只改内容不改长度，不会重新触发本 effect
           setPlaylist((prev) => prev.map((s) => (s.id === currentSong.id ? { ...s, lyrics: parsed } : s)));
+          if (parsed.length === 0) setLyricState({ songId: currentSong.id, text: PURE_MUSIC_TEXT });
         })
-        .catch(() => { if (isMounted) setCurrentLyric(PURE_MUSIC_TEXT); });
-    } else {
-      setCurrentLyric(PURE_MUSIC_TEXT);
+        .catch(() => { if (isMounted) setLyricState({ songId: currentSong.id, text: PURE_MUSIC_TEXT }); });
     }
 
     if (isPlaying && audioRef.current) {
@@ -255,10 +255,12 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       setProgress((currentTime / (duration || 1)) * 100);
 
       // 纯文本歌词（time = -1）没有时间轴，不参与滚动
-      if (lyrics.length > 0 && lyrics[0].time >= 0) {
+      const song = playlist[currentIndex];
+      const lyrics = song?.lyrics ?? [];
+      if (song && lyrics.length > 0 && lyrics[0].time >= 0) {
         const activeLyric = lyrics.slice().reverse().find(l => currentTime >= l.time);
         if (activeLyric && activeLyric.text !== currentLyric) {
-          setCurrentLyric(activeLyric.text);
+          setLyricState({ songId: song.id, text: activeLyric.text });
         }
       }
     }
@@ -286,7 +288,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     if (failStreakRef.current >= playlist.length) {
       failStreakRef.current = 0;
       setIsPlaying(false);
-      setCurrentLyric('歌单中的歌曲暂时都无法播放');
+      setLyricState({ songId: failed.id, text: '歌单中的歌曲暂时都无法播放' });
       return;
     }
     setCurrentIndex((prev) => (prev + 1) % playlist.length);

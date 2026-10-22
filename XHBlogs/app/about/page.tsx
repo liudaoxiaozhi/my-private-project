@@ -1,4 +1,5 @@
 // src/app/about/page.tsx
+import 'katex/dist/katex.min.css';
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
@@ -44,8 +45,10 @@ export default async function AboutPage() {
 
   try {
     const fileContents = fs.readFileSync(fullPath, 'utf8');
-    // 🌟 改为 let，以便进行文本预清洗
-    let { data, content } = matter(fileContents);
+    const parsed = matter(fileContents);
+    const data = parsed.data;
+    // content 后面要做文本预清洗，所以用 let
+    let content = parsed.content;
     if (data.cover) coverImage = data.cover;
 
     // ==========================================
@@ -74,7 +77,6 @@ export default async function AboutPage() {
       .use(remarkMath)
       .use(remarkRehype, { allowDangerousHtml: true })
       // 🌟 核心修复：开启自动语言侦测，并限制语言白名单！
-      // @ts-ignore
       .use(rehypeHighlight, {
         detect: true,
         ignoreMissing: true,
@@ -99,7 +101,7 @@ export default async function AboutPage() {
 
   return (
     <div className="min-h-screen relative pb-20">
-      <main className="w-[95%] md:w-[90%] max-w-4xl mx-auto mt-24 md:mt-28 relative z-10">
+      <main className="w-[95%] md:w-[90%] max-w-4xl mx-auto mt-8 md:mt-28 relative z-10">
 
         {/* 🌟 注入 About 页面专用的高颜值 Prose 全局样式 */}
         <style dangerouslySetInnerHTML={{ __html: `

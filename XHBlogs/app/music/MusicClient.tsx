@@ -7,10 +7,9 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  FastForward, ListMusic, MessageSquare, MessageSquareQuote, Pause, Play,
+  FastForward, ListMusic, MessageSquareQuote, Pause, Play,
   Repeat, Repeat1, Rewind, Shuffle, Volume1, Volume2, VolumeX,
 } from 'lucide-react';
-import Comments from '../../components/Comments';
 import AppImage from '../../components/AppImage';
 import { useMusic } from '../../components/MusicProvider';
 import ArtworkBackground from './ArtworkBackground';
@@ -209,20 +208,6 @@ export default function MusicClient() {
             ) : (
               <QueuePanel playlist={playlist} currentId={currentSong.id} isPlaying={isPlaying} onPlay={playSong} />
             )}
-          </div>
-        </section>
-
-        {/* ================= 留言板（向下滚动） ================= */}
-        <section aria-labelledby="music-comments-title" className="mx-auto w-full max-w-[1320px] px-5 pb-24 sm:px-8 lg:px-12">
-          <div className="rounded-3xl border border-white/10 bg-black/25 px-5 py-8 backdrop-blur-xl sm:px-8 md:px-12">
-            <div className="mb-6 flex items-center gap-3 border-b border-white/10 pb-5">
-              <MessageSquare size={20} className="text-white/60" />
-              <div>
-                <h2 id="music-comments-title" className="text-lg text-white">乐迷留言板</h2>
-                <p className="text-sm text-white/45">聊聊你正在听的歌</p>
-              </div>
-            </div>
-            <Comments />
           </div>
         </section>
       </main>

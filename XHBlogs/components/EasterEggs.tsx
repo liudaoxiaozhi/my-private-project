@@ -6,15 +6,15 @@
 // - 节日：节日当天桌宠送上一句祝福（每个节日每年只说一次，见 lib/seasons.ts）
 // - 科乐美秘籍：键盘按 ↑↑↓↓←→←→BA，触发十秒樱花风暴 + 烟花
 // - 小撒花：读完文章等场合撒一小把花瓣（lib/petBus.ts 的 petalBurst）；「阅读」档不撒
+//
+// 监听按键、事件的这部分很小，从页面一打开就在（秘籍要从第一个键开始数）；
+// 花瓣和烟花的画面在 components/EasterStorm.tsx，触发时才下载。
 
 import { useEffect, useState } from 'react';
-import PetalField, { makePieces } from './PetalField';
-import type { Piece } from './PetalField';
-import Fireworks from './Fireworks';
-import { currentSeason } from './Sakura';
+import dynamic from 'next/dynamic';
+import type { StormSpec } from './EasterStorm';
 import { PETAL_BURST_EVENT, sendPetCommand } from '../lib/petBus';
 import { getSeason } from '../lib/seasons';
-import type { Season } from '../lib/seasons';
 import { readJSON, writeJSON } from '../lib/localStore';
 import { siteConfig } from '../siteConfig';
 import { reduceMotion } from '../lib/effects';
@@ -36,13 +36,15 @@ const ASCII = String.raw`
 
 let consoleGreeted = false;
 
+const EasterStorm = dynamic(() => import('./EasterStorm'), { ssr: false });
+
 function isTyping(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
   return !!el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName));
 }
 
 export default function EasterEggs() {
-  const [storm, setStorm] = useState<{ pieces: Piece[]; season: Season; motion: boolean; fireworks: boolean; ms: number } | null>(null);
+  const [storm, setStorm] = useState<(StormSpec & { motion: boolean }) | null>(null);
 
   // 控制台彩蛋（整个页面生命周期只打印一次）
   useEffect(() => {
@@ -106,8 +108,8 @@ export default function EasterEggs() {
       const motion = !reduceMotion();
       const mobile = window.matchMedia('(max-width: 767px)').matches;
       setStorm({
-        pieces: motion ? makePieces(mobile ? 36 : 80, { fall: [3, 6], delayMax: 4, once: true, size: [12, 26] }) : [],
-        season: currentSeason(),
+        count: motion ? (mobile ? 36 : 80) : 0,
+        options: { fall: [3, 6], delayMax: 4, once: true, size: [12, 26] },
         motion,
         fireworks: true,
         ms: STORM_MS,
@@ -126,8 +128,8 @@ export default function EasterEggs() {
       const mobile = window.matchMedia('(max-width: 767px)').matches;
       setStorm((current) =>
         current ?? {
-          pieces: makePieces(mobile ? 12 : 26, { fall: [3.5, 6], delayMax: 2, once: true, size: [12, 22] }),
-          season: currentSeason(),
+          count: mobile ? 12 : 26,
+          options: { fall: [3.5, 6], delayMax: 2, once: true, size: [12, 22] },
           motion: true,
           fireworks: false,
           ms: BURST_MS,
@@ -145,10 +147,5 @@ export default function EasterEggs() {
   }, [storm]);
 
   if (!storm || !storm.motion) return null;
-  return (
-    <>
-      <PetalField pieces={storm.pieces} season={storm.season} once className="z-[56]" />
-      {storm.fireworks && <Fireworks duration={storm.ms - 1000} />}
-    </>
-  );
+  return <EasterStorm spec={storm} />;
 }

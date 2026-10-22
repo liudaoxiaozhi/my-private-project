@@ -65,7 +65,7 @@ test.describe('文章渲染', () => {
 
   test('标题锚点、目录高亮、阅读进度条', async ({ page }) => {
     await page.goto(POST);
-    // 用文章中段的标题：靠近文末的标题可能滚不到顶（取决于下面评论区有多高）
+    // 用文章中段的标题：靠近文末的标题可能滚不到顶（取决于文末下面还有多少内容）
     const heading = page.locator('h2#提示框');
     await heading.scrollIntoViewIfNeeded();
     await heading.hover();
@@ -183,4 +183,13 @@ test.describe('手机', () => {
       .toBeLessThan(200);
     expect(await page.evaluate(() => document.getElementById('表格')!.getBoundingClientRect().top)).toBeGreaterThanOrEqual(0);
   });
+});
+
+test('评论区已经去掉：文章、杂谈、音乐、说说、关于、友链页都没有评论组件', async ({ page }) => {
+  for (const url of ['/posts/zz-e2e-guide', '/music', '/moments', '/about', '/friends']) {
+    await page.goto(url);
+    await page.waitForTimeout(600);
+    expect(await page.locator('.gt-container, #gitalk-container').count(), url).toBe(0);
+    await expect(page.getByText(/留言板|展开评论/), url).toHaveCount(0);
+  }
 });

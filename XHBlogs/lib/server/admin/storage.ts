@@ -3,7 +3,8 @@
 // 两种实现，接口一样：
 // - GitHub（线上用）：读文件走 GitHub API，保存时把这次改动的所有文件做成「一个提交」推到仓库，
 //   Vercel 收到提交后自动重新部署，一两分钟后网站生效。需要环境变量 GITHUB_TOKEN（见 docs/ADMIN.md）
-// - 本地（开发 / 测试用）：直接读写磁盘上的文件（ADMIN_LOCAL_ROOT，默认是项目目录）
+// - 本地（开发 / 测试 / 自己的服务器用）：直接读写磁盘上的文件（ADMIN_LOCAL_ROOT，默认是项目目录）。
+//   自己的服务器上再开 SELF_HOST_REBUILD=1，保存后自动重新构建网站（见 rebuild.ts、docs/DEPLOY-BAOTA.md）
 //
 // 选哪种：ADMIN_STORAGE=local 时一定用本地；否则配置了 GITHUB_TOKEN 用 GitHub；都没有时开发模式用本地，线上报错提示去配置。
 //
@@ -16,6 +17,8 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { outboundFetch } from '../outboundFetch';
+import { rebuildConfigured, rebuildDeployStatus, requestRebuild } from './rebuild';
+import type { RebuildInfo } from './rebuild';
 
 export interface FileEntry {
   name: string;
@@ -43,6 +46,8 @@ export interface DeployStatus {
   state: 'success' | 'pending' | 'failure' | 'error' | 'unknown';
   url: string | null;
   description: string;
+  /** 自己的服务器（本地存储 + 自动重建）才有：排队 / 重建中 / 已上线 / 失败、时间和失败日志 */
+  rebuild?: RebuildInfo;
 }
 
 export interface Storage {
@@ -135,7 +140,7 @@ class LocalStorage implements Storage {
     return id;
   }
 
-  async commit(changes: Change[]): Promise<{ sha: string | null }> {
+  async commit(changes: Change[], message: string): Promise<{ sha: string | null }> {
     // 改名分两步：先全部挪到临时名，再挪到目标，这样 A→B、B→A 这种互换也不会互相覆盖
     const moving = new Map<string, string>();
     for (const change of changes) {
@@ -157,6 +162,8 @@ class LocalStorage implements Storage {
         await fs.promises.copyFile(path.join(this.stagingDir, change.staged), target);
       } else await fs.promises.rename(moving.get(change.from)!, target);
     }
+    // 自己的服务器上：文件写好了，安排重新构建（10 秒内的多次保存合成一次）；没开 SELF_HOST_REBUILD 时什么也不做
+    if (changes.length > 0) requestRebuild(message);
     return { sha: null };
   }
 
@@ -165,6 +172,7 @@ class LocalStorage implements Storage {
   }
 
   async deployStatus(): Promise<DeployStatus> {
+    if (rebuildConfigured()) return rebuildDeployStatus(true);
     return { state: 'unknown', url: null, description: '本地模式：文件已直接写入磁盘' };
   }
 }
@@ -331,9 +339,16 @@ export interface StorageInfo {
   target: string;
   /** kind 为 none 时，告诉用户缺什么 */
   problem?: string;
+  /** 本地存储并且开了 SELF_HOST_REBUILD：保存后自动重新构建网站 */
+  rebuild?: boolean;
 }
 
 export function storageInfo(): StorageInfo {
+  const info = selectStorage();
+  return info.kind === 'local' && rebuildConfigured() ? { ...info, rebuild: true } : info;
+}
+
+function selectStorage(): StorageInfo {
   if (process.env.ADMIN_STORAGE === 'local') return { kind: 'local', target: localRoot() };
   const token = (process.env.GITHUB_TOKEN ?? '').trim();
   if (token) {

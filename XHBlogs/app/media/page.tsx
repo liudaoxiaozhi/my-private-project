@@ -17,7 +17,7 @@ export default function MediaPage() {
   return (
     <ToastProvider>
       <div className="relative min-h-screen pb-24">
-        <main className="relative z-10 mx-auto mt-24 w-full max-w-6xl px-4 sm:px-6 md:mt-28 lg:px-8">
+        <main className="relative z-10 mx-auto mt-8 w-full max-w-6xl px-4 sm:px-6 md:mt-28 lg:px-8">
           <MediaClient
             initialEntries={entries}
             editable={ANIME_EDITABLE}

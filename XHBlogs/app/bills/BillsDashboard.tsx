@@ -32,7 +32,7 @@ export default function BillsDashboard({ stats, timeZone }: { stats: PublicBills
         </div>
       </PageHeader>
 
-      <section aria-label={`${current.year} 年合计`} className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <section aria-label={`${current.year} 年合计`} className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
         <StatCard label="年度收入" value={formatSGD(current.income)} icon={<TrendingUp size={16} />} swatch={INCOME_BG} />
         <StatCard label="年度支出" value={formatSGD(current.expense)} icon={<TrendingDown size={16} />} swatch={EXPENSE_BG} />
         <StatCard label="结余" value={formatSGD(current.balance)} icon={<PiggyBank size={16} />} hint={current.balance < 0 ? '入不敷出' : undefined} />
@@ -64,14 +64,15 @@ export default function BillsDashboard({ stats, timeZone }: { stats: PublicBills
   );
 }
 
+/** 手机上两列紧凑排（字小一号、内边距小），sm 起和原来一样 */
 function StatCard({ label, value, icon, swatch, hint }: { label: string; value: string; icon: React.ReactNode; swatch?: string; hint?: string }) {
   return (
-    <div className="glass-card flex min-w-0 flex-col gap-1.5 p-4 sm:p-5">
-      <span className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 sm:text-sm">
+    <div className="glass-card flex min-w-0 flex-col gap-1 rounded-2xl px-3.5 py-3 sm:gap-1.5 sm:rounded-3xl sm:p-5">
+      <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 sm:gap-2 sm:text-sm">
         {swatch ? <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${swatch}`} aria-hidden="true" /> : <span className="text-indigo-500 dark:text-indigo-400" aria-hidden="true">{icon}</span>}
         {label}
       </span>
-      <span className="truncate text-xl font-black tabular-nums tracking-tight text-slate-900 dark:text-white sm:text-2xl">{value}</span>
+      <span className="truncate text-lg font-black tabular-nums tracking-tight text-slate-900 dark:text-white sm:text-2xl">{value}</span>
       {hint && <span className="text-[11px] text-slate-500 dark:text-slate-400">{hint}</span>}
     </div>
   );

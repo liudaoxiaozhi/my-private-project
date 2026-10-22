@@ -1,3 +1,5 @@
+// 数学公式样式只在会渲染公式的页面加载（不放根布局，其他页面不用下载）
+import 'katex/dist/katex.min.css';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -12,7 +14,6 @@ import BackButton from '../../../components/BackButton';
 import ArticleEnhancer from '../../../components/article/ArticleEnhancer';
 import ArticleProgress from '../../../components/article/ArticleProgress';
 import ArticleReaderSettings from '../../../components/article/ArticleReaderSettings';
-import LazyComments from '../../../components/article/LazyComments';
 import { getChatterBySlug, getChatterSlugs, getRecentChatters, toTimestamp } from '../../../lib/content';
 import { renderArticle } from '../../../lib/markdown';
 import { ARTICLE_CONTENT_ID, ARTICLE_LAYOUT_CLASS, articleSettingsScript } from '../../../lib/articleReader';
@@ -101,7 +102,7 @@ export default async function ChatterDetail({ params }: ChatterPageProps) {
       <ArticleProgress storageKey={`chatter:${slug}`} />
 
       <main
-        className={`${ARTICLE_LAYOUT_CLASS} w-[95%] md:w-[90%] max-w-6xl mx-auto mt-24 md:mt-28 flex flex-col lg:flex-row gap-6 md:gap-8 relative z-10 transition-[max-width] duration-500`}
+        className={`${ARTICLE_LAYOUT_CLASS} w-[95%] md:w-[90%] max-w-6xl mx-auto mt-8 md:mt-28 flex flex-col lg:flex-row gap-6 md:gap-8 relative z-10 transition-[max-width] duration-500`}
         suppressHydrationWarning
       >
 
@@ -159,10 +160,6 @@ export default async function ChatterDetail({ params }: ChatterPageProps) {
             {/* 首屏绘制前套用读者保存的阅读设置 */}
             <script dangerouslySetInnerHTML={{ __html: articleSettingsScript }} />
             <ArticleEnhancer />
-
-            <div className="mt-10 md:mt-12">
-              <LazyComments />
-            </div>
 
           </div>
         </article>

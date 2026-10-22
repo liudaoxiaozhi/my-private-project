@@ -1,21 +1,16 @@
-import 'katex/dist/katex.min.css';
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Serif_SC } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { themeInitScript } from "../lib/theme";
 import { SITE_URL } from "../lib/site";
-import BackgroundEffects from "../components/BackgroundEffects";
 import { MusicProvider } from "../components/MusicProvider";
 import FloatingPlayer from "../components/FloatingPlayer";
 import { siteConfig } from "../siteConfig";
-import ClickEffect from "../components/ClickEffect";
 import BackgroundSlider from "../components/BackgroundSlider";
-import GlobalToolbox from "../components/GlobalToolbox";
 import SplashScreen from "../components/SplashScreen";
-import PetSaber from '../components/PetSaber';
-import Sakura from '../components/Sakura';
-import WeatherLayer, { WeatherFront, WeatherNotice } from '../components/WeatherLayer';
+// 🚀 不急用的特效、浮层拆成单独的包按需加载，不占首屏 JS（草地、点击涟漪、桌宠等页面空闲后才挂载；电脑端专属的手机上不下载）
+import { BackgroundEffects, ClickEffect, GlobalToolbox, PetSaber, Sakura, WeatherFront, WeatherLayer, WeatherNotice } from '../components/LazyFx';
 import SakuraBranches from '../components/SakuraBranches';
 
 import MobileBackButton from '../components/MobileBackButton';
@@ -27,7 +22,7 @@ import { getImageMeta, toAccentHue } from '../lib/imageMeta';
 import { effectsInitScript } from '../lib/effects';
 import EffectGate from '../components/EffectGate';
 import CoverTransition from '../components/CoverTransition';
-import CommandPalette from '../components/CommandPalette';
+import LazyCommandPalette from '../components/LazyCommandPalette';
 import EasterEggs from '../components/EasterEggs';
 import CardFx from '../components/CardFx';
 
@@ -184,8 +179,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                   <MobileBackButton />
                 </div>
 
-                {/* ⌘K 命令面板（需要读取音乐播放状态，放在 MusicProvider 里面） */}
-                <CommandPalette />
+                {/* ⌘K 命令面板（需要读取音乐播放状态，放在 MusicProvider 里面）；面板本身第一次打开时才下载 */}
+                <LazyCommandPalette />
               </HideOnReader>
 
               {/* 隐藏手机端点击涟漪；siteConfig.enableClickEffect 可关闭；只在「完整」档显示 */}

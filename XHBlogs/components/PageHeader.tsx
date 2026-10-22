@@ -6,7 +6,8 @@
 // - 副标题一句话，正常字重、不用斜体：text-sm text-slate-600 dark:text-slate-300
 // - actions：右上角的按钮 / 搜索框；children：标题下面的一整行（筛选标签、统计、搜索框等）
 // - back：在卡片左上角放「返回」小按钮（不再单独浮在背景上）
-// 外层的宽度和上边距由页面自己决定（一般 max-w-6xl mx-auto mt-24 sm:mt-28 px-4 sm:px-6）。
+// 外层的宽度和上边距由页面自己决定（一般 max-w-6xl mx-auto mt-8 md:mt-28 px-4 sm:px-6）。
+// 手机上各处间距收紧一档（py-5、mt-4……），首屏多露出一点内容；sm 起不变。
 import type { ReactNode } from 'react';
 import BackButton from './BackButton';
 
@@ -26,13 +27,13 @@ interface PageHeaderProps {
 
 export default function PageHeader({ title, subtitle, icon, actions, children, back, className = '' }: PageHeaderProps) {
   return (
-    <section className={`glass-card relative px-5 py-6 sm:px-8 sm:py-8 ${className}`}>
+    <section className={`glass-card relative px-5 py-5 sm:px-8 sm:py-8 ${className}`}>
       {back && (
-        <div className="mb-4">
+        <div className="mb-3 sm:mb-4">
           <BackButton compact />
         </div>
       )}
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-3 sm:gap-4">
         <div className="min-w-0">
           <h1 className="flex items-center gap-2.5 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">
             {icon && <span className="shrink-0 text-indigo-500 dark:text-indigo-400">{icon}</span>}
@@ -42,7 +43,7 @@ export default function PageHeader({ title, subtitle, icon, actions, children, b
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
-      {children && <div className="mt-5">{children}</div>}
+      {children && <div className="mt-4 sm:mt-5">{children}</div>}
     </section>
   );
 }

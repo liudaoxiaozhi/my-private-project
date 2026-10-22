@@ -160,7 +160,7 @@ export default function SearchBar({ posts = [] }: { posts: Post[] }) {
                   </svg>
                 </div>
                 <p className="text-slate-500 dark:text-slate-400 font-medium">
-                  数据海中未发现关于 "<span className="text-indigo-500 font-bold">{searchQuery}</span>" 的踪迹
+                  数据海中未发现关于「<span className="text-indigo-500 font-bold">{searchQuery}</span>」的踪迹
                 </p>
               </div>
             )}

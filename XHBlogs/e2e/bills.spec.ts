@@ -2,6 +2,7 @@
 //
 // 测试数据是 e2e/fixtures/data/bills.json（scripts/e2e.mjs 构建前临时换进 data/，后台的 .e2e-admin-root 也从它开始）：
 // 2026 年 9、10 月 12 笔 + 2025 年 1 笔；其中一笔的备注是「机密备注-E2E」，公开页里绝不能出现。
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Page } from '@playwright/test';
@@ -10,10 +11,22 @@ import { ADMIN_PASSWORD, ADMIN_ROOT } from './adminEnv';
 import { buildPublicStats, coerceBills, formatSGD, parseAmount, round2, summarizeYear, todayIn } from '../lib/bills';
 import type { BillsData } from '../lib/bills';
 import { billsToCsv, importCsv } from '../lib/billsCsv';
+import { decrypt } from '../lib/server/admin/secrets';
 
 const SECRET = '机密备注-E2E';
 const fixture = (): BillsData => coerceBills(JSON.parse(fs.readFileSync(path.resolve('e2e/fixtures/data/bills.json'), 'utf8')));
-const savedBills = (): BillsData => JSON.parse(fs.readFileSync(path.join(ADMIN_ROOT, 'data', 'bills.json'), 'utf8')) as BillsData;
+const BILLS_FILE = path.join(ADMIN_ROOT, 'data', 'bills.json');
+const savedRaw = () => fs.readFileSync(BILLS_FILE, 'utf8');
+// 和服务器同一把钥匙（测试环境没设 ADMIN_SECRETS_KEY，用管理员密码派生）
+const billsKey = crypto.createHash('sha256').update(`xhblogs-secrets:${ADMIN_PASSWORD}`).digest();
+/** 后台保存的账单：加密的先解开；还没保存过时是 fixture 的明文 */
+const savedBills = (): BillsData => {
+  const parsed = JSON.parse(savedRaw()) as { encrypted?: string };
+  if (typeof parsed.encrypted !== 'string') return parsed as unknown as BillsData;
+  const text = decrypt(parsed.encrypted.replace(/^v1:/, ''), billsKey);
+  if (text === null) throw new Error('账单解不开');
+  return JSON.parse(text) as BillsData;
+};
 const unique = () => Date.now().toString(36);
 
 const section = (page: Page, name: string) => page.getByRole('navigation', { name: '后台板块' }).getByRole('button', { name, exact: true }).click();
@@ -122,6 +135,11 @@ test.describe('账单：后台', () => {
     const entry = savedBills().entries.find((e) => e.note === note);
     expect(entry).toMatchObject({ type: 'expense', amount: 12.35, category: 'food', date: todayIn('Asia/Singapore') });
     expect(savedBills().entries.find((e) => e.note === SECRET)).toBeTruthy();
+    // 仓库里存的是密文：明文里的备注、金额都看不到
+    const raw = savedRaw();
+    expect(raw).toMatch(/"encrypted": "v1:/);
+    expect(raw).not.toContain(note);
+    expect(raw).not.toContain(SECRET);
   });
 
   test('还在用的分类不能删；接口拒绝不合法的金额、日期和被删掉的在用分类', async ({ page }) => {
@@ -138,7 +156,7 @@ test.describe('账单：后台', () => {
     await expect(page.getByRole('group', { name: '分类 医疗' })).toHaveCount(0);
     await expect(page.getByText(/分类 \/ 预算有改动/)).toBeVisible();
 
-    const before = fs.readFileSync(path.join(ADMIN_ROOT, 'data', 'bills.json'), 'utf8');
+    const before = savedRaw();
     const base = savedBills();
     const first = base.entries[0];
     const withEntry = (patch: Record<string, unknown>) => ({ ...base, entries: [{ ...first, ...patch }, ...base.entries.slice(1)] });
@@ -159,6 +177,30 @@ test.describe('账单：后台', () => {
     res = await putBills(page, { ...base, categories: [...base.categories, { id: 'dup', name: '餐饮', type: 'expense' }] });
     expect(res).toMatchObject({ status: 400, error: expect.stringMatching(/重复/) });
     // 被拒绝的保存不会动文件
-    expect(fs.readFileSync(path.join(ADMIN_ROOT, 'data', 'bills.json'), 'utf8')).toBe(before);
+    expect(savedRaw()).toBe(before);
+  });
+
+  test('账单解不开（钥匙变了）：后台红色提示、拒绝保存，确认放弃旧账单后才能覆盖', async ({ page }) => {
+    const original = savedRaw();
+    // 用另一把钥匙加密的内容：服务器解不开
+    fs.writeFileSync(BILLS_FILE, JSON.stringify({ encrypted: 'v1:' + crypto.randomBytes(48).toString('base64') }));
+    try {
+      await adminLogin(page, ADMIN_PASSWORD);
+      await section(page, '账单');
+      await expect(page.getByRole('alert').filter({ hasText: '账单文件无法解密' })).toBeVisible();
+      const res = await putBills(page, coerceBills({}));
+      expect(res).toMatchObject({ status: 400, error: expect.stringMatching(/无法解密/) });
+      expect(JSON.parse(savedRaw()).encrypted).toMatch(/^v1:/);
+
+      // 确认放弃后，用新内容覆盖（带 overwriteLocked）
+      const forced = await page.evaluate(async (bills) => {
+        const r = await fetch('/api/admin/bills', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Admin': '1' }, body: JSON.stringify({ bills, overwriteLocked: true }) });
+        return r.status;
+      }, coerceBills({}));
+      expect(forced).toBe(200);
+      expect(savedBills().entries).toEqual([]);
+    } finally {
+      fs.writeFileSync(BILLS_FILE, original);
+    }
   });
 });

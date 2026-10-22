@@ -26,7 +26,7 @@ import { EyeOff, MessageCircle, Send } from 'lucide-react';
 import AppImage from './AppImage';
 import { useMusic } from './MusicProvider';
 import { useFullPlayerOnScreen } from '../lib/playerPresence';
-import { PET_COMMAND_EVENT } from '../lib/petBus';
+import { PET_COMMAND_EVENT, takeMissedPetCommands } from '../lib/petBus';
 import type { PetCommand } from '../lib/petBus';
 import { useReduceMotion } from './EffectGate';
 
@@ -239,8 +239,7 @@ export default function PetSaber() {
   // ---------- 听指令：召回 / 说话 ----------
   useEffect(() => {
     let returnTimer: number | undefined;
-    const onCommand = (e: Event) => {
-      const command = (e as CustomEvent<PetCommand>).detail;
+    const handle = (command: PetCommand) => {
       if (command.type === 'recall') {
         setHidden(false);
         setShowInput(false);
@@ -261,10 +260,15 @@ export default function PetSaber() {
         speak(command.text, command.ms);
       }
     };
+    const onCommand = (e: Event) => handle((e as CustomEvent<PetCommand>).detail);
     window.addEventListener(PET_COMMAND_EVENT, onCommand);
+    // 她是页面空闲后才加载的（components/LazyFx.tsx）：补上加载前别处发来的话，比如一打开页面就按出的秘籍
+    const missed = takeMissedPetCommands();
+    const missedTimer = missed.length > 0 ? window.setTimeout(() => missed.forEach(handle), 0) : undefined;
     return () => {
       window.removeEventListener(PET_COMMAND_EVENT, onCommand);
       window.clearTimeout(returnTimer);
+      window.clearTimeout(missedTimer);
     };
   }, [moveTo, speak]);
 

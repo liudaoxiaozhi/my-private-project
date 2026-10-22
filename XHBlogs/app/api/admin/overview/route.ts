@@ -1,4 +1,4 @@
-// app/api/admin/overview/route.ts —— 后台「概览」：各类内容的数量、最近的提交、网站部署状态
+// app/api/admin/overview/route.ts —— 后台「概览」：各类内容的数量、最近的提交、网站部署（或自己服务器上的重建）状态
 import { adminRoute, json } from '../../../../lib/server/admin/api';
 import { getStorage, storageInfo } from '../../../../lib/server/admin/storage';
 import { listSongs } from '../../../../lib/server/admin/music';
@@ -23,13 +23,19 @@ export const GET = adminRoute(async () => {
     readData('albums'),
     readData('friends').then((d) => d.length),
     readData('projects').then((d) => d.length),
-    readBillsLatest().then((b) => b.entries.length),
+    readBillsLatest().then((b) => b.bills.entries.length),
     storage.recentCommits(8).catch(() => []),
   ]);
   const photos = albums.reduce<number>((n, a) => n + (Array.isArray((a as { photos?: unknown[] }).photos) ? (a as { photos: unknown[] }).photos.length : 0), 0);
-  const deploy = commits[0] ? await storage.deployStatus(commits[0].sha).catch(() => null) : null;
+  // GitHub：最新一次提交的 Vercel 部署状态；自己的服务器（本地存储 + 自动重建）：最近一次重建的状态
+  const info = storageInfo();
+  const deploy = commits[0]
+    ? await storage.deployStatus(commits[0].sha).catch(() => null)
+    : info.rebuild
+      ? await storage.deployStatus('').catch(() => null)
+      : null;
   return json({
-    storage: storageInfo(),
+    storage: info,
     counts: { posts, chatters, moments, songs, albums: albums.length, photos, friends, projects, bills },
     commits,
     deploy,

@@ -80,11 +80,12 @@ const noopSubscribe = () => () => {};
 const readSearch = () => window.location.search;
 const serverSearch = () => '';
 
+/** 手机上是一排小卡片：390px 宽的屏幕四张正好平分一行，更窄时横向滑动；sm 起是原来的四宫格 */
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-2xl bg-white/50 px-4 py-3 ring-1 ring-white/50 dark:bg-slate-900/30 dark:ring-white/10">
-      <p className="text-2xl font-black tabular-nums text-slate-900 dark:text-white">{value}</p>
-      <p className="mt-0.5 text-xs font-bold text-slate-500 dark:text-slate-400">{label}</p>
+    <div className="min-w-[4.5rem] flex-1 shrink-0 basis-0 snap-start rounded-xl bg-white/50 px-3 py-2 ring-1 ring-white/50 dark:bg-slate-900/30 dark:ring-white/10 sm:min-w-0 sm:rounded-2xl sm:px-4 sm:py-3">
+      <p className="text-lg/6 font-black tabular-nums text-slate-900 dark:text-white sm:text-2xl">{value}</p>
+      <p className="mt-0.5 whitespace-nowrap text-[11px] font-bold text-slate-500 dark:text-slate-400 sm:whitespace-normal sm:text-xs">{label}</p>
     </div>
   );
 }
@@ -284,7 +285,7 @@ export default function MediaClient(props: MediaLibraryProps) {
         }
       >
         {entries.length > 0 && (
-          <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+          <div className="-mx-5 mb-4 flex snap-x snap-mandatory scroll-px-5 gap-2 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:mb-5 sm:grid sm:grid-cols-4 sm:gap-3 sm:overflow-visible sm:px-0">
             <Stat label={statLabels.watching} value={counts.watching} />
             <Stat label={statLabels.completed} value={counts.completed} />
             <Stat label={statLabels.planned} value={counts.planned} />

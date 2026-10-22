@@ -65,6 +65,7 @@ export default function SecretsSection() {
           番剧、书、音乐用 Bangumi 搜（不用密钥也能搜，登录后条目更全）；外文书还可以用 Open Library（不用密钥）；电影 / 电视剧用 TMDB，要先在下面填 TMDB Key。
         </p>
       </Panel>
+      <DiagnosticsPanel />
       <Panel
         title="密钥"
         subtitle="加密后存进仓库（只有密文），用管理员密码派生的钥匙加密；改了 ADMIN_PASSWORD 后需要重新填一次。在 Vercel 环境变量里配了的，以环境变量为准"
@@ -114,5 +115,75 @@ export default function SecretsSection() {
         )}
       </Panel>
     </div>
+  );
+}
+
+interface DiagnosticResult {
+  id: string;
+  label: string;
+  ok: boolean | null;
+  ms: number;
+  detail: string;
+}
+
+/** 接口自检：从服务器去连 Bangumi、Open Library、TMDB、网易云，结果可以直接截图反馈 */
+function DiagnosticsPanel() {
+  const [results, setResults] = useState<DiagnosticResult[] | null>(null);
+  const [checkedAt, setCheckedAt] = useState('');
+  const [running, setRunning] = useState(false);
+  const { toast } = useAdmin();
+
+  const run = async () => {
+    setRunning(true);
+    try {
+      const res = await api<{ results: DiagnosticResult[]; checkedAt: string }>('/api/admin/diagnostics');
+      setResults(res.results);
+      setCheckedAt(new Date(res.checkedAt).toLocaleString('zh-CN'));
+    } catch (e) {
+      toast(e instanceof Error ? e.message : '自检失败', 'error');
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <Panel
+      title="接口自检"
+      subtitle="从服务器去连书影音和音乐用到的外部接口，看现在能不能用。某项失败时把结果截图发给开发者就行"
+      actions={
+        <Button tone="indigo" onClick={() => void run()} disabled={running}>
+          {running ? '检测中…' : results ? '重新检测' : '开始检测'}
+        </Button>
+      }
+    >
+      {running && !results ? (
+        <Loading />
+      ) : results ? (
+        <div className="flex flex-col gap-2" aria-label="自检结果">
+          {results.map((r) => (
+            <Row key={r.id} className="items-start gap-3">
+              <span
+                aria-hidden="true"
+                className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-black ${
+                  r.ok === true ? 'bg-emerald-500/20 text-emerald-300' : r.ok === false ? 'bg-rose-500/20 text-rose-300' : 'bg-white/10 text-slate-400'
+                }`}
+              >
+                {r.ok === true ? '✓' : r.ok === false ? '✗' : '–'}
+              </span>
+              <div className="min-w-0 flex-1" data-diagnostic={r.id} data-ok={r.ok === null ? 'skip' : String(r.ok)}>
+                <p className="text-sm font-bold text-white">
+                  {r.label}
+                  <span className="ml-2 text-xs font-normal text-slate-400">{(r.ms / 1000).toFixed(1)} 秒</span>
+                </p>
+                <p className="mt-0.5 break-words text-xs text-slate-300">{r.detail}</p>
+              </div>
+            </Row>
+          ))}
+          <p className="admin-hint mt-1 text-xs">检测时间：{checkedAt}</p>
+        </div>
+      ) : (
+        <p className="admin-hint text-xs">点「开始检测」，大约 10 秒内出结果。</p>
+      )}
+    </Panel>
   );
 }

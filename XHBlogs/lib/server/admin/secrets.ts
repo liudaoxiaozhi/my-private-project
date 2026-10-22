@@ -4,6 +4,7 @@
 // - 后台填的密钥加密后存进仓库的 data/secrets.json（AES-256-GCM），随提交一起保存，仓库里只有密文
 // - 加密用的钥匙由 ADMIN_SECRETS_KEY 派生；没配置时用 ADMIN_PASSWORD。所以改了管理员密码后，
 //   之前存的密钥就解不开了，需要在后台重新填一次（后台会显示「需要重新填写」）
+// - 后来才设置 ADMIN_SECRETS_KEY 的：之前用管理员密码加密的密文照样能解开（openSealed），下次保存时换成新钥匙
 // - 读取顺序：环境变量优先（在 Vercel 里直接配置的照样能用），其次才是 data/secrets.json
 // - 读到的结果在内存里缓存 5 分钟，免得每次搜索都去 GitHub 读文件
 import crypto from 'crypto';
@@ -19,10 +20,16 @@ export const isSecretName = (v: string): v is SecretName => (SECRET_NAMES as rea
 const FILE = 'data/secrets.json';
 const CACHE_MS = 5 * 60_000;
 
-function cipherKey(): Buffer | null {
+const deriveKey = (base: string): Buffer => crypto.createHash('sha256').update(`xhblogs-secrets:${base}`).digest();
+
+/** 加密用的钥匙（ADMIN_SECRETS_KEY 优先，否则 ADMIN_PASSWORD）；账单（lib/server/billsStore.ts）也用它 */
+export function cipherKey(): Buffer | null {
   const base = (process.env.ADMIN_SECRETS_KEY ?? '').trim() || adminPassword();
-  return base ? crypto.createHash('sha256').update(`xhblogs-secrets:${base}`).digest() : null;
+  return base ? deriveKey(base) : null;
 }
+
+/** 是否单独设置了 ADMIN_SECRETS_KEY（没设时钥匙跟着管理员密码走，改密码后旧密文就解不开了） */
+export const hasDedicatedSecretsKey = (): boolean => (process.env.ADMIN_SECRETS_KEY ?? '').trim() !== '';
 
 export function encrypt(plain: string, key: Buffer): string {
   const iv = crypto.randomBytes(12);
@@ -41,6 +48,20 @@ export function decrypt(sealed: string, key: Buffer): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * 解开后台存的密文：先用当前钥匙；设置了 ADMIN_SECRETS_KEY 时再试管理员密码派生的旧钥匙
+ * （设置之前存的密钥 / 账单照样能读）。legacy = 是旧钥匙解开的，保存时要换成当前钥匙。都解不开返回 null
+ */
+export function openSealed(sealed: string): { text: string; legacy: boolean } | null {
+  const key = cipherKey();
+  const text = key ? decrypt(sealed, key) : null;
+  if (text !== null) return { text, legacy: false };
+  const password = adminPassword();
+  if (!hasDedicatedSecretsKey() || !password) return null;
+  const old = decrypt(sealed, deriveKey(password));
+  return old === null ? null : { text: old, legacy: true };
 }
 
 let cache: { at: number; sealed: Record<string, string> } | null = null;
@@ -65,8 +86,7 @@ export async function getSecret(name: SecretName): Promise<string> {
   const fromEnv = (process.env[name] ?? '').trim();
   if (fromEnv) return fromEnv;
   const sealed = (await readSealed())[name];
-  const key = cipherKey();
-  return sealed && key ? (decrypt(sealed, key) ?? '') : '';
+  return sealed ? (openSealed(sealed)?.text ?? '') : '';
 }
 
 export type SecretStatus = 'env' | 'stored' | 'unreadable' | 'none';
@@ -74,11 +94,10 @@ export type SecretStatus = 'env' | 'stored' | 'unreadable' | 'none';
 /** 后台显示用：每个密钥是在环境变量里、存在后台、存了但解不开，还是没有 */
 export async function secretStatus(): Promise<Record<SecretName, SecretStatus>> {
   const sealed = await readSealed();
-  const key = cipherKey();
   const entries = SECRET_NAMES.map((name): [SecretName, SecretStatus] => {
     if ((process.env[name] ?? '').trim()) return [name, 'env'];
     if (!sealed[name]) return [name, 'none'];
-    return [name, key && decrypt(sealed[name], key) !== null ? 'stored' : 'unreadable'];
+    return [name, openSealed(sealed[name]) ? 'stored' : 'unreadable'];
   });
   return Object.fromEntries(entries) as Record<SecretName, SecretStatus>;
 }
@@ -96,6 +115,11 @@ export async function setSecret(name: SecretName, value: string): Promise<{ sha:
   if (!key) throw new Error('没有配置 ADMIN_PASSWORD，没法加密保存');
   cache = null;
   const sealed = { ...(await readSealed()) };
+  // 顺便把还是旧钥匙（管理员密码）加密的其他密钥换成当前钥匙
+  for (const [other, text] of Object.entries(sealed)) {
+    const opened = openSealed(text);
+    if (opened?.legacy) sealed[other] = encrypt(opened.text, key);
+  }
   if (value) sealed[name] = encrypt(value, key);
   else delete sealed[name];
   const result = await getStorage().commit(

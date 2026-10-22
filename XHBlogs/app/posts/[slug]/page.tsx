@@ -1,3 +1,5 @@
+// 数学公式样式只在会渲染公式的页面加载（不放根布局，其他页面不用下载）
+import 'katex/dist/katex.min.css';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -14,7 +16,6 @@ import SidebarLyric from '../../../components/SidebarLyric';
 import ArticleEnhancer from '../../../components/article/ArticleEnhancer';
 import ArticleProgress from '../../../components/article/ArticleProgress';
 import ArticleReaderSettings from '../../../components/article/ArticleReaderSettings';
-import LazyComments from '../../../components/article/LazyComments';
 import PostNeighbors from '../../../components/article/PostNeighbors';
 import SeriesNav from '../../../components/article/SeriesNav';
 import {
@@ -98,7 +99,7 @@ export default async function Post({ params }: PostPageProps) {
     <div className="min-h-screen relative pb-20">
       <ArticleProgress storageKey={`post:${slug}`} />
       <main
-        className={`${ARTICLE_LAYOUT_CLASS} w-[95%] md:w-[90%] max-w-6xl mx-auto mt-24 md:mt-28 flex flex-col lg:flex-row gap-6 md:gap-8 relative z-10 transition-[max-width] duration-500`}
+        className={`${ARTICLE_LAYOUT_CLASS} w-[95%] md:w-[90%] max-w-6xl mx-auto mt-8 md:mt-28 flex flex-col lg:flex-row gap-6 md:gap-8 relative z-10 transition-[max-width] duration-500`}
         suppressHydrationWarning
       >
 
@@ -158,10 +159,6 @@ export default async function Post({ params }: PostPageProps) {
             <ArticleEnhancer />
 
             <PostNeighbors prev={prev} next={next} />
-
-            <div className="mt-12 md:mt-16">
-              <LazyComments />
-            </div>
 
           </div>
         </article>

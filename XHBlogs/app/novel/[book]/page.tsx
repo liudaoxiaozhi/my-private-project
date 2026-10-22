@@ -46,7 +46,7 @@ export default async function BookPage({ params }: BookPageProps) {
 
   return (
     <div className="relative min-h-screen pb-24">
-      <main className="relative z-10 mx-auto mt-24 w-full max-w-5xl px-4 sm:px-6 md:mt-28 lg:px-8">
+      <main className="relative z-10 mx-auto mt-8 w-full max-w-5xl px-4 sm:px-6 md:mt-28 lg:px-8">
         <Link
           href="/novel"
           className="glass-chip mb-4 inline-flex items-center gap-1 px-3 py-1.5 text-sm font-bold text-slate-600 transition-colors duration-300 hover:bg-white/70 dark:text-slate-300 dark:hover:bg-slate-700/60"

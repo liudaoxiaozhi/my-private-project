@@ -204,7 +204,9 @@ test.describe('前进 / 后退', () => {
       const y0 = await scrollY(page);
 
       await watchTransforms(page);
-      await link.click();
+      // 直接触发点击，不用 link.click()：链接被右下角的桌宠挡住时，Playwright 会先把页面再滚一下才点，
+      // 离开时的位置就不再是上面记下的 y0（网站恢复的是点击那一刻的位置，这是对的）
+      await link.evaluate((el) => (el as HTMLElement).click());
       await page.waitForURL((u) => u.pathname !== from);
       await page.waitForTimeout(1200);
       // 文章卡片走封面过渡，不叠加入场动画；其余链接从下往上浮起

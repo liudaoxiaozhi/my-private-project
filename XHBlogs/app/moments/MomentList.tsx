@@ -2,8 +2,7 @@
 
 import { useState, useMemo, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
-import { MapPin, MessageSquare, Clock, Camera, Search, SearchX, ArrowDownAZ, ArrowUpZA, ChevronLeft, ChevronRight, Ghost } from 'lucide-react';
-import MomentComments from '../../components/MomentComments';
+import { MapPin, Clock, Camera, Search, SearchX, ArrowDownAZ, ArrowUpZA, ChevronLeft, ChevronRight, Ghost } from 'lucide-react';
 import AppImage from '../../components/AppImage';
 import PageHeader from '../../components/PageHeader';
 import EmptyState from '../../components/EmptyState';
@@ -50,7 +49,6 @@ function useNow(): number | null {
 }
 
 export default function MomentList({ moments, authorName, avatarUrl }: MomentListProps) {
-  const [openCommentId, setOpenCommentId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [lightbox, setLightbox] = useState<{ images: string[], index: number } | null>(null);
@@ -160,26 +158,7 @@ export default function MomentList({ moments, authorName, avatarUrl }: MomentLis
             </span>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => setOpenCommentId(openCommentId === moment.id ? null : moment.id)}
-          aria-label={openCommentId === moment.id ? '收起评论' : '展开评论'}
-          aria-expanded={openCommentId === moment.id}
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 sm:h-10 sm:w-10 ${openCommentId === moment.id ? 'bg-indigo-500 text-white shadow-indigo-500/30' : 'bg-white/70 text-slate-500 ring-1 ring-black/5 hover:text-indigo-500 dark:bg-slate-800/60 dark:text-slate-400 dark:ring-white/10 dark:hover:text-indigo-400'}`}
-        >
-          <MessageSquare size={16} />
-        </button>
       </div>
-
-      <AnimatePresence>
-        {openCommentId === moment.id && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1, marginTop: 16 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-            <div className="relative rounded-2xl border border-slate-200/60 bg-white/50 p-4 dark:border-slate-700/50 dark:bg-slate-900/40 sm:p-5">
-              <MomentComments id={`/moments/${moment.id}`} />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 
@@ -193,7 +172,7 @@ export default function MomentList({ moments, authorName, avatarUrl }: MomentLis
     }`;
 
   return (
-    <div className="relative z-10 mx-auto mt-24 flex w-full max-w-6xl flex-1 flex-col px-4 pb-24 sm:mt-28 sm:px-6">
+    <div className="relative z-10 mx-auto mt-8 flex w-full max-w-6xl flex-1 flex-col px-4 pb-24 md:mt-28 sm:px-6">
       <PageHeader
         title="生活动态"
         icon={<Camera size={30} />}

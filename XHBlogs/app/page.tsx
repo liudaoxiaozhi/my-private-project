@@ -61,7 +61,7 @@ export default function Home() {
         {siteConfig.homeHero?.enabled && <HomeHero danmaku={danmaku} />}
 
         {/* 🌟 调整整体容器的内边距，适应手机端更小的屏幕；scroll-mt 让「往下滚」停在导航栏下面 */}
-        <div id="home-main" className={`w-full max-w-6xl mx-auto ${siteConfig.homeHero?.enabled ? 'mt-0 scroll-mt-24' : 'mt-24 sm:mt-28'} px-4 sm:px-6 lg:px-10 relative z-10`}>
+        <div id="home-main" className={`w-full max-w-6xl mx-auto ${siteConfig.homeHero?.enabled ? 'mt-0 scroll-mt-24' : 'mt-8 md:mt-28'} px-4 sm:px-6 lg:px-10 relative z-10`}>
           <SearchBar posts={allPosts} />
 
           <main className="flex flex-col gap-6 w-full mt-6">

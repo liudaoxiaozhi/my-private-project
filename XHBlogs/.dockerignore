@@ -1,6 +1,10 @@
 # 依赖与构建产物在镜像内重新生成
 node_modules
 .next
+.next-staging
+.next-old
+.rebuild*
+logs
 out
 coverage
 *.tsbuildinfo

@@ -19,7 +19,7 @@ export default function BillsPage() {
 
   return (
     <div className="relative min-h-screen pb-24">
-      <main className="relative z-10 mx-auto mt-24 w-full max-w-6xl px-4 sm:mt-28 sm:px-6">
+      <main className="relative z-10 mx-auto mt-8 w-full max-w-6xl px-4 md:mt-28 sm:px-6">
         {hasData ? (
           <BillsDashboard stats={stats} timeZone={siteConfig.timeZone} />
         ) : (

@@ -3,11 +3,12 @@
 //
 // 服务端渲染时一律显示「开始阅读」；挂载后读取本地进度，章节仍存在时换成「继续阅读」，避免 Hydration 不一致。
 
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { BookOpen, History } from 'lucide-react';
 import { loadProgress } from '../../lib/novelProgress';
 import type { NovelProgress } from '../../lib/novelProgress';
+import { useIsClient } from '../../lib/useIsClient';
 
 interface ContinueReadingProps {
   bookSlug: string;
@@ -22,12 +23,13 @@ const SECONDARY =
   'glass-chip inline-flex items-center gap-2 px-5 py-3 text-sm font-bold text-slate-700 transition-all duration-300 ease-out hover:bg-white/80 dark:text-slate-200 dark:hover:bg-slate-700/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400';
 
 export default function ContinueReading({ bookSlug, firstHref, validHrefs }: ContinueReadingProps) {
-  const [progress, setProgress] = useState<NovelProgress | null>(null);
-
-  useEffect(() => {
+  // 阅读进度存在读者浏览器里：服务端和首帧按「没读过」渲染，挂载后再读
+  const isClient = useIsClient();
+  const progress = useMemo<NovelProgress | null>(() => {
+    if (!isClient) return null;
     const saved = loadProgress(bookSlug);
-    if (saved && validHrefs.includes(saved.href)) setProgress(saved);
-  }, [bookSlug, validHrefs]);
+    return saved && validHrefs.includes(saved.href) ? saved : null;
+  }, [isClient, bookSlug, validHrefs]);
 
   if (!progress) {
     return (

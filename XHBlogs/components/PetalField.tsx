@@ -20,7 +20,7 @@ export interface Piece {
   shape: number;     // 用第几种形状（对 shapes 数量取余）
 }
 
-interface PieceOptions {
+export interface PieceOptions {
   /** 下落时长范围（秒） */
   fall?: [number, number];
   /** 一次性模式：delay 取 [0, max]；常驻模式：取 [-max, 0] */

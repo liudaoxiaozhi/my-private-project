@@ -2,7 +2,7 @@
 //
 // - 跳过开屏动画；主题、特效档位只在第一次打开时设置，测试里切换后刷新页面仍然保留
 // - 默认标记「桌宠已经打过招呼」，免得招呼气泡干扰别的断言（测招呼的用例自己关掉）
-// - 每个用例结束时检查页面没有报错（评论区连不上 GitHub 之类的网络错误除外）
+// - 每个用例结束时检查页面没有报错（外链图片之类的网络错误除外）
 
 import { test as base, expect } from '@playwright/test';
 import type { BrowserContext, Page } from '@playwright/test';
@@ -36,8 +36,8 @@ export async function prepare(context: BrowserContext, { theme = 'light', effect
   );
 }
 
-// 网络层面的失败（外链图片、评论区连 GitHub）和代码无关，离线或网络受限时也会出现
-const IGNORED_CONSOLE = /Failed to load resource|Gitalk|api\.github|ERR_FAILED|CORS|preloaded using link preload/;
+// 网络层面的失败（外链图片、第三方接口）和代码无关，离线或网络受限时也会出现
+const IGNORED_CONSOLE = /Failed to load resource|ERR_FAILED|CORS|preloaded using link preload/;
 
 export function trackErrors(page: Page): string[] {
   const errors: string[] = [];

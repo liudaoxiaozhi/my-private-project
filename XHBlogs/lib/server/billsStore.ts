@@ -1,13 +1,19 @@
 // lib/server/billsStore.ts —— 账单数据 data/bills.json 的读写与校验（仅服务端）
 //
-// - readBills()：公开的 /bills 页在构建时同步读（文件缺失、坏了都回退到默认值，页面照样能生成）
-// - readBillsLatest()：后台读，走 getStorage()（线上读 GitHub 上最新的版本）
+// - readBills()：公开的 /bills 页在构建时同步读（文件缺失、坏了、解不开都回退到默认值，页面照样能生成）
+// - readBillsLatest()：后台读，走 getStorage()（线上读 GitHub 上最新的版本），同时告诉后台文件状态
 // - validateBills()：保存前的严格检查，出错抛 AdminInputError（中文说明，后台直接弹出来）
-// - writeBills()：整份写回，一次提交
+// - writeBills()：整份加密写回，一次提交
+//
+// 加密：仓库里只存密文 { "encrypted": "v1:…" }，AES-256-GCM，钥匙和后台密钥相同（lib/server/admin/secrets.ts：
+// ADMIN_SECRETS_KEY 优先，否则 ADMIN_PASSWORD）。旧的明文文件照样能读，下次保存自动变成密文；
+// 后来才设置 ADMIN_SECRETS_KEY 的，管理员密码加密的旧文件也能读，下次保存时换成新钥匙。
+// 解不开（钥匙变了）时公开页显示「还没有记账」，后台拒绝保存，免得用空账单覆盖掉原来的数据。
 import fs from 'fs';
 import path from 'path';
 import { AdminInputError } from './admin/api';
 import { getStorage } from './admin/storage';
+import { cipherKey, encrypt, openSealed } from './admin/secrets';
 import {
   BILL_TYPE_LABEL,
   MAX_AMOUNT,
@@ -25,24 +31,55 @@ const FILE = 'data/bills.json';
 const MAX_ENTRIES = 50_000;
 const MAX_CATEGORIES = 100;
 
-/** 构建时读本地文件（公开页用） */
+const SEAL_VERSION = 'v1:';
+
+/**
+ * 文件状态：empty 还没有文件；plain 旧的明文；encrypted 密文已解开；
+ * locked 解不开（钥匙变了 / 文件坏了）——这时不能保存，否则会覆盖掉原来的数据
+ */
+export type BillsFileState = 'empty' | 'plain' | 'encrypted' | 'locked';
+
+/** legacy：密文是旧钥匙（管理员密码）加密的，下次保存时即使内容没变也要重新加密 */
+export function openBills(raw: string | null): { bills: BillsData; state: BillsFileState; legacy?: boolean } {
+  if (!raw || !raw.trim()) return { bills: defaultBills(), state: 'empty' };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { bills: defaultBills(), state: 'locked' };
+  }
+  if (isPlain(parsed) && typeof parsed.encrypted === 'string') {
+    const sealed = parsed.encrypted;
+    const opened = sealed.startsWith(SEAL_VERSION) ? openSealed(sealed.slice(SEAL_VERSION.length)) : null;
+    if (opened === null) return { bills: defaultBills(), state: 'locked' };
+    try {
+      return { bills: coerceBills(JSON.parse(opened.text) as unknown), state: 'encrypted', legacy: opened.legacy };
+    } catch {
+      return { bills: defaultBills(), state: 'locked' };
+    }
+  }
+  return { bills: coerceBills(parsed), state: 'plain' };
+}
+
+/** 加密成写进仓库的文件内容 */
+export function sealBills(data: BillsData): string {
+  const key = cipherKey();
+  if (!key) throw new AdminInputError('没有设置 ADMIN_PASSWORD（或 ADMIN_SECRETS_KEY），账单无法加密保存');
+  return `${JSON.stringify({ encrypted: SEAL_VERSION + encrypt(billsToText(data), key) }, null, 2)}\n`;
+}
+
+/** 构建时读本地文件（公开页用；解不开就当没有记账） */
 export function readBills(): BillsData {
   try {
-    return coerceBills(JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'bills.json'), 'utf8')) as unknown);
+    return openBills(fs.readFileSync(path.join(process.cwd(), 'data', 'bills.json'), 'utf8')).bills;
   } catch {
     return defaultBills();
   }
 }
 
-/** 后台用：读存储里最新的版本 */
-export async function readBillsLatest(): Promise<BillsData> {
-  const raw = await getStorage().readText(FILE);
-  if (!raw) return defaultBills();
-  try {
-    return coerceBills(JSON.parse(raw) as unknown);
-  } catch {
-    return defaultBills();
-  }
+/** 后台用：读存储里最新的版本，连同文件状态 */
+export async function readBillsLatest(): Promise<{ bills: BillsData; state: BillsFileState; legacy?: boolean }> {
+  return openBills(await getStorage().readText(FILE));
 }
 
 const isPlain = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -137,11 +174,18 @@ export function validateBills(input: unknown, previous?: BillsData): BillsData {
 
 export const billsToText = (data: BillsData): string => `${JSON.stringify(data, null, 2)}\n`;
 
-/** 整份写回；内容没变时不提交 */
-export async function writeBills(data: BillsData): Promise<{ sha: string | null; changed: boolean }> {
+export const LOCKED_MESSAGE =
+  '账单文件无法解密（可能改过管理员密码或 ADMIN_SECRETS_KEY）。为免覆盖原来的数据，现在不能保存；改回原来的密码 / 钥匙即可恢复，或用之前导出的 CSV 导入';
+
+/** 整份加密写回；内容没变时不提交；现有文件解不开时拒绝（除非站长确认放弃旧账单） */
+export async function writeBills(data: BillsData, { overwriteLocked = false } = {}): Promise<{ sha: string | null; changed: boolean }> {
   const storage = getStorage();
-  const content = billsToText(data);
-  if ((await storage.readText(FILE)) === content) return { sha: null, changed: false };
-  const { sha } = await storage.commit([{ path: FILE, content }], `后台：更新账单（${data.entries.length} 笔）`);
+  const current = openBills(await storage.readText(FILE));
+  if (current.state === 'locked' && !overwriteLocked) throw new AdminInputError(LOCKED_MESSAGE);
+  // 已经是当前钥匙加密的密文且内容一样：不提交（每次加密结果都不同，所以比较解开后的内容）
+  if (current.state === 'encrypted' && !current.legacy && billsToText(current.bills) === billsToText(data)) {
+    return { sha: null, changed: false };
+  }
+  const { sha } = await storage.commit([{ path: FILE, content: sealBills(data) }], `后台：更新账单（${data.entries.length} 笔）`);
   return { sha, changed: true };
 }

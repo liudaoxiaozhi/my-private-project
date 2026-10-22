@@ -52,3 +52,14 @@ next-env.d.ts
 /public/music/_covers/
 /public/music/_lyrics/
 /.e2e-admin-root
+
+# 自己的服务器上自动重建（scripts/self-host/rebuild.mjs，见 docs/DEPLOY-BAOTA.md）：状态、锁、日志、构建中 / 换下来的目录
+/.rebuild-status.json
+/.rebuild.lock
+/.rebuild.pending
+/.rebuild.log
+/.rebuild.log.old
+/.next-staging/
+/.next-old/
+# pm2 的日志（ecosystem.config.cjs）
+/logs/

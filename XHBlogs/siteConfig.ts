@@ -81,13 +81,6 @@ const defaults = {
 
   // 首页开场飘过的弹幕（再加上最近几篇文章的标题）；enableDanmaku 设为 false 关闭
   danmakuList: ["欢迎来到研究所～", "前排围观", "樱花好好看", "有笨蛋嘛？", "前方高能反应！", "BUG 修复进度 99%", "来点音乐 ♪", "Saber 好可爱", "今天也要开心呀", "在干嘛呢？", "签到", "wwwww", "写算法中", "睡大觉中", "下雨天适合看书", "新加坡今天也很热"],
-  gitalkConfig: {
-    clientID: "",
-    clientSecret: "",
-    repo: "",
-    owner: "",
-    admin: [""],
-  },
   buildDate: "2026-03-23T00:00:00", // 建站日期
 
   // 👇 【新增】首页时钟的时区（IANA 时区名，如 "Asia/Shanghai"、"Asia/Tokyo"）；建站日期也按这个时区计算
